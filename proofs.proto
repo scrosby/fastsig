@@ -1,0 +1,42 @@
+option java_outer_classname = "Serialization";
+option java_package = "org.rice.crosby.historytree.generated";
+
+// A configuration message for an aggregator. An aggobj generates a config blob, which 
+// is placed in this message along with its name.
+
+message AggConfig {
+  required string name = 1;
+  optional bytes configblob =2;
+ }
+
+message Config {
+  required AggConfig aggconfig = 1;
+  required string valtype = 2;
+}
+
+
+// For serializing a pruned tree. 
+message HistNode {
+     optional HistNode left = 1;
+     optional HistNode right = 2;
+ 
+     // Leaves must include either a value or an agg.
+     // Interior non-frozen never include a value or agg.
+     // Interior non-stubs never include a value or an agg.
+     // Interior frozen stubs include an agg.
+     optional bytes val = 3;
+     optional bytes agg = 4;
+}
+
+message HistTree {
+     required int32 version = 1; // Needed/hint to include the depth.
+     required HistNode root = 2; // Root node.
+}
+
+
+// What is signed.
+message Commitment {
+     //required Config configblob = 1 ; // Serialized config blob. 
+     required int32 version = 2; // Needed to calculate the depth.
+     required bytes roothash = 3; // Root hash.
+}
