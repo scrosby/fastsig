@@ -1,0 +1,218 @@
+package org.rice.crosby.historytree;
+
+
+
+public class HistoryTreeOps<A,V> {
+	/** Operations that the history tree needs to be supported by the nodefactory */
+	interface NodeFactoryInterface<A,V> {
+	    NodeCursor<A,V> makeRoot(int layer); // Make a root at the given layer
+	    //int getTime();
+	}
+	
+	HistoryTreeOps(int time) {
+		this.time = time;
+	}
+
+	//
+	// Operations for adding to a log and getting the commitment
+	//
+	
+	
+	/** Add an event to the log */
+	public void append(V val) {
+		NodeCursor<A,V> leaf;
+		if (time < 0) {
+			time = 0;
+			//nodefactory.updateTime(time);
+			root = leaf = nodefactory.makeRoot(0);
+		} else {
+			time = time+1;
+			//nodefactory.updateTime(time);
+			reparent(time);
+			leaf = forceLeaf(time);
+		}
+		leaf.setVal(val);
+		computefrozenaggs(leaf);
+	}
+		
+	private void reparent(int time) {
+		while (!(time <= (1<<root.layer)-1))
+			this.root = root.reparent();
+	}
+
+	/** Recurse from the leaf upwards, computing the agg for all frozen nodes */
+    private void computefrozenaggs(NodeCursor<A,V> leaf) {
+    	// First, set the leaf agg from the stored event (if it exists
+    	if (leaf.hasVal() && leaf.getAgg() == null) 
+    		leaf.setAgg(aggobj.aggVal(leaf.getVal()));
+
+    	NodeCursor<A,V> node=leaf.getParent(root);
+    	while (node != null && node.isFrozen(time)) {
+    		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
+    		node = node.getParent(root);
+    	}
+    }
+    
+
+    public A agg() {
+    	return aggV(time);
+    }
+    public A aggV(int version) {
+    	NodeCursor<A,V>  child, leaf, node;
+
+    	child = leaf = this.leaf(version);
+    	node= leaf.getParent(root);
+    	A agg = leaf.getAgg();
+
+    	while (node!=null && version >= (1<<node.layer-1)) {
+    		NodeCursor<A,V>  left = node.left();
+    		if (child.equals(left))
+    			agg = aggobj.aggChildren(agg,null);
+    		else
+    			agg = aggobj.aggChildren(left.getAgg(),agg);
+    		child = node;
+    		node = node.getParent(root);
+    	}
+    	return agg;
+    }
+    
+    //
+    //  Operations for making pruned trees.
+    //
+    
+	/** Make a cursor pointing to the given leaf, if possible */
+    NodeCursor<A,V> leaf(int version)  {
+    	if (time == 0)
+    		return root;
+    	NodeCursor<A,V> node=root,child;
+    	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+    		int mask = 1 << (layer-1);
+    		if ((mask & version) == mask)
+    			child = node.right();
+    		else
+    			child = node.left();
+    		if (layer == 1)
+    			return child;
+    		node = child;
+    	}
+    	assert false;
+    	return null;
+    }
+    /** Make a cursor pointing to the given leaf, forcibly creating the path if possible */
+    NodeCursor<A,V> forceLeaf(int version) {
+    	if (time == 0)
+    		return root;
+    	NodeCursor<A,V> node=root,child;
+    	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+    		int mask = 1 << (layer-1);
+    		if ((mask & version) == mask)
+    			child = node.forceRight();
+    		else
+    			child = node.forceLeft();
+    		if (layer == 1)
+    			return child;
+    		node = child;
+    	}
+    	assert false;
+    	return null;
+    }
+
+    void copyRoot(HistoryTreeOps<A,V> orig) {
+    	assert this.root == null;
+    	root = nodefactory.makeRoot(orig.root.layer);
+    	if (root.isFrozen(time))
+    		root.copyAgg(orig.root);
+    }
+
+    /** Make a path to one leaf and copy over its value or agg. 
+     * @throws ProofError */
+    NodeCursor<A,V> copyVersionHelper(HistoryTreeOps<A,V> orig, int version, boolean copyValFlag) throws ProofError {
+    	NodeCursor<A,V> origleaf, selfleaf;
+    	selfleaf = leaf(version);
+    	origleaf = orig.leaf(version);
+    	
+    	if (selfleaf == null)
+    		throw new ProofError("Leaf not in the tree");    	
+    	selfleaf.copyAgg(origleaf);
+    	// If we want a value, have one to copy from, and don't have one already... Copy it.
+    	if (copyValFlag && !selfleaf.hasVal() && origleaf.hasVal())
+    		selfleaf.copyVal(origleaf);
+    	return origleaf;
+    	}
+
+    
+    void _copyAgg(HistoryTreeOps<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf) {
+    	NodeCursor<A,V> node,orignode,origleft,origright;
+    	node = leaf.getParent(root);
+    	orignode = origleaf.getParent(orig.root);
+
+    	// Invariant: We have a well-formed tree with all stubs include hashes EXCEPT possibly siblings in the path from the leaf to where it merged into the existing pruned tree.
+   	    // Iterate up the tree, copying over sibling agg's for stubs. If we hit a node with two siblings. we're done. Earlier inserts will have already inserted sibling hashes for ancestor nodes.
+    	while (orignode != null) {
+    		if (node.left()!= null && node.right()!= null)
+    			break;
+    		origleft = orignode.left();
+    		if (origleft.isFrozen(orig.time)) // TODO: Is this right? should it be this.time?
+    			node.forceLeft().copyAgg(origleft);
+    		
+    		// A right node may or may not exist.
+    		origright = orignode.right();
+    		if (origright!= null && origright.isFrozen(orig.time)) // TODO: Is this right? should it be this.time?
+    				node.forceRight().copyAgg(origright);
+    			
+    		orignode = orignode.getParent(orig.root);
+    		node = node.getParent(root);
+    	}
+    }
+    public void copyV(HistoryTreeOps<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
+    	if (root == null)
+    		copyRoot(orig);
+
+    	NodeCursor<A,V> origleaf, selfleaf;
+    	selfleaf = leaf(version);
+    	origleaf = orig.leaf(version);
+
+    	assert origleaf != null;
+    	if (selfleaf!= null) {
+    		// If the leaf is already in the tree...
+    		assert selfleaf.getAgg() != null;
+    		assert selfleaf.getAgg().equals(origleaf.getAgg());
+    	} else {
+    		selfleaf = copyVersionHelper(orig,version,copyValueFlag);
+    		_copyAgg(orig,origleaf,selfleaf);    		
+    	}    			
+    	if (copyValueFlag) {
+    		if (!origleaf.hasVal())
+    			throw new ProofError("Missing value in proof");
+    	} else {
+    		if (!selfleaf.hasVal() && origleaf.hasVal()) 
+    			selfleaf.copyVal(origleaf);
+    	}
+    
+    }
+    
+    
+
+    //
+    //  Serialization code: TODO TODO TODO
+    //
+    
+  
+    //
+    //  Member fields
+    //    
+    private int time;
+    private NodeCursor<A,V> root;
+    private NodeFactoryInterface<A,V> nodefactory;
+    private AggregationInterface<A,V> aggobj;
+
+    // Misc helpers
+    public static int log2(int x) {
+    	int i = 0, pow = 1;
+    	while (pow <= x) {
+    		pow = pow*2;
+    		i=i+1;
+    	}
+    	return i;
+    }
+}
