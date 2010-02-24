@@ -246,8 +246,46 @@ public class HistoryTreeOps<A,V> {
     	parseNode(node.forceRight(),in.getRight());
     }
     
+    public String toString(String prefix) {
+    	StringBuilder b = new StringBuilder();
+    	debugString(b,prefix,root);
+    	return new String(b);
+    }
+    public String toString() {
+    	return toString("");
+    }
+	public void debugString(StringBuilder b, String prefix, NodeCursor<A,V> node) {
+		b.append(prefix);
+		b.append(":\t");
+		// Print out the value (if any)
+		if (node.hasVal())
+			b.append(valToString(node.getVal()));
+		else
+			b.append("--");
+		b.append("\t");	
+
+		A agg = node.getAgg();
+		if (agg==null)
+			b.append(aggToString(agg));
+		else
+			b.append("<None>");
+
+		b.append("\n");
+		NodeCursor<A,V> left=node.left(), right=node.right();
+		
+		if (left != null)
+			debugString(b,prefix+"L",left);
+		if (right != null) 
+			debugString(b,prefix+"R",right);
+	}
     
-    
+    public String aggToString(A a) {
+    	return aggobj.serializeAgg(a).toString();
+    }
+    public String valToString(V v) {
+    	return aggobj.serializeVal(v).toString();
+    }
+ 
     //
     //  Member fields
     //    
