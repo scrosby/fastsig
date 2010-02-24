@@ -1,6 +1,9 @@
 package org.rice.crosby.historytree;
 
 
+import org.rice.crosby.historytree.generated.Serialization;
+
+
 
 public class HistoryTreeOps<A,V> {
 	/** Operations that the history tree needs to be supported by the nodefactory */
@@ -194,10 +197,57 @@ public class HistoryTreeOps<A,V> {
     
 
     //
-    //  Serialization code: TODO TODO TODO
+    //  Serialization code
     //
+    void serializeNode(Serialization.HistNode.Builder out, NodeCursor<A,V> node) {
+    	if (node.hasVal()) {
+    		// Must be a leaf.
+    		out.setVal(aggobj.serializeVal(node.getVal()));
+    		return;
+    	}
+    	if (node.left() == null && node.right() == null) {
+    		// Either a stub or a leaf. 
+    		// Gotta include the agg for this node.
+    		out.setAgg(aggobj.serializeAgg(node.getAgg()));
+    		return;
+    	}
+    	// Ok, recurse both sides. Don't forget, we need to make a builder.
+    	Serialization.HistNode.Builder b = Serialization.HistNode.newBuilder();
+    	if (node.left() != null) {
+    		serializeNode(b,node.left());
+    		out.setLeft(b.build());
+    		b.clear(); // Clear so we can reuse it.
+    	}
+    	if (node.right() != null) {
+    		serializeNode(b,node.right());
+    		out.setRight(b.build());
+    	}
+    }
     
-  
+    void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
+    	if (in.hasVal()) {
+    		V val = aggobj.parseVal(in.getVal());
+    		node.setVal(val);
+    		node.setAgg(aggobj.aggVal(val));
+    		return;
+    	}
+    	if (in.hasAgg()) {
+    		// If it has an agg, it should be a stub or a leaf stub.
+    		assert !in.hasLeft();
+    		assert !in.hasRight();
+    		A agg = aggobj.parseAgg(in.getAgg());
+    		node.setAgg(agg);
+    		return;
+    	}
+    	// Must always have a left and right child.
+    	assert in.hasLeft();
+    	assert in.hasRight();
+    	parseNode(node.forceLeft(),in.getLeft());
+    	parseNode(node.forceRight(),in.getRight());
+    }
+    
+    
+    
     //
     //  Member fields
     //    

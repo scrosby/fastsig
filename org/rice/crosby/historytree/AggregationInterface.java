@@ -1,5 +1,7 @@
 package org.rice.crosby.historytree;
 
+import com.google.protobuf.ByteString;
+
 /** Interface for how aggregation is implemented. A is the type of an annotation, and 
  * V is the type of an event.*/
 
@@ -14,4 +16,9 @@ public interface AggregationInterface<A,V> {
 	abstract A aggChildren(A leftAnn, A rightAnn);
 	/** Map from an event to its aggregate */
 	abstract A aggVal(V event);
+
+	abstract ByteString serializeVal(V val);
+	abstract ByteString serializeAgg(A agg);
+	abstract A parseAgg(ByteString b);
+	abstract V parseVal(ByteString b);
 }
