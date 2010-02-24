@@ -1,5 +1,33 @@
 package org.rice.crosby.historytree;
 
+/** A cursor for navigating around a a history tree. 
+ * 
+ * A cursor lets me easily store date 'externally', through a nodefactory object.
+ * 
+ * I have a 3-way challenge in desiging them..
+ * 
+ * A given Cursor can be either:
+
+   None: Used to indicate NULL, eg, no such child.
+            Indicated by NodeFactory == NULL
+
+   Valid: Pointing to a layer&index containing real data.
+
+   Invalid: Points to a valid location, however that location, if
+   dereferenced, has no valid data, so this node cannot be
+   dereferenced. Must be marked somehow.
+
+A given agg stored for a node may thus be one of:
+
+   Valid data
+
+   None (also considered valid. Eg, a valid tree node, but unfrozen.)
+
+   'Invalid', marking a location as having invalid contents.
+
+A leaf should always have a value, unless it has been deliberately stubbed out.
+
+*/
 
 public class NodeCursor<A,V> {
 	interface NodeFactoryInterface<A,V> {
@@ -42,7 +70,7 @@ public class NodeCursor<A,V> {
 	}
 
 	/** Compute index in a total order */
-	protected int computeIndex() {
+	public int computeIndex() {
 		int s = 0;
 		int j = index + (1<<layer)-1;
 		while (j>0) {
