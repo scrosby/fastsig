@@ -9,7 +9,7 @@ public class HistoryTreeOps<A,V> {
 	/** Operations that the history tree needs to be supported by the nodefactory */
 	interface NodeFactoryInterface<A,V> {
 	    NodeCursor<A,V> makeRoot(int layer); // Make a root at the given layer
-	    //int getTime();
+	    //void updateTime(int time);
 	}
 	
 	HistoryTreeOps(int time) {
