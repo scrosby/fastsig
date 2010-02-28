@@ -30,7 +30,7 @@ A leaf should always have a value, unless it has been deliberately stubbed out.
 */
 
 public class NodeCursor<A,V> {
-	interface NodeFactoryInterface<A,V> {
+	interface HistoryDataStore<A,V> {
 		/** A node cursor can point anywhere. This indicates that we should create the references cursor location. */
 		void markValid(NodeCursor<A,V> node);
 		/** A node cursor can point anywhere. This sees if we do in fact have valid data at the cursor location */
@@ -45,12 +45,12 @@ public class NodeCursor<A,V> {
 	
 	
 	NodeCursor(int layer, int index) {
-		this.nodefactory = null;
+		this.datastore = null;
 		this.layer = layer;
 		this.index = index;
 	}
-	NodeCursor(NodeFactoryInterface<A,V> nodefactory, int layer, int index) {
-		this.nodefactory = nodefactory;
+	NodeCursor(HistoryDataStore<A,V> nodefactory, int layer, int index) {
+		this.datastore = nodefactory;
 		this.layer = layer;
 		this.index = index;
 	}
@@ -80,7 +80,7 @@ public class NodeCursor<A,V> {
 		return s+layer;
 	}
 
-	protected final NodeFactoryInterface<A,V> nodefactory;
+	protected final HistoryDataStore<A,V> datastore;
 	protected final int layer;
 	protected final int index;
 
@@ -88,17 +88,17 @@ public class NodeCursor<A,V> {
 	 * the given child. May or may not actually exist. */
 	NodeCursor<A,V> getLeft() {
 		int newindex = index;
-		return new NodeCursor<A,V>(nodefactory,layer-1,newindex);
+		return new NodeCursor<A,V>(datastore,layer-1,newindex);
 	}
 	/** Return a NodeCursor reference with the layer and index numbers of
 	 * the given child. May or may not actually exist. */
 	NodeCursor<A,V> getRight() {
 		int newindex = index + getStep()/2;
-		return new NodeCursor<A,V>(nodefactory,layer-1,newindex);
+		return new NodeCursor<A,V>(datastore,layer-1,newindex);
 	}
 
 	NodeCursor<A,V> reparent() {
-		return new NodeCursor<A,V>(nodefactory,layer+1,0).markValid();
+		return new NodeCursor<A,V>(datastore,layer+1,0).markValid();
 	}
 
 	/** Get the parent node of the current cursor. In order to return 'null' for the root node, 
@@ -106,7 +106,7 @@ public class NodeCursor<A,V> {
 	NodeCursor<A,V> getParent(final NodeCursor<A,V> root) {
 		if (this.equals(root))
 			return null;
-		return new NodeCursor<A,V>(nodefactory,layer+1,index & ~(getStep()*2-1));
+		return new NodeCursor<A,V>(datastore,layer+1,index & ~(getStep()*2-1));
 	}
 
 	NodeCursor<A,V> left() {
@@ -139,7 +139,7 @@ public class NodeCursor<A,V> {
 	public boolean equals(Object o) {
 		if (!(o instanceof NodeCursor<?,?>)) return false;
 		NodeCursor<A,V> o2 = (NodeCursor<A,V>)o;
-		if (this.nodefactory != o2.nodefactory) return false;
+		if (this.datastore != o2.datastore) return false;
 		if (this.layer != o2.layer) return false;
 		if (this.index != o2.index) return false;
 		return true;
@@ -153,31 +153,31 @@ public class NodeCursor<A,V> {
 	 * Functions that reflect up to the nodefactory.
 	 */
 	NodeCursor<A,V> markValid() {
-		nodefactory.markValid(this);
+		datastore.markValid(this);
 		return this;
 	}
 	boolean isAggValid() {
-		return nodefactory.isAggValid(this);
+		return datastore.isAggValid(this);
 	}
 	boolean hasVal() {
-		return nodefactory.hasVal(this);
+		return datastore.hasVal(this);
 	}
 	V getVal() {
-		return nodefactory.getVal(this);
+		return datastore.getVal(this);
 	}
 	void setVal(V v) {
-		nodefactory.setVal(this,v);
+		datastore.setVal(this,v);
 	}
 	A getAgg() {
-		return nodefactory.getAgg(this);
+		return datastore.getAgg(this);
 	}
 	void setAgg(A v) {
-		nodefactory.setAgg(this,v);
+		datastore.setAgg(this,v);
 	}
 	void copyAgg(NodeCursor<A,V> orig) {
-		nodefactory.setAgg(this,orig.getAgg());
+		datastore.setAgg(this,orig.getAgg());
 	}
 	void copyVal(NodeCursor<A,V> orig) {
-		nodefactory.setVal(this,orig.getVal());
+		datastore.setVal(this,orig.getVal());
 	}
 }

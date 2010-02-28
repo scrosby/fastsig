@@ -2,10 +2,10 @@ package org.rice.crosby.historytree;
 
 import java.util.Vector;
 
-import org.rice.crosby.historytree.HistoryTreeOps.NodeFactoryInterface;
+import org.rice.crosby.historytree.HistoryTree.HistoryDataStore;
 
-public class ArrayStore<A,V> extends StoreBase implements NodeFactoryInterface<A, V>,
-		org.rice.crosby.historytree.NodeCursor.NodeFactoryInterface<A, V> {
+public class ArrayStore<A,V> extends StoreBase implements HistoryDataStore<A, V>,
+		org.rice.crosby.historytree.NodeCursor.HistoryDataStore<A, V> {
 
 	public ArrayStore() {
 		this.time = -1;

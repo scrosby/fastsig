@@ -5,31 +5,31 @@ import org.rice.crosby.historytree.generated.Serialization;
 
 
 
-public class HistoryTreeOps<A,V> {
-	/** Operations that the history tree needs to be supported by the nodefactory */
-	interface NodeFactoryInterface<A,V> {
+public class HistoryTree<A,V> {
+	/** Operations that the history tree needs to be supported by the datastore */
+	interface HistoryDataStore<A,V> {
 	    NodeCursor<A,V> makeRoot(int layer); // Make a root at the given layer
 	    void updateTime(int time);
 	}
 
-	/** Make an empty history tree with a given aggobj and nodefactory.  */
-	HistoryTreeOps(AggregationInterface<A,V> aggobj,
-	    		   NodeFactoryInterface<A,V> nodefactory) {
+	/** Make an empty history tree with a given aggobj and datastore.  */
+	public HistoryTree(AggregationInterface<A,V> aggobj,
+	    		   HistoryDataStore<A,V> datastore) {
 	    this.time = -1;
 		this.root = null;
 		this.aggobj = aggobj;
-		this.nodefactory = nodefactory;
+		this.datastore = datastore;
 	}
 
 	/** Make an history at a given timestamp (used as a template for building a pruned trees)
 	 */
-	HistoryTreeOps(AggregationInterface<A,V> aggobj,
-	    		   NodeFactoryInterface<A,V> nodefactory,
+	HistoryTree(AggregationInterface<A,V> aggobj,
+	    		   HistoryDataStore<A,V> datastore,
 	    		   int time) {
 	    this.time = time;
 		this.root = null;
 		this.aggobj = aggobj;
-		this.nodefactory = nodefactory;
+		this.datastore = datastore;
 	}
 
 	//
@@ -42,11 +42,11 @@ public class HistoryTreeOps<A,V> {
 		NodeCursor<A,V> leaf;
 		if (time < 0) {
 			time = 0;
-			nodefactory.updateTime(time);
-			root = leaf = nodefactory.makeRoot(0);
+			datastore.updateTime(time);
+			root = leaf = datastore.makeRoot(0);
 		} else {
 			time = time+1;
-			nodefactory.updateTime(time);
+			datastore.updateTime(time);
 			reparent(time);
 			leaf = forceLeaf(time);
 		}
@@ -136,16 +136,16 @@ public class HistoryTreeOps<A,V> {
     	return null;
     }
 
-    void copyRoot(HistoryTreeOps<A,V> orig) {
+    void copyRoot(HistoryTree<A,V> orig) {
     	assert this.root == null;
-    	root = nodefactory.makeRoot(orig.root.layer);
+    	root = datastore.makeRoot(orig.root.layer);
     	if (root.isFrozen(time))
     		root.copyAgg(orig.root);
     }
 
     /** Make a path to one leaf and copy over its value or agg. 
      * @throws ProofError */
-    NodeCursor<A,V> copyVersionHelper(HistoryTreeOps<A,V> orig, int version, boolean copyValFlag) throws ProofError {
+    NodeCursor<A,V> copyVersionHelper(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
     	NodeCursor<A,V> origleaf, selfleaf;
     	selfleaf = leaf(version);
     	origleaf = orig.leaf(version);
@@ -160,7 +160,7 @@ public class HistoryTreeOps<A,V> {
     	}
 
     
-    void _copyAgg(HistoryTreeOps<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf) {
+    void _copyAgg(HistoryTree<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf) {
     	NodeCursor<A,V> node,orignode,origleft,origright;
     	node = leaf.getParent(root);
     	orignode = origleaf.getParent(orig.root);
@@ -183,7 +183,7 @@ public class HistoryTreeOps<A,V> {
     		node = node.getParent(root);
     	}
     }
-    public void copyV(HistoryTreeOps<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
+    public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
     	if (root == null)
     		copyRoot(orig);
 
@@ -307,7 +307,7 @@ public class HistoryTreeOps<A,V> {
     //    
     private int time;
     private NodeCursor<A,V> root;
-    private NodeFactoryInterface<A,V> nodefactory;
+    private HistoryDataStore<A,V> datastore;
     private AggregationInterface<A,V> aggobj;
 
     // Misc helpers

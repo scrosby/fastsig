@@ -1,10 +1,10 @@
 package org.rice.crosby.historytree;
 
 import java.util.Hashtable;
-import org.rice.crosby.historytree.HistoryTreeOps.NodeFactoryInterface;
+import org.rice.crosby.historytree.HistoryTree.HistoryDataStore;
 
-public class HashStore<A,V> extends StoreBase implements NodeFactoryInterface<A, V>,
-		org.rice.crosby.historytree.NodeCursor.NodeFactoryInterface<A, V> {
+public class HashStore<A,V> extends StoreBase implements HistoryDataStore<A, V>,
+		org.rice.crosby.historytree.NodeCursor.HistoryDataStore<A, V> {
 
 	HashStore() {
 		this.time = -1;
