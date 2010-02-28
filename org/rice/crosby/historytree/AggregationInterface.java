@@ -21,4 +21,5 @@ public interface AggregationInterface<A,V> {
 	abstract ByteString serializeAgg(A agg);
 	abstract A parseAgg(ByteString b);
 	abstract V parseVal(ByteString b);
+	abstract AggregationInterface<A, V> clone();
 }

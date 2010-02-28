@@ -58,4 +58,10 @@ public class ConcatAgg implements AggregationInterface<String, String> {
 	public AggregationInterface<String, String> setup(String config) {
 		return this;
 	}
+
+	@Override
+	public AggregationInterface<String, String> clone() {
+		// ConcatAgg is stateless, so just return this
+		return this;
+	}
 }
