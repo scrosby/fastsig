@@ -3,9 +3,14 @@ package org.rice.crosby.historytree;
 import java.util.Hashtable;
 import org.rice.crosby.historytree.HistoryTreeOps.NodeFactoryInterface;
 
-public class HashStore<A,V> implements NodeFactoryInterface<A, V>,
+public class HashStore<A,V> extends StoreBase implements NodeFactoryInterface<A, V>,
 		org.rice.crosby.historytree.NodeCursor.NodeFactoryInterface<A, V> {
 
+	HashStore() {
+		this.time = -1;
+		this.aggstore = new Hashtable<Integer,A>();
+		this.valstore = new Hashtable<Integer,V>();
+	}
 	@Override
 	public NodeCursor<A, V> makeRoot(int layer) {
 		return new NodeCursor<A,V>(this,layer,0);
@@ -48,8 +53,13 @@ public class HashStore<A,V> implements NodeFactoryInterface<A, V>,
 		valstore.put(new Integer(node.computeIndex()),v);
 	}
 
-	int time;
+	public void updateTime(int time) {
+		assert (time > this.time);
+		this.time = time;		
+	}
+
 	Hashtable<Integer,A>  aggstore;
+	protected int time;
 	Hashtable<Integer,V>  valstore;
 }
 

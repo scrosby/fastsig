@@ -4,9 +4,15 @@ import java.util.Vector;
 
 import org.rice.crosby.historytree.HistoryTreeOps.NodeFactoryInterface;
 
-public class ArrayStore<A,V> implements NodeFactoryInterface<A, V>,
+public class ArrayStore<A,V> extends StoreBase implements NodeFactoryInterface<A, V>,
 		org.rice.crosby.historytree.NodeCursor.NodeFactoryInterface<A, V> {
 
+	public ArrayStore() {
+		this.time = -1;
+		this.aggstore = new Vector<A>();
+		this.valstore = new Vector<V>();
+	}
+	
 	@Override
 	public NodeCursor<A, V> makeRoot(int layer) {
 		return new NodeCursor<A,V>(this,layer,0);
@@ -49,7 +55,14 @@ public class ArrayStore<A,V> implements NodeFactoryInterface<A, V>,
 		valstore.set(node.computeIndex(),v);
 	}
 
-	int time;
+	public void updateTime(int time) {
+		assert (time > this.time);
+		this.time = time;		
+		aggstore.add(time,null);
+		valstore.add(time,null);
+	}
+
+	protected int time;
 	private Vector<A>  aggstore;
 	private Vector<V>  valstore;
 	

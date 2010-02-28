@@ -9,11 +9,27 @@ public class HistoryTreeOps<A,V> {
 	/** Operations that the history tree needs to be supported by the nodefactory */
 	interface NodeFactoryInterface<A,V> {
 	    NodeCursor<A,V> makeRoot(int layer); // Make a root at the given layer
-	    //void updateTime(int time);
+	    void updateTime(int time);
 	}
-	
-	HistoryTreeOps(int time) {
-		this.time = time;
+
+	/** Make an empty history tree with a given aggobj and nodefactory.  */
+	HistoryTreeOps(AggregationInterface<A,V> aggobj,
+	    		   NodeFactoryInterface<A,V> nodefactory) {
+	    this.time = -1;
+		this.root = null;
+		this.aggobj = aggobj;
+		this.nodefactory = nodefactory;
+	}
+
+	/** Make an history at a given timestamp (used as a template for building a pruned trees)
+	 */
+	HistoryTreeOps(AggregationInterface<A,V> aggobj,
+	    		   NodeFactoryInterface<A,V> nodefactory,
+	    		   int time) {
+	    this.time = time;
+		this.root = null;
+		this.aggobj = aggobj;
+		this.nodefactory = nodefactory;
 	}
 
 	//
@@ -26,11 +42,11 @@ public class HistoryTreeOps<A,V> {
 		NodeCursor<A,V> leaf;
 		if (time < 0) {
 			time = 0;
-			//nodefactory.updateTime(time);
+			nodefactory.updateTime(time);
 			root = leaf = nodefactory.makeRoot(0);
 		} else {
 			time = time+1;
-			//nodefactory.updateTime(time);
+			nodefactory.updateTime(time);
 			reparent(time);
 			leaf = forceLeaf(time);
 		}
