@@ -72,7 +72,14 @@ public class HistoryTree<A,V> {
     	}
     }
     
-
+    public AggregationInterface<A,V> getAggObj() {
+    	return aggobj.clone();
+    }
+    
+    public int version() {
+    	return time;
+    }
+    
     public A agg() {
     	return aggV(time);
     }
