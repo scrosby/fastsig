@@ -228,7 +228,33 @@ public class HistoryTree<A,V> {
     //
     //  Serialization code
     //
-    void serializeNode(Serialization.HistNode.Builder out, NodeCursor<A,V> node) {
+    static HistoryTree makeFromConfig(Serialization.Config config) {
+    	assert (false); // TODO
+    	return null;
+    }
+    
+    /** Serialize a pruned tree to a protocol buffer */
+    public void serializeTree(Serialization.HistTree.Builder out) {
+    	out.setVersion(time);
+    	if (root != null) {
+    		Serialization.HistNode.Builder builder = Serialization.HistNode.newBuilder();
+    		serializeNode(builder,root);
+    		out.setRoot(builder.build());
+    	}
+    }
+
+    /** Parse from a protocol buffer. I assume that the history tree has 
+     * been configured with the right aggobj and a datastore. */
+    public void parseTree(Serialization.HistTree in) {
+    	this.time = in.getVersion();
+    	if (in.hasRoot()) {
+    		NodeCursor<A,V> root = datastore.makeRoot(log2(in.getVersion()));
+    		parseNode(root,in.getRoot());    		
+    	}
+    }
+
+    /** Helper function for recursively serializing a history tree */
+    private void serializeNode(Serialization.HistNode.Builder out, NodeCursor<A,V> node) {
     	if (node.hasVal()) {
     		// Must be a leaf.
     		out.setVal(aggobj.serializeVal(node.getVal()));
