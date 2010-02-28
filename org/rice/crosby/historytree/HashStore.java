@@ -6,7 +6,7 @@ import org.rice.crosby.historytree.HistoryTree.HistoryDataStore;
 public class HashStore<A,V> extends StoreBase implements HistoryDataStore<A, V>,
 		org.rice.crosby.historytree.NodeCursor.HistoryDataStore<A, V> {
 
-	HashStore() {
+	public HashStore() {
 		this.time = -1;
 		this.aggstore = new Hashtable<Integer,A>();
 		this.valstore = new Hashtable<Integer,V>();

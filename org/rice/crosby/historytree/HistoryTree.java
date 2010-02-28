@@ -23,7 +23,7 @@ public class HistoryTree<A,V> {
 
 	/** Make an history at a given timestamp (used as a template for building a pruned trees)
 	 */
-	HistoryTree(AggregationInterface<A,V> aggobj,
+	private HistoryTree(AggregationInterface<A,V> aggobj,
 	    		   HistoryDataStore<A,V> datastore,
 	    		   int time) {
 	    this.time = time;
@@ -100,7 +100,7 @@ public class HistoryTree<A,V> {
     //
     
 	/** Make a cursor pointing to the given leaf, if possible */
-    NodeCursor<A,V> leaf(int version)  {
+    private NodeCursor<A,V> leaf(int version)  {
     	if (time == 0)
     		return root;
     	NodeCursor<A,V> node=root,child;
@@ -118,7 +118,7 @@ public class HistoryTree<A,V> {
     	return null;
     }
     /** Make a cursor pointing to the given leaf, forcibly creating the path if possible */
-    NodeCursor<A,V> forceLeaf(int version) {
+    private NodeCursor<A,V> forceLeaf(int version) {
     	if (time == 0)
     		return root;
     	NodeCursor<A,V> node=root,child;
@@ -136,7 +136,13 @@ public class HistoryTree<A,V> {
     	return null;
     }
 
-    void copyRoot(HistoryTree<A,V> orig) {
+    public HistoryTree<A,V> makePruned(HistoryDataStore<A, V> newdatastore) {
+    	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore,this.time);
+    	out.copyRoot(this);
+    	return out;
+        }
+    
+    private void copyRoot(HistoryTree<A,V> orig) {
     	assert this.root == null;
     	root = datastore.makeRoot(orig.root.layer);
     	if (root.isFrozen(time))
@@ -145,7 +151,7 @@ public class HistoryTree<A,V> {
 
     /** Make a path to one leaf and copy over its value or agg. 
      * @throws ProofError */
-    NodeCursor<A,V> copyVersionHelper(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
+    private NodeCursor<A,V> copyVersionHelper(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
     	NodeCursor<A,V> origleaf, selfleaf;
     	selfleaf = leaf(version);
     	origleaf = orig.leaf(version);
@@ -160,7 +166,7 @@ public class HistoryTree<A,V> {
     	}
 
     
-    void _copyAgg(HistoryTree<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf) {
+    private void _copyAgg(HistoryTree<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf) {
     	NodeCursor<A,V> node,orignode,origleft,origright;
     	node = leaf.getParent(root);
     	orignode = origleaf.getParent(orig.root);
@@ -240,7 +246,7 @@ public class HistoryTree<A,V> {
     	}
     }
     
-    void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
+    private void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
     	if (in.hasVal()) {
     		V val = aggobj.parseVal(in.getVal());
     		node.setVal(val);
@@ -295,10 +301,10 @@ public class HistoryTree<A,V> {
 			debugString(b,prefix+"R",right);
 	}
     
-    public String aggToString(A a) {
+    protected String aggToString(A a) {
     	return aggobj.serializeAgg(a).toString();
     }
-    public String valToString(V v) {
+    protected String valToString(V v) {
     	return aggobj.serializeVal(v).toString();
     }
  
