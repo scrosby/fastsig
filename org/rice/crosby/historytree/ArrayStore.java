@@ -57,6 +57,7 @@ public class ArrayStore<A,V> extends StoreBase implements HistoryDataStore<A, V>
 
 	public void updateTime(int time) {
 		assert (time > this.time);
+		assert time == aggstore.size(); // So that when we add, we increase the size by one.
 		this.time = time;		
 		aggstore.add(time,null);
 		valstore.add(time,null);
