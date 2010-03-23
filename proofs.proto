@@ -37,6 +37,25 @@ message HistTree {
 // What is signed.
 message Commitment {
      //required Config configblob = 1 ; // Serialized config blob. 
-     required int32 version = 2; // Needed to calculate the depth.
-     required bytes roothash = 3; // Root hash.
+     optional int32 treeid = 2;
+     required int32 version = 3; // Needed to calculate the depth.
+     required bytes roothash = 4; // Root hash.
 }
+
+
+////////////////
+////////////////   Stream signature design.
+////////////////
+
+message StreamBundle {
+   repeated int32 splicepoints=2; // Includes the end of the last epoch.
+   required Commitment commitment=3;
+   required bytes signature = 4;
+}
+
+/* Represents a signature over a single version. 
+message SigBlob {
+   repeated int32 messageversion = 1;
+   required Commitment commitment = 2;
+}
+
