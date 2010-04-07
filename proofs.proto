@@ -53,7 +53,7 @@ message StreamBundle {
    required bytes signature = 4;
 }
 
-/* Represents a signature over a single version. 
+/* Represents a signature over a single version. */ 
 message SigBlob {
    repeated int32 messageversion = 1;
    required Commitment commitment = 2;
