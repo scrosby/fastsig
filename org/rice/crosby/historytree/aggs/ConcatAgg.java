@@ -20,7 +20,7 @@ public class ConcatAgg implements AggregationInterface<String, String> {
 
 	@Override
 	public String aggVal(String event) {
-		return event;
+		return event.substring(0,1);
 	}
 
 	@Override
