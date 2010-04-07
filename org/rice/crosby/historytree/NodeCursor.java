@@ -43,13 +43,14 @@ public class NodeCursor<A,V> {
 		boolean hasVal(NodeCursor<A,V> node);
 	};
 	
-	
+	/*
 	NodeCursor(int layer, int index) {
 		this.datastore = null;
 		this.layer = layer;
 		this.index = index;
-	}
+	}*/
 	NodeCursor(HistoryDataStore<A,V> nodefactory, int layer, int index) {
+		assert nodefactory != null;
 		this.datastore = nodefactory;
 		this.layer = layer;
 		this.index = index;
@@ -143,14 +144,36 @@ public class NodeCursor<A,V> {
 	public boolean equals(Object o) {
 		if (!(o instanceof NodeCursor<?,?>)) return false;
 		NodeCursor<A,V> o2 = (NodeCursor<A,V>)o;
-		if (this.datastore != o2.datastore) return false;
+		assert (this.datastore == o2.datastore);
 		if (this.layer != o2.layer) return false;
 		if (this.index != o2.index) return false;
 		return true;
 	}
 
 	public String toString() {
-		return String.format("<%d,%d>",layer,index);
+		StringBuilder b=new StringBuilder();
+		b.append(String.format("<%d,%d>",layer,index));
+		b.append(",V=");
+		// Print out the value (if any)
+		
+		if (isLeaf() && hasVal())
+			b.append(getVal().toString());
+			else
+				b.append("<>");
+				
+		b.append(",A=");	
+
+		if (isAggValid()) {
+			A agg = getAgg();
+			if (agg == null)
+				b.append("Null");
+			else
+				b.append(agg.toString());
+		} else
+			b.append("<>");
+
+		
+		return b.toString();
 	}
 
 	/*

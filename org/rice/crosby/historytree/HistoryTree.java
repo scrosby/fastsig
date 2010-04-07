@@ -23,13 +23,14 @@ public class HistoryTree<A,V> {
 
 	/** Make an history at a given timestamp (used as a template for building a pruned trees)
 	 */
-	private HistoryTree(AggregationInterface<A,V> aggobj,
+	public HistoryTree(AggregationInterface<A,V> aggobj,
 	    		   HistoryDataStore<A,V> datastore,
 	    		   int time) {
 	    this.time = time;
-		this.root = null;
+		this.root = datastore.makeRoot(log2(time));
 		this.aggobj = aggobj;
 		this.datastore = datastore;
+		datastore.updateTime(time);
 	}
 
 	//
@@ -160,36 +161,38 @@ public class HistoryTree<A,V> {
      * @throws ProofError */
     private NodeCursor<A,V> copyVersionHelper(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
     	NodeCursor<A,V> origleaf, selfleaf;
-    	selfleaf = leaf(version);
+    	selfleaf = forceLeaf(version);
     	origleaf = orig.leaf(version);
     	
-    	if (selfleaf == null)
+    	if (!origleaf.isAggValid())
     		throw new ProofError("Leaf not in the tree");    	
     	selfleaf.copyAgg(origleaf);
     	// If we want a value, have one to copy from, and don't have one already... Copy it.
     	if (copyValFlag && !selfleaf.hasVal() && origleaf.hasVal())
     		selfleaf.copyVal(origleaf);
-    	return origleaf;
+    	return selfleaf;
     	}
 
     
     private void _copyAgg(HistoryTree<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf) {
-    	NodeCursor<A,V> node,orignode,origleft,origright;
+    	NodeCursor<A,V> node,orignode;
     	node = leaf.getParent(root);
     	orignode = origleaf.getParent(orig.root);
 
     	// Invariant: We have a well-formed tree with all stubs include hashes EXCEPT possibly siblings in the path from the leaf to where it merged into the existing pruned tree.
    	    // Iterate up the tree, copying over sibling agg's for stubs. If we hit a node with two siblings. we're done. Earlier inserts will have already inserted sibling hashes for ancestor nodes.
-    	while (orignode != null) {
-    		if (node.left()!= null && node.right()!= null)
+    	while (node != null) {
+    		NodeCursor<A,V> origleft,origright;
+    		if (node.left() != null && node.right() != null) //  && node.left().getAgg() != null and node.right.getAgg() != null)
     			break;
     		origleft = orignode.left();
-    		if (origleft.isFrozen(orig.time)) // TODO: Is this right? should it be this.time?
+    		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
+    		if (origleft.isFrozen(this.time))
     			node.forceLeft().copyAgg(origleft);
     		
     		// A right node may or may not exist.
     		origright = orignode.right();
-    		if (origright!= null && origright.isFrozen(orig.time)) // TODO: Is this right? should it be this.time?
+    		if (origright!= null && origright.isFrozen(this.time))
     				node.forceRight().copyAgg(origright);
     			
     		orignode = orignode.getParent(orig.root);
@@ -197,20 +200,23 @@ public class HistoryTree<A,V> {
     	}
     }
     public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
-    	if (root == null)
+    	if (root == null) {
     		copyRoot(orig);
-
+    	}
+    		
     	NodeCursor<A,V> origleaf, selfleaf;
-    	selfleaf = leaf(version);
+    	selfleaf = forceLeaf(version);
     	origleaf = orig.leaf(version);
 
-    	assert origleaf != null;
-    	if (selfleaf!= null) {
+    	selfleaf.equals(root);
+    	origleaf.equals(orig);
+    	
+    	assert origleaf.getAgg() != null;
+    	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
     		// If the leaf is already in the tree...
-    		assert selfleaf.getAgg() != null;
     		assert selfleaf.getAgg().equals(origleaf.getAgg());
     	} else {
-    		selfleaf = copyVersionHelper(orig,version,copyValueFlag);
+    		copyVersionHelper(orig,version,copyValueFlag);
     		_copyAgg(orig,origleaf,selfleaf);    		
     	}    			
     	if (copyValueFlag) {
@@ -226,12 +232,11 @@ public class HistoryTree<A,V> {
     
 
     //
-    //  Serialization code
+    //  TODO: Serialization code
     //
-    static HistoryTree makeFromConfig(Serialization.Config config) {
-    	assert (false); // TODO
+    /*static HistoryTree makeFromConfig(Serialization.Config config) {
     	return null;
-    }
+    }*/
     
     /** Serialize a pruned tree to a protocol buffer */
     public void serializeTree(Serialization.HistTree.Builder out) {
@@ -311,22 +316,7 @@ public class HistoryTree<A,V> {
     }
 	public void debugString(StringBuilder b, String prefix, NodeCursor<A,V> node) {
 		b.append(prefix);
-		b.append(":"+node.toString()+"\t V=");
-		// Print out the value (if any)
-
-		if (node.isLeaf() && node.hasVal())
-			b.append(valToString(node.getVal()));
-		else
-			b.append("--");
-		
-		b.append("\tA=");	
-
-		A agg = node.getAgg();
-		if (agg!=null)
-			b.append(aggToString(agg));
-		else
-			b.append("<None>");
-
+		b.append(":"+node.toString());
 		b.append("\n");
 
 		if (node.isLeaf())
