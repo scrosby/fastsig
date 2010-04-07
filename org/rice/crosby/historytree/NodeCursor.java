@@ -150,7 +150,7 @@ public class NodeCursor<A,V> {
 	}
 
 	public String toString() {
-		return "TODO: NodeCursor<A,V>Common.toString()";
+		return String.format("<%d,%d>",layer,index);
 	}
 
 	/*

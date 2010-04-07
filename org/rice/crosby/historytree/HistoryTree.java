@@ -341,10 +341,10 @@ public class HistoryTree<A,V> {
 	}
     
     protected String aggToString(A a) {
-    	return aggobj.serializeAgg(a).toString();
+    	return aggobj.serializeAgg(a).toStringUtf8();
     }
     protected String valToString(V v) {
-    	return aggobj.serializeVal(v).toString();
+    	return aggobj.serializeVal(v).toStringUtf8();
     }
  
     //
