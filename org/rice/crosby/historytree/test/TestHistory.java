@@ -61,29 +61,34 @@ public class TestHistory extends TestCase {
 
 		//assert histtree.version() == 8;
 		int i;
-		for (i=0 ; i<histtree.version(); i++) {
+		for (i=0 ; i<=histtree.version(); i++) {
 			System.out.format("AggV(%d) %s\n",i,histtree.aggV(i));
 		}
 	}
 
 	void helpTestMakePruned(HistoryTree<String,String> histtree, int version, boolean copyValFlag) {
+		System.out.println(String.format("Doing(%d/%d)\n",version,histtree.version()));
 		HashStore<String,String> datastore=new HashStore<String,String>();
-		HistoryTree<String,String> clone= new HistoryTree<String,String>(histtree.getAggObj(),datastore);
+		HistoryTree<String,String> clone= new HistoryTree<String,String>(histtree.getAggObj(),datastore,histtree.version());
+		assert histtree.version() == clone.version();
 		try {
 			clone.copyV(histtree, version, copyValFlag);
 		} catch (ProofError e) {
 			System.out.println("Unable to copy");
 			e.printStackTrace();
 		}	
-		System.out.println(clone.toString());
+		System.out.println(clone.toString(String.format("Clone(%d):",version)));
 	}
-	void testMakePruned(HistoryTree<String,String> histtree) {
+	
+	@Test
+	public void testMakePruned() {
+		HistoryTree<String,String> histtree= makeHistTree();
 		for (int i = 0 ; i <= histtree.version() ; i++) {
-			helpTestMakePruned(histtree,i,false);
+			helpTestMakePruned(histtree,i,true);
 		}
-		for (int i = 0 ; i <= histtree.version() ; i++) {
-			helpTestMakePruned(histtree,i,false);
-		}
+		//for (int i = 0 ; i <= histtree.version() ; i++) {
+		//	helpTestMakePruned(histtree,i,false);
+		//}
 	}		
 }
 
