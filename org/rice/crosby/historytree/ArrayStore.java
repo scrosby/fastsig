@@ -20,17 +20,21 @@ public class ArrayStore<A,V> extends StoreBase implements HistoryDataStore<A, V>
 
 	@Override
 	public A getAgg(NodeCursor<A, V> node) {
-		return aggstore.get(node.computeIndex()); 
+		int index = node.computeIndex();
+		assert(index >= 0);
+		if (index < aggstore.size())
+			return aggstore.get(index);
+		return null;
 	}
 
 	@Override
 	public V getVal(NodeCursor<A, V> node) {
-		return valstore.get(node.computeIndex());
+		return valstore.get(node.index);
 	}
 
 	@Override
 	public boolean hasVal(NodeCursor<A, V> node) {
-		return valstore.get(node.computeIndex()) != null;
+		return valstore.get(node.index) != null;
 	}
 
 	@Override
@@ -52,15 +56,17 @@ public class ArrayStore<A,V> extends StoreBase implements HistoryDataStore<A, V>
 	public void setVal(NodeCursor<A, V> node, V v) {
 		// Also, vals cannot be primitive types. Need a 'null' to indicate invalid.
 		assert (v != null);
-		valstore.set(node.computeIndex(),v);
+		valstore.set(node.index,v);
 	}
 
 	public void updateTime(int time) {
 		assert (time > this.time);
-		assert time == aggstore.size(); // So that when we add, we increase the size by one.
 		this.time = time;		
-		aggstore.add(time,null);
-		valstore.add(time,null);
+
+		if (time >= valstore.size())
+			valstore.setSize(time+1);
+		if (2*time+0 >= aggstore.size())
+			aggstore.setSize(2*time+0+1);
 	}
 
 	protected int time;
