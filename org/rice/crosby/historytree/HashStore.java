@@ -53,6 +53,7 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStore<A, V>,
 		valstore.put(new Integer(node.computeIndex()),v);
 	}
 
+	@Override
 	public void updateTime(int time) {
 		assert (time > this.time);
 		this.time = time;		
