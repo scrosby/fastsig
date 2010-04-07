@@ -311,21 +311,27 @@ public class HistoryTree<A,V> {
     }
 	public void debugString(StringBuilder b, String prefix, NodeCursor<A,V> node) {
 		b.append(prefix);
-		b.append(":\t");
+		b.append(":"+node.toString()+"\t V=");
 		// Print out the value (if any)
-		if (node.hasVal())
+
+		if (node.isLeaf() && node.hasVal())
 			b.append(valToString(node.getVal()));
 		else
 			b.append("--");
-		b.append("\t");	
+		
+		b.append("\tA=");	
 
 		A agg = node.getAgg();
-		if (agg==null)
+		if (agg!=null)
 			b.append(aggToString(agg));
 		else
 			b.append("<None>");
 
 		b.append("\n");
+
+		if (node.isLeaf())
+			return;
+			
 		NodeCursor<A,V> left=node.left(), right=node.right();
 		
 		if (left != null)
