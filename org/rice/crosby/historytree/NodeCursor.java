@@ -71,6 +71,8 @@ public class NodeCursor<A,V> {
 
 	/** Compute index in a total order */
 	public int computeIndex() {
+		assert index>=0;
+		assert layer>=0;
 		int s = 0;
 		int j = index + (1<<layer)-1;
 		while (j>0) {
@@ -87,12 +89,14 @@ public class NodeCursor<A,V> {
 	/** Return a NodeCursor reference with the layer and index numbers of
 	 * the given child. May or may not actually exist. */
 	NodeCursor<A,V> getLeft() {
+		assert layer > 0;
 		int newindex = index;
 		return new NodeCursor<A,V>(datastore,layer-1,newindex);
 	}
 	/** Return a NodeCursor reference with the layer and index numbers of
 	 * the given child. May or may not actually exist. */
 	NodeCursor<A,V> getRight() {
+		assert layer > 0;
 		int newindex = index + getStep()/2;
 		return new NodeCursor<A,V>(datastore,layer-1,newindex);
 	}
