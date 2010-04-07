@@ -1,5 +1,6 @@
 package org.rice.crosby.historytree;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 import org.rice.crosby.historytree.HistoryTree.HistoryDataStore;
@@ -9,8 +10,8 @@ public class ArrayStore<A,V> extends StoreBase implements HistoryDataStore<A, V>
 
 	public ArrayStore() {
 		this.time = -1;
-		this.aggstore = new Vector<A>();
-		this.valstore = new Vector<V>();
+		this.aggstore = new ArrayList<A>();
+		this.valstore = new ArrayList<V>();
 	}
 	
 	@Override
@@ -64,14 +65,14 @@ public class ArrayStore<A,V> extends StoreBase implements HistoryDataStore<A, V>
 		this.time = time;		
 
 		if (time >= valstore.size())
-			valstore.setSize(time+1);
+			valstore.ensureCapacity(time+1);
 		if (2*time+0 >= aggstore.size())
-			aggstore.setSize(2*time+0+1);
+			aggstore.ensureCapacity(2*time+0+1);
 	}
 
 	protected int time;
-	private Vector<A>  aggstore;
-	private Vector<V>  valstore;
+	private ArrayList<A>  aggstore;
+	private ArrayList<V>  valstore;
 	
 }
 
