@@ -35,13 +35,12 @@ public class ConcatAgg implements AggregationInterface<String, String> {
 
 	@Override
 	public String parseAgg(ByteString b) {
-		return b.toString();
+		return b.toStringUtf8();
 	}
 
 	@Override
 	public String parseVal(ByteString b) {
-		// TODO Auto-generated method stub
-		return b.toString();
+		return b.toStringUtf8();
 	}
 
 	@Override
