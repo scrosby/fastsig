@@ -6,33 +6,25 @@ import org.rice.crosby.historytree.generated.Serialization;
 
 
 public class HistoryTree<A,V> {
-	/** Operations that the history tree needs to be supported by the datastore */
-	interface HistoryDataStore<A,V> {
-	    NodeCursor<A,V> makeRoot(int layer); // Make a root at the given layer
-	    void updateTime(int time);
-	}
+
 
 	/** Make an empty history tree with a given aggobj and datastore.  */
 	public HistoryTree(AggregationInterface<A,V> aggobj,
-	    		   HistoryDataStore<A,V> datastore) {
+	    		   HistoryDataStoreInterface<A,V> datastore) {
 	    this.time = -1;
 		this.root = null;
 		this.aggobj = aggobj;
 		this.datastore = datastore;
 	}
 
-	/** Make an history at a given timestamp (used as a template for building a pruned trees)
+	/** Make an history at a given timestamp (used as a template for building a pruned trees or parsing trees.)
 	 */
-	public HistoryTree(AggregationInterface<A,V> aggobj,
-	    		   HistoryDataStore<A,V> datastore,
-	    		   int time) {
-	    this.time = time;
-		this.root = datastore.makeRoot(log2(time));
-		this.aggobj = aggobj;
-		this.datastore = datastore;
+	public HistoryTree<A,V> updateTime(int time) {
+		this.time = time;
 		datastore.updateTime(time);
+		return this;
 	}
-
+	
 	//
 	// Operations for adding to a log and getting the commitment
 	//
@@ -60,14 +52,25 @@ public class HistoryTree<A,V> {
 			this.root = root.reparent();
 	}
 
+	/** Compute any frozen aggregates on a node */
+	private void computeAggOnNode(NodeCursor<A,V> node) {
+		if (node.isLeaf()) {
+			if (node.hasVal() && node.getAgg() == null) 
+				node.setAgg(aggobj.aggVal(node.getVal()));
+		} else {
+			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
+		}
+	}
+	
 	/** Recurse from the leaf upwards, computing the agg for all frozen nodes */
     private void computefrozenaggs(NodeCursor<A,V> leaf) {
     	// First, set the leaf agg from the stored event (if it exists
-    	if (leaf.hasVal() && leaf.getAgg() == null) 
+    	if (leaf.hasVal() && leaf.getAgg() == null) {
+    		leaf.markValid();
     		leaf.setAgg(aggobj.aggVal(leaf.getVal()));
-
+    	}
     	NodeCursor<A,V> node=leaf.getParent(root);
-    	while (node != null && node.isFrozen(time)) {
+    	while (node != null && node.isFrozen(time) && node.getAgg() == null) {
     		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
     		node = node.getParent(root);
     	}
@@ -113,6 +116,7 @@ public class HistoryTree<A,V> {
     		return root;
     	NodeCursor<A,V> node=root,child;
     	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+    		//System.out.println("leaf"+node);
     		int mask = 1 << (layer-1);
     		if ((mask & version) == mask)
     			child = node.right();
@@ -131,6 +135,7 @@ public class HistoryTree<A,V> {
     		return root;
     	NodeCursor<A,V> node=root,child;
     	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+    		//System.out.println("forceleaf"+node);
     		int mask = 1 << (layer-1);
     		if ((mask & version) == mask)
     			child = node.forceRight();
@@ -144,9 +149,11 @@ public class HistoryTree<A,V> {
     	return null;
     }
 
-    public HistoryTree<A,V> makePruned(HistoryDataStore<A, V> newdatastore) {
-    	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore,this.time);
+    public HistoryTree<A,V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
+    	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
+    	out.updateTime(this.time);
     	out.copyRoot(this);
+    	out._copyAgg(this,leaf(this.time),out.forceLeaf(this.time));
     	return out;
         }
     
@@ -182,9 +189,9 @@ public class HistoryTree<A,V> {
     	// Invariant: We have a well-formed tree with all stubs include hashes EXCEPT possibly siblings in the path from the leaf to where it merged into the existing pruned tree.
    	    // Iterate up the tree, copying over sibling agg's for stubs. If we hit a node with two siblings. we're done. Earlier inserts will have already inserted sibling hashes for ancestor nodes.
     	while (node != null) {
+    		System.out.println("CA: "+orignode+" --> "+node);
     		NodeCursor<A,V> origleft,origright;
-    		if (node.left() != null && node.right() != null) //  && node.left().getAgg() != null and node.right.getAgg() != null)
-    			break;
+    		System.out.println("NO BREAK");
     		origleft = orignode.left();
     		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
     		if (origleft.isFrozen(this.time))
@@ -192,9 +199,17 @@ public class HistoryTree<A,V> {
     		
     		// A right node may or may not exist.
     		origright = orignode.right();
-    		if (origright!= null && origright.isFrozen(this.time))
+    		System.out.println("RIGHT:"+origright+"  "+time); 
+    		if (origright!= null && origright.index <= time) 
     				node.forceRight().copyAgg(origright);
     			
+    		
+    		// FIX: THE INITAL TREE VIOLATES THE INVARIANTS.
+    		if (node.left() != null && node.right() != null) {//  && node.left().getAgg() != null and node.right.getAgg() != null)
+    			//if (node.isFrozen(time))
+    			//	node.copyAgg(orignode);
+    			break;
+    		}
     		orignode = orignode.getParent(orig.root);
     		node = node.getParent(root);
     	}
@@ -202,6 +217,7 @@ public class HistoryTree<A,V> {
     public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
     	if (root == null) {
     		copyRoot(orig);
+    		//copyVersionHelper(orig,this.time,false);
     	}
     		
     	NodeCursor<A,V> origleaf, selfleaf;
@@ -211,6 +227,8 @@ public class HistoryTree<A,V> {
     	selfleaf.equals(root);
     	origleaf.equals(orig);
     	
+   		//System.out.println("copyV"+selfleaf+"  "+origleaf);
+   	    	
     	assert origleaf.getAgg() != null;
     	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
     		// If the leaf is already in the tree...
@@ -247,22 +265,31 @@ public class HistoryTree<A,V> {
     		out.setRoot(builder.build());
     	}
     }
+    
+    public byte[] serializeTree() {
+    	Serialization.HistTree.Builder builder= Serialization.HistTree.newBuilder();
+    	serializeTree(builder);
+    	return builder.build().toByteArray();
+    }
 
     /** Parse from a protocol buffer. I assume that the history tree has 
      * been configured with the right aggobj and a datastore. */
     public void parseTree(Serialization.HistTree in) {
     	this.time = in.getVersion();
     	if (in.hasRoot()) {
-    		NodeCursor<A,V> root = datastore.makeRoot(log2(in.getVersion()));
+    		root = datastore.makeRoot(log2(in.getVersion()));
     		parseNode(root,in.getRoot());    		
     	}
     }
 
     /** Helper function for recursively serializing a history tree */
     private void serializeNode(Serialization.HistNode.Builder out, NodeCursor<A,V> node) {
-    	if (node.hasVal()) {
-    		// Must be a leaf.
-    		out.setVal(aggobj.serializeVal(node.getVal()));
+    	if (node.isLeaf()) {
+    		System.out.println("SN:"+node);
+    		if (node.hasVal())
+    			out.setVal(aggobj.serializeVal(node.getVal()));
+    		else
+    			out.setAgg(aggobj.serializeAgg(node.getAgg()));
     		return;
     	}
     	if (node.left() == null && node.right() == null) {
@@ -272,13 +299,13 @@ public class HistoryTree<A,V> {
     		return;
     	}
     	// Ok, recurse both sides. Don't forget, we need to make a builder.
-    	Serialization.HistNode.Builder b = Serialization.HistNode.newBuilder();
     	if (node.left() != null) {
+    		Serialization.HistNode.Builder b = Serialization.HistNode.newBuilder();
     		serializeNode(b,node.left());
     		out.setLeft(b.build());
-    		b.clear(); // Clear so we can reuse it.
     	}
     	if (node.right() != null) {
+    		Serialization.HistNode.Builder b = Serialization.HistNode.newBuilder();
     		serializeNode(b,node.right());
     		out.setRight(b.build());
     	}
@@ -301,9 +328,13 @@ public class HistoryTree<A,V> {
     	}
     	// Must always have a left and right child.
     	assert in.hasLeft();
-    	assert in.hasRight();
     	parseNode(node.forceLeft(),in.getLeft());
-    	parseNode(node.forceRight(),in.getRight());
+
+    	if (in.hasRight()) {
+    		parseNode(node.forceRight(),in.getRight());
+    		if (node.isFrozen(time))
+    			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
+    	}
     }
     
     public String toString(String prefix) {
@@ -316,7 +347,7 @@ public class HistoryTree<A,V> {
     }
 	public void debugString(StringBuilder b, String prefix, NodeCursor<A,V> node) {
 		b.append(prefix);
-		b.append(":"+node.toString());
+		b.append("\t"+node.toStringForTree());
 		b.append("\n");
 
 		if (node.isLeaf())
@@ -337,12 +368,85 @@ public class HistoryTree<A,V> {
     	return aggobj.serializeVal(v).toStringUtf8();
     }
  
+    /* Merge another pruned tree in with this tree.
+     * 
+     * Assume both merged trees have been confirmed to be consistent.
+     * 
+     */
+    
+    public void mergeTree(HistoryTree<A,V> peer) {
+    	NodeCursor <A,V> thisroot, peerroot;
+
+    	if (peer.version() <0) {
+    		// Nothing to merge.
+    		return;
+    	}
+
+    	if (this.version() <0 ) {
+    		// Need to make a root node to act as the destination
+    		this.root = new NodeCursor<A,V>(this.datastore,log2(peer.version()),0);
+    		assert log2(peer.version()) == peer.root.layer;
+    	}
+    	
+    	
+    	thisroot = this.root;
+    	peerroot = peer.root;
+
+    	// Get two new roots on the same layer before merging.
+    	if (this.version() < peer.version()) {
+    		while (peerroot.layer > this.root.layer)
+    			this.root = this.root.reparent();
+    		this.updateTime(peer.version());
+    		thisroot = this.root;
+    	} else {
+    		while (thisroot.layer > peerroot.layer)
+    			thisroot=thisroot.left();
+    	}
+
+    	mergeNode(peer,thisroot,peerroot);
+     }
+
+
+    private void mergeNode(HistoryTree<A,V> peer, NodeCursor<A,V> thisnode, NodeCursor<A,V> peernode) {
+    	/*
+    	 * 
+    	 *  Invariant: The thisnode and peernode are always 'valid'
+    	 */
+    	assert thisnode.isAggValid();
+    	assert peernode.isAggValid();
+
+    	if (peernode.isLeaf()) {
+    		if (peernode.hasVal()) 
+    			thisnode.copyVal(peernode);
+    		return;
+    	}
+    	if (peernode.isStub()) {
+    		if (thisnode.getAgg() == null) {
+    			peernode.copyAgg(thisnode);
+    		}
+    		return;
+    	}
+
+    	// OK, now recurse the left subtrees.
+    	mergeNode(peer,thisnode.forceLeft(),peernode.left());
+
+    	// Do we recurse the right trees? The peer is not a stub.
+    	if (thisnode.right().index <= version() && peernode.right().index <= peer.version()) {
+    		// Both have valid right children for this snapshot version.
+    		mergeNode(peer,thisnode.forceRight(),peernode.right());
+    		if (thisnode.isFrozen(time) && thisnode.getAgg() == null)
+    			computeAggOnNode(thisnode);
+    	}
+    }
+
+
+    
     //
     //  Member fields
     //    
     private int time;
     private NodeCursor<A,V> root;
-    private HistoryDataStore<A,V> datastore;
+    private HistoryDataStoreInterface<A,V> datastore;
     private AggregationInterface<A,V> aggobj;
 
     // Misc helpers

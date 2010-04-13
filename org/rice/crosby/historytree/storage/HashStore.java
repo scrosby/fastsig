@@ -1,14 +1,12 @@
-package org.rice.crosby.historytree;
+package org.rice.crosby.historytree.storage;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
 
-import org.rice.crosby.historytree.HistoryTree.HistoryDataStore;
+import org.rice.crosby.historytree.HistoryDataStoreInterface;
+import org.rice.crosby.historytree.NodeCursor;
 
-public class HashStore<A,V> extends StoreBase implements HistoryDataStore<A, V>,
-		org.rice.crosby.historytree.NodeCursor.HistoryDataStore<A, V> {
+
+public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterface<A, V> {
 
 	public HashStore() {
 		this.time = -1;
@@ -50,6 +48,7 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStore<A, V>,
 
 	@Override
 	public void setAgg(NodeCursor<A, V> node, A a) {
+		assert(isAggValid(node));
 		Integer key=new Integer(node.computeIndex());
 		//System.out.println("SetAgg "+key+"["+node+"] = "+a);
 		aggstore.put(key,a);

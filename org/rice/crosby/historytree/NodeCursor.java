@@ -29,11 +29,13 @@ A leaf should always have a value, unless it has been deliberately stubbed out.
 
 */
 
-public class NodeCursor<A,V> {
+public final class NodeCursor<A,V> {
 	interface HistoryDataStore<A,V> {
-		/** A node cursor can point anywhere. This indicates that we should create the references cursor location. */
+		/** A node cursor can point anywhere. This indicates that we should create 
+		 * the cursor location and allow aggregates to be stored there. */
 		void markValid(NodeCursor<A,V> node);
-		/** A node cursor can point anywhere. This sees if we do in fact have valid data at the cursor location */
+		/** A node cursor can point anywhere. This sees if we do in fact have 
+		 * valid data at the cursor location */
 		boolean isAggValid(NodeCursor<A,V> node);
 
 		void setAgg(NodeCursor<A,V> node, A a);
@@ -49,7 +51,7 @@ public class NodeCursor<A,V> {
 		this.layer = layer;
 		this.index = index;
 	}*/
-	NodeCursor(HistoryDataStore<A,V> nodefactory, int layer, int index) {
+	public NodeCursor(HistoryDataStore<A,V> nodefactory, int layer, int index) {
 		assert nodefactory != null;
 		this.datastore = nodefactory;
 		this.layer = layer;
@@ -80,12 +82,13 @@ public class NodeCursor<A,V> {
 			s = s+j;
 			j = j/2;
 		}
+		//System.out.format("\n %d %d --> %d \n",index,layer,s+layer);
 		return s+layer;
 	}
 
-	protected final HistoryDataStore<A,V> datastore;
-	protected final int layer;
-	protected final int index;
+	public final HistoryDataStore<A,V> datastore;
+	public final int layer;
+	public final int index;
 
 	/** Return a NodeCursor reference with the layer and index numbers of
 	 * the given child. May or may not actually exist. */
@@ -109,8 +112,10 @@ public class NodeCursor<A,V> {
 	/** Get the parent node of the current cursor. In order to return 'null' for the root node, 
 	 * to indicate that it is not the parent, we must know what the root is. */
 	NodeCursor<A,V> getParent(final NodeCursor<A,V> root) {
+		//System.out.println("GetParent "+root+"==?"+this);
 		if (this.equals(root))
 			return null;
+		//System.out.println("NonNull Parent");
 		return new NodeCursor<A,V>(datastore,layer+1,index & ~(getStep()*2-1));
 	}
 
@@ -130,6 +135,12 @@ public class NodeCursor<A,V> {
 			return null;
 	};
 
+	/* A node is a leaf, stub, or interior */
+	boolean isStub() {
+		assert !isLeaf();
+		return getLeft().isAggValid();
+	}
+	
 	/** Return the layer and index numbers of the given child. Create
 	 * if needed. */
 	NodeCursor<A,V> forceLeft() {
@@ -142,14 +153,17 @@ public class NodeCursor<A,V> {
 	}
 
 	public boolean equals(Object o) {
-		if (!(o instanceof NodeCursor<?,?>)) return false;
-		NodeCursor<A,V> o2 = (NodeCursor<A,V>)o;
-		assert (this.datastore == o2.datastore);
-		if (this.layer != o2.layer) return false;
-		if (this.index != o2.index) return false;
-		return true;
+		if (o instanceof NodeCursor<?,?>) {
+			NodeCursor<A,V> o2 = (NodeCursor<A,V>)o;
+			assert (this.datastore == o2.datastore);
+			if (this.layer != o2.layer) return false;
+			if (this.index != o2.index) return false;
+			return true;
+		} else {
+			return false;		
+		}
 	}
-
+	
 	public String toString() {
 		StringBuilder b=new StringBuilder();
 		b.append(String.format("<%d,%d>",layer,index));
@@ -171,8 +185,31 @@ public class NodeCursor<A,V> {
 				b.append(agg.toString());
 		} else
 			b.append("<>");
+		return b.toString();
+	}
 
+	/** Return this as a longer tab-delimited string */
+	public String toStringForTree() {
+		StringBuilder b=new StringBuilder();
+		b.append(String.format("<%d,%d>",layer,index));
+		b.append("\t");
+		// Print out the value (if any)
 		
+		if (isLeaf() && hasVal())
+			b.append(getVal().toString());
+			else
+				b.append("<>");
+				
+		b.append("\t");	
+
+		if (isAggValid()) {
+			A agg = getAgg();
+			if (agg == null)
+				b.append("Null");
+			else
+				b.append(agg.toString());
+		} else
+			b.append("<>");
 		return b.toString();
 	}
 
@@ -202,6 +239,7 @@ public class NodeCursor<A,V> {
 		datastore.setAgg(this,v);
 	}
 	void copyAgg(NodeCursor<A,V> orig) {
+		//System.out.println("CopyAgg:"+orig+ " ===> "+orig);
 		datastore.setAgg(this,orig.getAgg());
 	}
 	void copyVal(NodeCursor<A,V> orig) {
