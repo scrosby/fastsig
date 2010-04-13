@@ -3,6 +3,8 @@ package org.rice.crosby.historytree.aggs;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.rice.crosby.historytree.AggregationInterface;
+
 
 
 public class SHA256Agg extends HashAggBase {
@@ -19,6 +21,13 @@ public class SHA256Agg extends HashAggBase {
 	
 	@Override
 	public String getName() {
-		return "SHA256Agg";
+		return NAME;
+	}
+	static final String NAME = "SHA256Agg";
+	static { 
+		AggRegistry.register(new AggregationInterface.Factory() {
+			public String name() {return NAME;}
+			public AggregationInterface newInstance() { return new ConcatAgg();} 
+		});
 	}
 }

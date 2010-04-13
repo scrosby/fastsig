@@ -5,7 +5,6 @@ import org.rice.crosby.historytree.AggregationInterface;
 import com.google.protobuf.ByteString;
 
 public class ConcatAgg implements AggregationInterface<String, String> {
-
 	@Override
 	public String aggChildren(String leftAnn, String rightAnn) {
 		StringBuilder out = new StringBuilder();
@@ -30,7 +29,7 @@ public class ConcatAgg implements AggregationInterface<String, String> {
 
 	@Override
 	public String getName() {
-		return "ConcatAgg";
+		return NAME;
 	}
 
 	@Override
@@ -62,5 +61,13 @@ public class ConcatAgg implements AggregationInterface<String, String> {
 	public AggregationInterface<String, String> clone() {
 		// ConcatAgg is stateless, so just return this
 		return this;
+	}
+
+	static final String NAME = "ConcatAgg";
+	static { 
+		AggRegistry.register(new AggregationInterface.Factory() {
+			public String name() {return NAME;}
+			public AggregationInterface newInstance() { return new ConcatAgg();} 
+		});
 	}
 }

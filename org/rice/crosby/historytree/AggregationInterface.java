@@ -6,6 +6,12 @@ import com.google.protobuf.ByteString;
  * V is the type of an event.*/
 
 public interface AggregationInterface<A,V> {
+	
+	public interface Factory<A,V> {
+		public AggregationInterface<A,V> newInstance();
+		public String name();
+	}	
+	
     /** Get the name of this aggregation function */
 	abstract String getName();
 	/** Get any configuration information needed to configure it. (Eg, hash keys) */
