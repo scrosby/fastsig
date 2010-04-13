@@ -11,7 +11,6 @@ public class SHA256AggB64 extends SHA256Agg {
 		try {
 			return Base64.decode(b.toByteArray());
 		} catch (Base64DecodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}

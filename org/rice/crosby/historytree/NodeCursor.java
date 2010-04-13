@@ -185,33 +185,11 @@ public final class NodeCursor<A,V> {
 				b.append(agg.toString());
 		} else
 			b.append("<>");
+		//b.append(":");
+		//b.append(datastore.hashCode());
 		return b.toString();
 	}
-
-	/** Return this as a longer tab-delimited string */
-	public String toStringForTree() {
-		StringBuilder b=new StringBuilder();
-		b.append(String.format("<%d,%d>",layer,index));
-		b.append("\t");
-		// Print out the value (if any)
-		
-		if (isLeaf() && hasVal())
-			b.append(getVal().toString());
-			else
-				b.append("<>");
-				
-		b.append("\t");	
-
-		if (isAggValid()) {
-			A agg = getAgg();
-			if (agg == null)
-				b.append("Null");
-			else
-				b.append(agg.toString());
-		} else
-			b.append("<>");
-		return b.toString();
-	}
+	
 
 	/*
 	 * Functions that reflect up to the nodefactory.
@@ -230,6 +208,7 @@ public final class NodeCursor<A,V> {
 		return datastore.getVal(this);
 	}
 	void setVal(V v) {
+		assert (v != null);
 		datastore.setVal(this,v);
 	}
 	A getAgg() {
@@ -239,6 +218,7 @@ public final class NodeCursor<A,V> {
 		datastore.setAgg(this,v);
 	}
 	void copyAgg(NodeCursor<A,V> orig) {
+		assert orig.getAgg() != null;
 		//System.out.println("CopyAgg:"+orig+ " ===> "+orig);
 		datastore.setAgg(this,orig.getAgg());
 	}

@@ -8,9 +8,6 @@ import com.google.protobuf.ByteString;
 
 abstract public class HashAggBase implements AggregationInterface<byte[], byte[]> {
 
-	public HashAggBase() {
-		super();
-	}
 	abstract public MessageDigest getAlgo(byte tag);
 
 	@Override
@@ -44,10 +41,18 @@ abstract public class HashAggBase implements AggregationInterface<byte[], byte[]
 	}
 	@Override
 	public byte[] aggChildren(byte[] leftAnn, byte[] rightAnn) {
-		MessageDigest md=getAlgo((byte)1);
-		md.update(leftAnn);
-		md.update(rightAnn);
-		return md.digest();
+		if (rightAnn != null) {
+			//System.out.println("AC: " + serializeAgg(leftAnn).toStringUtf8() + "  " + serializeAgg(rightAnn).toStringUtf8()); 
+			MessageDigest md=getAlgo((byte)1);
+			md.update(leftAnn);
+			md.update(rightAnn);
+			return md.digest();
+		} else {
+			//System.out.println("AC: " + serializeAgg(leftAnn).toStringUtf8() + "  __________________");
+			MessageDigest md=getAlgo((byte)2);
+			md.update(leftAnn);
+			return md.digest();
+		}
 	}
 	@Override
 	public byte[] aggVal(byte[] event) {

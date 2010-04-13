@@ -8,7 +8,7 @@ import java.security.NoSuchAlgorithmException;
 public class SHA256Agg extends HashAggBase {
 	public MessageDigest getAlgo(byte tag) {
 		try {
-			MessageDigest md=MessageDigest.getInstance("SHA256");
+			MessageDigest md=MessageDigest.getInstance("SHA-256");
 			md.update(tag);
 			return md;
 		} catch (NoSuchAlgorithmException e) {
