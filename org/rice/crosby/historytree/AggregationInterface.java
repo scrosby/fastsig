@@ -17,9 +17,14 @@ public interface AggregationInterface<A,V> {
 	/** Map from an event to its aggregate */
 	abstract A aggVal(V event);
 
+	/** Serialize a value to a ByteString */
 	abstract ByteString serializeVal(V val);
+	/** Serialize an aggregate to a ByteString */
 	abstract ByteString serializeAgg(A agg);
+	/** Parse a ByteString to an aggregate */
 	abstract A parseAgg(ByteString b);
+	/** Parse a ByteString to a value */
 	abstract V parseVal(ByteString b);
+	/** Make a clone of this aggregation with the same fields. */
 	abstract AggregationInterface<A, V> clone();
 }
