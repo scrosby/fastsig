@@ -18,36 +18,122 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import junit.framework.TestCase;
 
 public class TestHistory extends TestCase {
+	public final String NAMES[]  = {
+			"Alan","Bob","Charlie","Dan",
+			"Elen","Frank","Gordon","Helen",
+			"Isis","Jon","Kevin", "Laura"}; 
 
-	@Test
-	public void testAppend() {
+	public String results[] = {
+			"A",
+			"[A,B]",
+			"[[A,B],[C,]]", "[[A,B],[C,D]]",
+			"[[[A,B],[C,D]],[[E,],]]",
+			"[[[A,B],[C,D]],[[E,F],]]",
+			"[[[A,B],[C,D]],[[E,F],[G,]]]",
+			"[[[A,B],[C,D]],[[E,F],[G,H]]]",
+			"[[[[A,B],[C,D]],[[E,F],[G,H]]],[[[I,],],]]",
+			"[[[[A,B],[C,D]],[[E,F],[G,H]]],[[[I,J],],]]",
+			"[[[[A,B],[C,D]],[[E,F],[G,H]]],[[[I,J],[K,]],]]",
+			"[[[[A,B],[C,D]],[[E,F],[G,H]]],[[[I,J],[K,L]],]]",
+	};
+	
+	
+	public HistoryTree<String,String> doTestAppendOnStore(HistoryDataStoreInterface<String,String> store) {
+		String mynames[] = Arrays.copyOf(NAMES,9);
 		AggregationInterface<String,String> aggobj = new ConcatAgg();
-		ArrayStore<String,String> datastore = new ArrayStore<String,String>();
-		HistoryTree<String,String> histtree=new HistoryTree<String,String>(aggobj,datastore);
+		HistoryTree<String,String> histtree=new HistoryTree<String,String>(aggobj,store);
+
 		
-		histtree.append("A");
-		System.out.println(histtree.agg());
-		histtree.append("B");
-		System.out.println(histtree.agg());
-		histtree.append("C");
-		//System.out.println(histtree.toString("AfterC:"));
-		System.out.println(histtree.agg());
-		histtree.append("D");
-        System.out.println(histtree.agg());
+		for (int i = 0 ; i <=4 ; i++) {
+			histtree.append(mynames[i]) ; assertEquals(results[i],histtree.agg());
+		}
+       
+        assertEquals(4,histtree.version());
+        for (int i = 0 ; i <= histtree.version() ; i++)
+        	assertEquals(results[i],histtree.aggV(i));
+        
+		for (int i = 5 ; i <= 8 ; i++) {
+			histtree.append(mynames[i]) ; assertEquals(results[i],histtree.agg());
+		}
 
-        histtree.append("E");
-		System.out.println(histtree.agg());
-		histtree.append("F");
-		System.out.println(histtree.agg());
-		histtree.append("G");
-		System.out.println(histtree.agg());
-        histtree.append("H");
-		System.out.println(histtree.agg());
+        assertEquals(8,histtree.version());
+        for (int i = 0 ; i <= histtree.version() ; i++)
+        	assertEquals(results[i],histtree.aggV(i));
 
-		histtree.append("I");
-		System.out.println(histtree.agg());
+        return histtree;
 	}
 
+	@Test
+	public void testOnArrayStore() {
+		HistoryDataStoreInterface<String,String> store = new ArrayStore<String,String>();
+		doTestAppendOnStore(store);
+	}
+	@Test
+	public void testOnAppendArrayStore() {
+		HistoryDataStoreInterface<String,String> store = new AppendOnlyArrayStore<String,String>();
+		doTestAppendOnStore(store);
+	}
+	@Test
+	public void testOnHashStore() {
+		HistoryDataStoreInterface<String,String> store = new HashStore<String,String>();
+		doTestAppendOnStore(store);
+	}
+
+	
+	HistoryTree<String, String> makeHistTree(int length) {
+		AggregationInterface<String,String> aggobj = new ConcatAgg();
+		HistoryDataStoreInterface<String,String> datastore = new AppendOnlyArrayStore<String,String>();
+		HistoryTree<String,String> histtree=new HistoryTree<String,String>(aggobj,datastore);
+		
+		for (int i=0 ; i < length ; i++) {
+			histtree.append(NAMES[i]);
+        	assertEquals(results[i],histtree.aggV(i));
+		}
+		return histtree;
+	}
+	
+
+	void doTestMakePruned(int length, HistoryDataStoreInterface<String,String> datastore) throws ProofError {
+		HistoryTree<String,String> tree=makeHistTree(length);
+
+		HistoryTree<String,String> clone0=tree.makePruned(datastore);		
+
+		assertEquals(clone0.version(),length-1);
+		assertEquals(clone0.aggV(tree.version()),clone0.agg());
+
+		
+		for (int i=0; i <= length-1 ; i++) {
+			HistoryTree<String,String> clone=tree.makePruned(datastore);		
+			clone.copyV(tree,i,false);
+			assertEquals(length-1,clone.version());
+			assertEquals(results[i],clone.aggV(i));
+			assertEquals(results[length-1],clone.aggV(length-1));
+		}
+	}
+	
+	@Test
+	public void testPruned() throws ProofError {
+		// Try around powers of 2.
+		for (int i=1 ; i < 12 ; i++) {
+			HashStore<String,String> store = new HashStore<String,String>();
+			doTestMakePruned(i,store);
+		}
+	}
+
+	
+	// TO WRITE TESTS BELOW HERE.
+	
+	@Test	
+	public void testSerialization() throws InvalidProtocolBufferException {
+		HistoryTree<String,String> histtree= makeHistTree(11);
+		byte[] serialized = histtree.serializeTree();
+		HistoryTree<String,String> tree2 = parseSerialization(serialized);
+		System.out.println(tree2.toString("Unserial:"));
+		tree2.aggV(3);
+		assertEquals(histtree.agg(),tree2.agg());
+	}
+	
+	
 	public HistoryTree<String,String> parseSerialization(byte serialized[]) throws InvalidProtocolBufferException {
 		Serialization.HistTree.Builder builder = Serialization.HistTree.newBuilder();
 		Serialization.HistTree pb = builder.mergeFrom(serialized).build();
@@ -57,97 +143,6 @@ public class TestHistory extends TestCase {
 		tree2.parseTree(pb);
 		return tree2;
 	}	
-	@Test	
-	public void testSerialization() throws InvalidProtocolBufferException {
-		HistoryTree<String,String> histtree= makeHistTree();
-		byte[] serialized = histtree.serializeTree();
-		HistoryTree<String,String> tree2 = parseSerialization(serialized);
-		System.out.println(tree2.toString("Unserial:"));
-		tree2.aggV(3);
-		assertEquals(histtree.agg(),tree2.agg());
-	}
-
-	HistoryTree<String, String> makeHistTree() {
-		List<String> x = Arrays.asList("Alan","Bob","Charlie","Dan","Elen","Frank","Gordon","Helen","Isis","Jon","Kevin");
-		AggregationInterface<String,String> aggobj = new ConcatAgg();
-		HistoryDataStoreInterface<String,String> datastore = new AppendOnlyArrayStore<String,String>();
-		HistoryTree<String,String> histtree=new HistoryTree<String,String>(aggobj,datastore);
-		
-		for (String s : x) {
-			histtree.append(s);
-		}
-		return histtree;
-	}
-	
-	
-	@Test	
-	public void testAggV() {
-		HistoryTree<String,String> histtree= makeHistTree();
-		System.out.println(histtree.toString("Def:"));
-
-		//assert histtree.version() == 8;
-		int i;
-		for (i=0 ; i<=histtree.version(); i++) {
-			System.out.format("AggV(%d) %s\n",i,histtree.aggV(i));
-		}
-	}
-
-	private void helpTestMakePruned(HistoryTree<String,String> histtree, int version, boolean copyValFlag) {
-		System.out.format("Doing(%d/%d)\n",version,histtree.version());
-		//System.out.println(histtree.toString(String.format(" Orig( ):")));			
-		HashStore<String,String> datastore=new HashStore<String,String>();
-		HistoryTree<String,String> clone= histtree.makePruned(datastore);
-		assert histtree.version() == clone.version();
-		try {
-			//System.out.println(clone.toString(String.format("Prune( ):")));			
-			clone.copyV(histtree, version, copyValFlag);
-			clone.aggV(version);
-			assertEquals(histtree.aggV(version),clone.aggV(version));
-			//System.out.println(clone.toString(String.format("Clone(%d):",version)));			
-			assertEquals(histtree.agg(),clone.agg());
-		} catch (ProofError e) {
-			System.out.println("Unable to copy");
-			e.printStackTrace();
-		}	
-		//System.out.println(clone.toString(String.format("Clone(%d):",version)));
-	}
-	private void helpTestMakePrunedPair(HistoryTree<String,String> histtree, int version1, int version2, boolean copyValFlag) {
-		System.out.format("Doing(%d+%d/%d)\n",version1,version2,histtree.version());
-		HashStore<String,String> datastore=new HashStore<String,String>();
-		HistoryTree<String,String> clone= histtree.makePruned(datastore);
-		assert histtree.version() == clone.version();
-		try {
-			clone.copyV(histtree, version1, copyValFlag);
-			clone.copyV(histtree, version2, copyValFlag);
-		} catch (ProofError e) {
-			System.out.println("Unable to copy");
-			e.printStackTrace();
-		}	
-		//System.out.println(clone.toString(String.format("Clone(%d+%d):",version1,version2)));
-	}
-	
-	@Test
-	public void testMakePruned() {
-		HistoryTree<String,String> histtree= makeHistTree();
-		for (int i = 0 ; i <= histtree.version() ; i++) {
-			helpTestMakePruned(histtree,i,true);
-		}
-		for (int i = 0 ; i <= histtree.version() ; i++) {
-			//helpTestMakePruned(histtree,i,false);
-		}
-	}		
-
-	@Test
-	public void testMakePrunedPair() {
-		HistoryTree<String,String> histtree= makeHistTree();
-		for (int i = 0 ; i <= histtree.version() ; i++) {
-			for (int j = 0 ; j <= histtree.version() ; j++) {
-				//helpTestMakePrunedPair(histtree,i,j,true);
-			}
-		}
-	}
-	
-	
 	HistoryTree<byte[],byte[]> 
 	makeShaHistTree() {
 		List<String> x = Arrays.asList("Alan","Bob","Charlie","Dan","Elen","Frank","Gordon","Helen","Isis","Jon","Kevin");
