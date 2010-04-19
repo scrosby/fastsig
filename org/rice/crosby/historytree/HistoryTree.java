@@ -91,6 +91,7 @@ public class HistoryTree<A,V> {
     	return aggV(time);
     }
     public A aggV(int version) {
+    	assert (version <= time);
     	NodeCursor<A,V>  child, leaf, node;
 
     	child = leaf = this.leaf(version);
@@ -101,8 +102,10 @@ public class HistoryTree<A,V> {
     		NodeCursor<A,V>  left = node.left();
     		if (child.equals(left))
     			agg = aggobj.aggChildren(agg,null);
-    		else
-    			agg = aggobj.aggChildren(left.getAgg(),agg);
+    		else {
+    			A leftagg = left.getAgg(); assert leftagg != null;
+    			agg = aggobj.aggChildren(leftagg,agg);
+    		}
     		child = node;
     		node = node.getParent(root);
     	}
@@ -135,7 +138,7 @@ public class HistoryTree<A,V> {
     /** Make a cursor pointing to the given leaf, forcibly creating the path if possible */
     private NodeCursor<A,V> forceLeaf(int version) {
     	if (time == 0)
-    		return root;
+    		return root.markValid();
     	NodeCursor<A,V> node=root,child;
     	for (int layer = log2(time) ; layer >= 0 ; layer--) {
     		//System.out.println("forceleaf"+node);
@@ -185,6 +188,7 @@ public class HistoryTree<A,V> {
 
     
     private void _copyAgg(HistoryTree<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
+		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
     	NodeCursor<A,V> node,orignode;
     	orignode = origleaf.getParent(orig.root);
     	node = leaf.getParent(root);
@@ -200,7 +204,6 @@ public class HistoryTree<A,V> {
     		NodeCursor<A,V> origleft,origright;
     		//System.out.println("NO BREAK");
     		origleft = orignode.left();
-    		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
     		//System.out.println("CL: "+origleft+" --> "+node.forceLeft());
     		if (origleft.isFrozen(this.time))
     			node.forceLeft().copyAgg(origleft);

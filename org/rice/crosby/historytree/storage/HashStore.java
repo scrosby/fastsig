@@ -43,7 +43,8 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterfa
 	@Override
 	public void markValid(NodeCursor<A, V> node) {
 		Integer key=new Integer(node.computeIndex());
-		aggstore.put(key,null);
+		if (!aggstore.containsKey(key))
+			aggstore.put(key,null);
 	}
 
 	@Override
@@ -63,7 +64,7 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterfa
 
 	@Override
 	public void updateTime(int time) {
-		assert (time > this.time);
+		assert (time >= this.time);
 		this.time = time;		
 	}
 
