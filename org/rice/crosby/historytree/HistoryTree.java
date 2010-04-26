@@ -223,6 +223,11 @@ public class HistoryTree<A,V> {
     		orignode = orignode.getParent(orig.root);
     		node = node.getParent(root);
     	}
+    	// Handle the root-is-frozen case
+    	if (root.isFrozen(time)) {
+    		root.markValid();
+    		root.copyAgg(orig.root);
+    	}
     }    
     public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
     	if (root == null) {
@@ -346,8 +351,10 @@ public class HistoryTree<A,V> {
 
     	if (in.hasRight()) {
     		parseNode(node.forceRight(),in.getRight());
-    		if (node.isFrozen(time))
+    		if (node.isFrozen(time)) {
+    			node.markValid();
     			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
+    		}
     	}
     }
     
