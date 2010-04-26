@@ -152,6 +152,7 @@ public final class NodeCursor<A,V> {
 		return getRight().markValid();
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean equals(Object o) {
 		if (o instanceof NodeCursor<?,?>) {
 			NodeCursor<A,V> o2 = (NodeCursor<A,V>)o;

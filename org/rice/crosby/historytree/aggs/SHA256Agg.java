@@ -7,6 +7,7 @@ import org.rice.crosby.historytree.AggregationInterface;
 
 
 
+@SuppressWarnings("unchecked")
 public class SHA256Agg extends HashAggBase {
 	public MessageDigest getAlgo(byte tag) {
 		try {

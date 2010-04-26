@@ -7,6 +7,7 @@ import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingExcepti
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 
 /** Extend the prior standard SHA256Agg class to be human readable base64'ed values */
+@SuppressWarnings("unchecked")
 public class SHA256AggB64 extends SHA256Agg {
 	@Override
 	public byte[] parseAgg(ByteString b) {

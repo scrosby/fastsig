@@ -4,6 +4,7 @@ import org.rice.crosby.historytree.AggregationInterface;
 
 import com.google.protobuf.ByteString;
 
+@SuppressWarnings("unchecked")
 public class ConcatAgg implements AggregationInterface<String, String> {
 	@Override
 	public String aggChildren(String leftAnn, String rightAnn) {
