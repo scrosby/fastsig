@@ -73,7 +73,9 @@ public class HistoryTree<A,V> {
     		leaf.setAgg(aggobj.aggVal(leaf.getVal()));
     	}
     	NodeCursor<A,V> node=leaf.getParent(root);
+    	//System.out.println("Adding leaf "+leaf+" ------------------------ " );
     	while (node != null && node.isFrozen(time) && node.getAgg() == null) {
+        	//System.out.println("Adding leaf "+leaf+" visit node" +node);
     		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
     		node = node.getParent(root);
     	}
@@ -97,8 +99,10 @@ public class HistoryTree<A,V> {
     	child = leaf = this.leaf(version);
     	node= leaf.getParent(root);
     	A agg = leaf.getAgg();
+		//System.out.println("leaf"+node);
 
     	while (node!=null && version >= (1<<node.layer-1)) {
+    		//System.out.println("aggv"+node);
     		NodeCursor<A,V>  left = node.left();
     		if (child.equals(left))
     			agg = aggobj.aggChildren(agg,null);
@@ -197,7 +201,7 @@ public class HistoryTree<A,V> {
     	// Invariant: We have a well-formed tree with all stubs include hashes EXCEPT possibly siblings in the path from the leaf to where it merged into the existing pruned tree.
    	    // Iterate up the tree, copying over sibling agg's for stubs. If we hit a node with two siblings. we're done. Earlier inserts will have already inserted sibling hashes for ancestor nodes.
     	while (continuing && node != null) {
-    		//System.out.println("CA: "+orignode+" --> "+node);
+    		//System.out.println("CA("+orig.version()+"): "+orignode+" --> "+node);
     		// FIX: THE INITAL TREE VIOLATES THE INVARIANTS.
     		if (!force && node.left() != null && node.right() != null)
     			continuing = false;

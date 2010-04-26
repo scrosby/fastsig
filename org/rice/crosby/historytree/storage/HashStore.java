@@ -21,7 +21,7 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterfa
 	@Override
 	public A getAgg(NodeCursor<A, V> node) {
 		Integer key=new Integer(node.computeIndex());
-		//System.out.println("GetAgg "+key+"["+"]"+aggstore.contains(key));
+		//System.out.println("GetAgg "+key+"["+"]"+aggstore.get(key));
 		return aggstore.get(key); 
 		}
 
