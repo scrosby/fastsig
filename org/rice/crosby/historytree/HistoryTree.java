@@ -162,17 +162,10 @@ public class HistoryTree<A,V> {
     public HistoryTree<A,V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
     	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
-    	out.copyRoot(this);
+        out.root = out.datastore.makeRoot(root.layer);
     	out._copyAgg(this,this.leaf(time),out.forceLeaf(time),true);
     	return out;
         }
-    
-    private void copyRoot(HistoryTree<A,V> orig) {
-    	assert this.root == null;
-    	root = datastore.makeRoot(orig.root.layer);
-    	//if (root.isFrozen(time))
-    	//	root.copyAgg(orig.root);
-    }
 
     /** Make a path to one leaf and copy over its value or agg. 
      * @throws ProofError */
@@ -231,7 +224,7 @@ public class HistoryTree<A,V> {
     }    
     public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
     	if (root == null) {
-    		copyRoot(orig);
+    		root = datastore.makeRoot(orig.root.layer);
     		//copyVersionHelper(orig,this.time,false);
     	}
     		
