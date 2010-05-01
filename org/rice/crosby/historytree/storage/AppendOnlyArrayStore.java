@@ -10,10 +10,6 @@ public class AppendOnlyArrayStore<A,V> extends ArrayStoreBase<A,V>  {
 		super();
 	}
 	
-	@Override
-	public NodeCursor<A, V> makeRoot(int layer) {
-		return new NodeCursor<A,V>(this,layer,0);
-	}
 
 	@Override
 	public boolean isAggValid(NodeCursor<A, V> node) {
@@ -25,6 +21,7 @@ public class AppendOnlyArrayStore<A,V> extends ArrayStoreBase<A,V>  {
 		assert(node.index <= time);
 	}
 
+	@Override
 	public void updateTime(int time) {
 		assert (time > this.time);
 		this.time = time;		

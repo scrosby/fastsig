@@ -64,8 +64,7 @@ public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryD
 
 	abstract public boolean isAggValid(NodeCursor<A, V> node);
 
-	abstract public void markValid(NodeCursor<A, V> node);
+	abstract public void markValid(NodeCursor<A, V> node);	
 	
-	
-	
+	abstract public void updateTime(int time);
 }

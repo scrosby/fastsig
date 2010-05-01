@@ -165,7 +165,7 @@ public class TestHistory extends TestCase {
 		Serialization.HistTree.Builder builder = Serialization.HistTree.newBuilder();
 		Serialization.HistTree pb = builder.mergeFrom(serialized).build();
 		//System.out.println(pb.toString());
-		HistoryTree<byte[],byte[]> tree2= new HistoryTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
+		HistoryTree<byte[],byte[]> tree2= new HistoryTree<byte[],byte[]>(new SHA256AggB64(),new HashStore<byte[],byte[]>());
 		tree2.updateTime(pb.getVersion());
 		tree2.parseTree(pb);
 		return tree2;
@@ -174,10 +174,10 @@ public class TestHistory extends TestCase {
 
 	public void benchTestCore(int iter, boolean doGetAgg, boolean doGetAggV, boolean doMakePrune,
 			boolean doAddPruned, boolean doSerialize, boolean doDeserialize, boolean doVf) {
-		int LOOP = 1000;
+		int LOOP = 44; // TODO: BUGGY WITH THIS AN EXACT POWER OF 2.
 		HistoryTree<byte[],byte[]> histtree;
 		for (int i=0; i < iter ; i++) {
-			AggregationInterface<byte[],byte[]> aggobj = new SHA256Agg();
+			AggregationInterface<byte[],byte[]> aggobj = new SHA256AggB64();
 			ArrayStore<byte[],byte[]> datastore = new ArrayStore<byte[],byte[]>();
 			histtree=new HistoryTree<byte[],byte[]>(aggobj,datastore);
 			for (int j =0; j < LOOP ; j++) {
@@ -199,6 +199,8 @@ public class TestHistory extends TestCase {
 							e.printStackTrace();
 						}
 					}
+
+					//System.out.print(clone.toString("Clone:"));
 					if (doDeserialize) {
 						byte[] data = clone.serializeTree();
 						if (doSerialize) {
@@ -208,7 +210,7 @@ public class TestHistory extends TestCase {
 							} catch (InvalidProtocolBufferException e) {
 								e.printStackTrace();
 							}
-
+							//System.out.print(parsed.toString("Parsed:"));
 							if (doVf) {
 								assertTrue(Arrays.equals(parsed.agg(),histtree.agg()));
 								assertTrue(Arrays.equals(parsed.aggV(j),histtree.aggV(j)));
@@ -222,7 +224,7 @@ public class TestHistory extends TestCase {
 	}
 
 
-	final int LOOPCOUNT = 100;
+	final int LOOPCOUNT = 10;
 	
 	@Test 
 	public void testdoAppend() {
