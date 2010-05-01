@@ -2,7 +2,8 @@ package org.rice.crosby.historytree.storage;
 
 import org.rice.crosby.historytree.NodeCursor;
 
-
+/** An array store indended soley for append-only operation, with all nodes up to the last one are always valid.
+ */
 public class AppendOnlyArrayStore<A,V> extends ArrayStoreBase<A,V>  {
 
 	public AppendOnlyArrayStore() {

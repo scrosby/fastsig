@@ -30,7 +30,9 @@ A leaf should always have a value, unless it has been deliberately stubbed out.
 */
 
 public final class NodeCursor<A,V> {
-	interface HistoryDataStore<A,V> {
+
+  /** Interfaces that a cursor requires of a data store */
+  interface HistoryDataStore<A,V> {
 		/** A node cursor can point anywhere. This indicates that we should create 
 		 * the cursor location and allow aggregates to be stored there. */
 		void markValid(NodeCursor<A,V> node);
@@ -38,19 +40,19 @@ public final class NodeCursor<A,V> {
 		 * valid data at the cursor location */
 		boolean isAggValid(NodeCursor<A,V> node);
 
+		/** Set the aggregate for a particular cursor to a particular aggregate value. Must be non-null. */
 		void setAgg(NodeCursor<A,V> node, A a);
+        /** Set the value for a particular cursor to a particular value. Must be non-null. */
 		void setVal(NodeCursor<A,V> node, V v);
+        /** Get the aggregate for a particular cursor. Cursor location must be previously marked valid. */
 		A getAgg(NodeCursor<A,V> node);
+        /** Get the value at the particular cursor, which should be a leaf. */
 		V getVal(NodeCursor<A,V> node);
+        /** Does the given leaf node have a value set? A leaf may have only an aggregate. */
 		boolean hasVal(NodeCursor<A,V> node);
 	};
 	
-	/*
-	NodeCursor(int layer, int index) {
-		this.datastore = null;
-		this.layer = layer;
-		this.index = index;
-	}*/
+
 	public NodeCursor(HistoryDataStore<A,V> nodefactory, int layer, int index) {
 		assert nodefactory != null;
 		this.datastore = nodefactory;
@@ -65,6 +67,7 @@ public final class NodeCursor<A,V> {
 	boolean isFrozen(int time) {
 		return time >= index+getStep()-1;
 	}
+	
 	int getStep() {
 		return 1 << layer;
 	}
@@ -85,7 +88,7 @@ public final class NodeCursor<A,V> {
 		//System.out.format("\n %d %d --> %d \n",index,layer,s+layer);
 		return s+layer;
 	}
-
+	
 	public final HistoryDataStore<A,V> datastore;
 	public final int layer;
 	public final int index;
@@ -105,6 +108,7 @@ public final class NodeCursor<A,V> {
 		return new NodeCursor<A,V>(datastore,layer-1,newindex);
 	}
 
+	/** Make a cursor that is a parent of the current cursor and mark it valid. */
 	NodeCursor<A,V> reparent() {
 		return new NodeCursor<A,V>(datastore,layer+1,0).markValid();
 	}
@@ -119,6 +123,7 @@ public final class NodeCursor<A,V> {
 		return new NodeCursor<A,V>(datastore,layer+1,index & ~(getStep()*2-1));
 	}
 
+    /** Get the node that is the left child of the current cursor, or null if the left child is not valid. (Meaning that the store does not have data at that position) */
 	NodeCursor<A,V> left() {
 		NodeCursor<A,V> out=getLeft();
 		if (out.isAggValid())
@@ -127,6 +132,7 @@ public final class NodeCursor<A,V> {
 			return null;
 	}
 
+	/** Get the node that is the right child of the current cursor, or null if the left child is not valid. (Meaning that the store does not have data at that position) */
 	NodeCursor<A,V> right() {
 		NodeCursor<A,V> out=getRight();
 		if (out.isAggValid())
@@ -135,19 +141,24 @@ public final class NodeCursor<A,V> {
 			return null;
 	};
 
-	/* A node is a leaf, stub, or interior */
+	/** A node is a leaf, stub, or interior */
 	boolean isStub() {
 		assert !isLeaf();
 		return getLeft().isAggValid();
 	}
 	
-	/** Return the layer and index numbers of the given child. Create
-	 * if needed. */
+  /**
+   * Return the layer and index numbers of the given child. Indicate to the
+   * store that it is valid and should be created if it does not already exist.
+   */
 	NodeCursor<A,V> forceLeft() {
 		return getLeft().markValid();
 	}
-	/** Return the layer and index numbers of the given child. Create
-	 * if needed. */
+
+  /**
+   * Return the layer and index numbers of the given child. Indicate to the
+   * store that it is valid and should be created if it does not already exist.
+   */
 	NodeCursor<A,V> forceRight() {
 		return getRight().markValid();
 	}
@@ -193,7 +204,7 @@ public final class NodeCursor<A,V> {
 	
 
 	/*
-	 * Functions that reflect up to the nodefactory.
+	 * Functions that reflect to the data store. 
 	 */
 	NodeCursor<A,V> markValid() {
 		datastore.markValid(this);
@@ -221,11 +232,13 @@ public final class NodeCursor<A,V> {
 		assert (v!= null);
 		datastore.setAgg(this,v);
 	}
+	/** Copy the aggregate from the node pointed to by the cursor */
 	void copyAgg(NodeCursor<A,V> orig) {
 		assert orig.getAgg() != null;
 		//System.out.println("CopyAgg:"+orig+ " ===> "+orig);
 		datastore.setAgg(this,orig.getAgg());
 	}
+    /** Copy the value from the node pointed to by the cursor */
 	void copyVal(NodeCursor<A,V> orig) {
 		assert orig.getVal() != null;
 		datastore.setVal(this,orig.getVal());

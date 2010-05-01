@@ -4,6 +4,9 @@ import java.util.ArrayList;
 
 import org.rice.crosby.historytree.NodeCursor;
 
+/** An array store where some interior nodes may not be valid.
+ */
+
 public class ArrayStore<A,V> extends ArrayStoreBase<A, V> 
 		 {
 
@@ -37,6 +40,7 @@ public class ArrayStore<A,V> extends ArrayStoreBase<A, V>
 		}
 	}
 
+	/** Record whether a given agg is valid. Offset into the array is the node's index in a post order traversal. */
 	private ArrayList<Boolean>  aggvalid;
 
 }

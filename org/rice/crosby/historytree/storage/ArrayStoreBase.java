@@ -5,8 +5,16 @@ import java.util.ArrayList;
 import org.rice.crosby.historytree.HistoryDataStoreInterface;
 import org.rice.crosby.historytree.NodeCursor;
 
+/** Common base class for when a history tree is stored as two arrays.
+ * 
+ * Nodes in a tree are assigned offsets in the array based on their position in a post-order traversal of the history tree.
+ * 
+ * @author crosby
+ *
+ * @param <A>
+ * @param <V>
+ */
 public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryDataStoreInterface<A, V> {
-
 	protected int time;
 
 	@Override
@@ -42,7 +50,9 @@ public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryD
 		valstore.set(node.index,v);
 	}
 
+    /** Record the agg for a node. Offset into the array is the node's index in a post order traversal. */
 	protected ArrayList<A> aggstore;
+    /** Record the val for a node. Offset into the array is the leaf node's index. */
 	protected ArrayList<V> valstore;
 
 	public ArrayStoreBase() {
