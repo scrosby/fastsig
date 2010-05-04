@@ -135,6 +135,46 @@ public abstract class TreeBase<A,V> {
   	}
   }
 
+  /** Make a cursor pointing to the given leaf, if possible */
+  protected NodeCursor<A,V> leaf(int version) {
+  	if (time == 0)
+  		return root;
+  	NodeCursor<A,V> node=root,child;
+  	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+  		//System.out.println("leaf"+node);
+  		int mask = 1 << (layer-1);
+  		if ((mask & version) == mask)
+  			child = node.right();
+  		else
+  			child = node.left();
+  		if (layer == 1)
+  			return child;
+  		node = child;
+  	}
+  	assert false;
+  	return null;
+  }
+
+  /** Make a cursor pointing to the given leaf, forcibly creating the path if possible */
+  protected NodeCursor<A,V> forceLeaf(int version) {
+  	if (time == 0)
+  		return root.markValid();
+  	NodeCursor<A,V> node=root,child;
+  	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+  		//System.out.println("forceleaf"+node);
+  		int mask = 1 << (layer-1);
+  		if ((mask & version) == mask)
+  			child = node.forceRight();
+  		else
+  			child = node.forceLeft();
+  		if (layer == 1)
+  			return child;
+  		node = child;
+  	}
+  	assert false;
+  	return null;
+  }
+
   protected int time;
   protected NodeCursor<A,V> root;
   protected HistoryDataStoreInterface<A,V> datastore;

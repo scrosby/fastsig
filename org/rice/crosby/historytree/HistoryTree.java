@@ -94,46 +94,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     //  Operations for making pruned trees.
     //
     
-	/** Make a cursor pointing to the given leaf, if possible */
-    private NodeCursor<A,V> leaf(int version)  {
-    	if (time == 0)
-    		return root;
-    	NodeCursor<A,V> node=root,child;
-    	for (int layer = log2(time) ; layer >= 0 ; layer--) {
-    		//System.out.println("leaf"+node);
-    		int mask = 1 << (layer-1);
-    		if ((mask & version) == mask)
-    			child = node.right();
-    		else
-    			child = node.left();
-    		if (layer == 1)
-    			return child;
-    		node = child;
-    	}
-    	assert false;
-    	return null;
-    }
-    /** Make a cursor pointing to the given leaf, forcibly creating the path if possible */
-    private NodeCursor<A,V> forceLeaf(int version) {
-    	if (time == 0)
-    		return root.markValid();
-    	NodeCursor<A,V> node=root,child;
-    	for (int layer = log2(time) ; layer >= 0 ; layer--) {
-    		//System.out.println("forceleaf"+node);
-    		int mask = 1 << (layer-1);
-    		if ((mask & version) == mask)
-    			child = node.forceRight();
-    		else
-    			child = node.forceLeft();
-    		if (layer == 1)
-    			return child;
-    		node = child;
-    	}
-    	assert false;
-    	return null;
-    }
-
-    public HistoryTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
+	public HistoryTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
     	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
         out.root = out.datastore.makeRoot(root.layer);
