@@ -20,19 +20,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 		this.datastore = datastore;
 	}
 
-	/** Make an history at a given timestamp (used as a template for building a pruned trees or parsing trees.)
-	 */
-	public HistoryTree<A,V> updateTime(int time) {
-		this.time = time;
-		datastore.updateTime(time);
-		return this;
-	}
-	
-	//
-	// Operations for adding to a log and getting the commitment
-	//
-	
-	
 	/** Add an event to the log */
 	public void append(V val) {
 		NodeCursor<A,V> leaf;
@@ -50,11 +37,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 		computefrozenaggs(leaf);
 	}
 		
-	private void reparent(int time) {
-		while (!(time <= (1<<root.layer)-1))
-			this.root = root.reparent();
-	}
-
 	/** Compute any frozen aggregates on a node */
 	private void computeAggOnNode(NodeCursor<A,V> node) {
 		if (node.isLeaf()) {
@@ -79,14 +61,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
     		node = node.getParent(root);
     	}
-    }
-    
-    public AggregationInterface<A,V> getAggObj() {
-    	return aggobj.clone();
-    }
-    
-    public int version() {
-    	return time;
     }
     
     public A agg() {
@@ -159,7 +133,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	return null;
     }
 
-    public HistoryTree<A,V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
+    public HistoryTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
     	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
         out.root = out.datastore.makeRoot(root.layer);
@@ -184,7 +158,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	}
 
     
-    private void _copyAgg(HistoryTree<A,V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
+    private void _copyAgg(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
 		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
     	NodeCursor<A,V> node,orignode;
     	orignode = origleaf.getParent(orig.root);
@@ -351,75 +325,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	}
     }
     
-    public String toString(String prefix) {
-    	StringBuilder b = new StringBuilder();
-    	b.append(prefix);
-    	b.append("  version = ");
-    	b.append(time);
-    	b.append("\n");
-    	debugString(b,prefix,root);
-    	return new String(b);
-    }
-    public String toString() {
-    	return toString("");
-    }
-	public void debugString(StringBuilder b, String prefix, NodeCursor<A,V> node) {
-		b.append(prefix);
-		b.append("\t"+toString(node));
-		b.append("\n");
-
-		if (node.isLeaf())
-			return;
-			
-		NodeCursor<A,V> left=node.left(), right=node.right();
-		
-		if (left != null)
-			debugString(b,prefix+"L",left);
-		if (right != null) 
-			debugString(b,prefix+"R",right);
-	}
-
-	/** Return this as a longer tab-delimited string */
-	public String toString(NodeCursor<A,V> node) {
-		StringBuilder b=new StringBuilder();
-		b.append(String.format("<%d,%d>",node.layer,node.index));
-		b.append("\t");
-		// Print out the value (if any)
-		
-		if (node.isLeaf() && node.hasVal())
-			b.append(valToString(node.getVal()));
-			else
-				b.append("<>");
-				
-		b.append("\t");	
-
-		if (node.isAggValid()) {
-			A agg = node.getAgg();
-			if (agg == null)
-				b.append("Null");
-			else
-				b.append(aggToString(agg));
-		} else
-			b.append("<>");
-		//b.append(":");
-		//b.append(datastore.hashCode());
-		return b.toString();
-	}
-	
-    protected String aggToString(A a) {
-    	return aggobj.serializeAgg(a).toStringUtf8();
-    }
-    protected String valToString(V v) {
-    	return aggobj.serializeVal(v).toStringUtf8();
-    }
- 
-    /* Merge another pruned tree in with this tree.
-     * 
-     * Assume both merged trees have been confirmed to be consistent.
-     * 
-     */
-    
-    public void mergeTree(HistoryTree<A,V> peer) {
+    public void mergeTree(TreeBase<A, V> peer) {
     	NodeCursor <A,V> thisroot, peerroot;
 
     	if (peer.version() <0) {
@@ -452,7 +358,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
      }
 
 
-    private void mergeNode(HistoryTree<A,V> peer, NodeCursor<A,V> thisnode, NodeCursor<A,V> peernode) {
+    private void mergeNode(TreeBase<A, V> peer, NodeCursor<A,V> thisnode, NodeCursor<A,V> peernode) {
     	/*
     	 * 
     	 *  Invariant: The thisnode and peernode are always 'valid'
@@ -482,25 +388,5 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     		if (thisnode.isFrozen(time) && thisnode.getAgg() == null)
     			computeAggOnNode(thisnode);
     	}
-    }
-
-
-    
-    //
-    //  Member fields
-    //    
-    private int time;
-    private NodeCursor<A,V> root;
-    private HistoryDataStoreInterface<A,V> datastore;
-    private AggregationInterface<A,V> aggobj;
-
-    // Misc helpers
-    public static int log2(int x) {
-    	int i = 0, pow = 1;
-    	while (pow <= x) {
-    		pow = pow*2;
-    		i=i+1;
-    	}
-    	return i;
     }
 }
