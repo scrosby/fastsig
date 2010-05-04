@@ -238,22 +238,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	return null;
     }*/
     
-    /** Serialize a pruned tree to a protocol buffer */
-    public void serializeTree(Serialization.HistTree.Builder out) {
-    	out.setVersion(time);
-    	if (root != null) {
-    		Serialization.HistNode.Builder builder = Serialization.HistNode.newBuilder();
-    		serializeNode(builder,root);
-    		out.setRoot(builder.build());
-    	}
-    }
-    
-    public byte[] serializeTree() {
-    	Serialization.HistTree.Builder builder= Serialization.HistTree.newBuilder();
-    	serializeTree(builder);
-    	return builder.build().toByteArray();
-    }
-
     /** Parse from a protocol buffer. I assume that the history tree has 
      * been configured with the right aggobj and a datastore. */
     public void parseTree(Serialization.HistTree in) {
@@ -266,35 +250,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 
     public void parseTree(byte data[]) throws InvalidProtocolBufferException {
 		parseTree(HistTree.parseFrom(data));
-    }
-    
-    /** Helper function for recursively serializing a history tree */
-    private void serializeNode(Serialization.HistNode.Builder out, NodeCursor<A,V> node) {
-    	if (node.isLeaf()) {
-    		//System.out.println("SN:"+node);
-    		if (node.hasVal())
-    			out.setVal(aggobj.serializeVal(node.getVal()));
-    		else
-    			out.setAgg(aggobj.serializeAgg(node.getAgg()));
-    		return;
-    	}
-    	if (node.left() == null && node.right() == null) {
-    		// Either a stub or a leaf. 
-    		// Gotta include the agg for this node.
-    		out.setAgg(aggobj.serializeAgg(node.getAgg()));
-    		return;
-    	}
-    	// Ok, recurse both sides. Don't forget, we need to make a builder.
-    	if (node.left() != null) {
-    		Serialization.HistNode.Builder b = Serialization.HistNode.newBuilder();
-    		serializeNode(b,node.left());
-    		out.setLeft(b.build());
-    	}
-    	if (node.right() != null) {
-    		Serialization.HistNode.Builder b = Serialization.HistNode.newBuilder();
-    		serializeNode(b,node.right());
-    		out.setRight(b.build());
-    	}
     }
     
     private void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
