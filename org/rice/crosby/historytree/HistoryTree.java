@@ -20,23 +20,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 		this.datastore = datastore;
 	}
 
-	/** Add an event to the log */
-	public void append(V val) {
-		NodeCursor<A,V> leaf;
-		if (time < 0) {
-			time = 0;
-			datastore.updateTime(time);
-			root = leaf = datastore.makeRoot(0);
-		} else {
-			time = time+1;
-			datastore.updateTime(time);
-			reparent(time);
-			leaf = forceLeaf(time);
-		}
-		leaf.setVal(val);
-		computefrozenaggs(leaf);
-	}
-		
 	/** Compute any frozen aggregates on a node */
 	private void computeAggOnNode(NodeCursor<A,V> node) {
 		if (node.isLeaf()) {
@@ -47,23 +30,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 		}
 	}
 	
-	/** Recurse from the leaf upwards, computing the agg for all frozen nodes */
-    private void computefrozenaggs(NodeCursor<A,V> leaf) {
-    	// First, set the leaf agg from the stored event (if it exists
-    	if (leaf.hasVal() && leaf.getAgg() == null) {
-    		leaf.markValid();
-    		leaf.setAgg(aggobj.aggVal(leaf.getVal()));
-    	}
-    	NodeCursor<A,V> node=leaf.getParent(root);
-    	//System.out.println("Adding leaf "+leaf+" ------------------------ " );
-    	while (node != null && node.isFrozen(time) && node.getAgg() == null) {
-        	//System.out.println("Adding leaf "+leaf+" visit node" +node);
-    		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
-    		node = node.getParent(root);
-    	}
-    }
-    
-    public A agg() {
+	public A agg() {
     	return aggV(time);
     }
     public A aggV(int version) {
