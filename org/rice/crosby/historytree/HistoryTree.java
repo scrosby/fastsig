@@ -8,7 +8,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 
 
-public class HistoryTree<A,V> {
+public class HistoryTree<A,V> extends TreeBase<A,V> {
 
 
 	/** Make an empty history tree with a given aggobj and datastore.  */
