@@ -143,7 +143,7 @@ public abstract class TreeBase<A,V> {
   	if (time == 0)
   		return root;
   	NodeCursor<A,V> node=root,child;
-  	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+  	for (int layer = log2(time) ; ; layer--) {
   		//System.out.println("leaf"+node);
   		int mask = 1 << (layer-1);
   		if ((mask & version) == mask)
@@ -154,8 +154,6 @@ public abstract class TreeBase<A,V> {
   			return child;
   		node = child;
   	}
-  	assert false;
-  	return null;
   }
 
   /** Make a cursor pointing to the given leaf, forcibly creating the path if possible */
@@ -163,7 +161,7 @@ public abstract class TreeBase<A,V> {
   	if (time == 0)
   		return root.markValid();
   	NodeCursor<A,V> node=root,child;
-  	for (int layer = log2(time) ; layer >= 0 ; layer--) {
+  	for (int layer = log2(time) ; ; layer--) {
   		//System.out.println("forceleaf"+node);
   		int mask = 1 << (layer-1);
   		if ((mask & version) == mask)
@@ -174,8 +172,6 @@ public abstract class TreeBase<A,V> {
   			return child;
   		node = child;
   	}
-  	assert false;
-  	return null;
   }
 
   /** Add an event to the log */
@@ -258,6 +254,7 @@ public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) thr
 
 abstract void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force);
 abstract void parseNode(NodeCursor<A,V> node, Serialization.HistNode in);
+abstract public A agg();
 
 
 /** Parse from a protocol buffer. I assume that the history tree has 
