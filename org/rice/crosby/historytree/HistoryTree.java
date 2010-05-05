@@ -65,7 +65,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
         out.root = out.datastore.makeRoot(root.layer);
-    	out._copyAgg(this,this.leaf(time),out.forceLeaf(time),true);
+    	out.copySiblingAggs(this,this.leaf(time),out.forceLeaf(time),true);
     	return out;
         }
 
@@ -100,7 +100,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 	}
 
     
-    private void _copyAgg(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
+    private void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
 		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
     	NodeCursor<A,V> node,orignode;
     	orignode = origleaf.getParent(orig.root);
@@ -150,7 +150,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
    	    	
     	assert origleaf.getAgg() != null;
     	copyLeaf(orig,version,copyValueFlag);
-    	_copyAgg(orig,origleaf,selfleaf,false);
+    	copySiblingAggs(orig,origleaf,selfleaf,false);
     }
     
     
