@@ -204,11 +204,11 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	return false;
     }
     private void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
-      if (parseThisNode(node,in))
-        return; // If its a stub.
+    	if (parseThisNode(node,in))
+    		return; // If its a stub.
 
-      // Not a stub. Must always have a left and right child.
-      assert in.hasLeft();
+    	// Not a stub. Must always have a left and may have right child.
+    	assert in.hasLeft();
 
     	parseNode(node.forceLeft(),in.getLeft());
 
