@@ -2,9 +2,7 @@ package org.rice.crosby.historytree;
 
 
 import org.rice.crosby.historytree.generated.Serialization;
-import org.rice.crosby.historytree.generated.Serialization.HistTree;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 
 
 
@@ -20,16 +18,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 		this.datastore = datastore;
 	}
 
-	/** Compute any frozen aggregates on a node */
-	private void computeAggOnNode(NodeCursor<A,V> node) {
-		if (node.isLeaf()) {
-			if (node.hasVal() && node.getAgg() == null) 
-				node.setAgg(aggobj.aggVal(node.getVal()));
-		} else {
-			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
-		}
-	}
-	
 	public A agg() {
     	return aggV(time);
     }
@@ -70,7 +58,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
         }
 
     
-    private void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
+    void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
 		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
     	NodeCursor<A,V> node,orignode;
     	orignode = origleaf.getParent(orig.root);
@@ -108,88 +96,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     		root.copyAgg(orig.root);
     	}
     }    
-    public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
-    	if (root == null) {
-    		root = datastore.makeRoot(orig.root.layer);
-    	}
-    	
-    	NodeCursor<A,V> origleaf, selfleaf;
-    	selfleaf = forceLeaf(version);
-    	origleaf = orig.leaf(version);
-
-    	assert origleaf.getAgg() != null;
-
-		if (!origleaf.isAggValid())
-			throw new ProofError("Leaf not in the tree");    	
-
-    	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
-    		// If the leaf is already in the tree...
-    		assert selfleaf.getAgg().equals(origleaf.getAgg());
-    	} else {
-    		selfleaf.copyAgg(origleaf);
-    	}
-    	// If we want a value 
-		if (copyValueFlag) {
-			// have one to copy from
-			if (!origleaf.hasVal()) {
-				throw new ProofError("Leaf source does not have value to copy");
-			}
-			// and don't have one already
-			if (!selfleaf.hasVal()) {
-				selfleaf.copyVal(origleaf); //Copy it.
-			}
-		}    	
-    	
-		copySiblingAggs(orig,origleaf,selfleaf,false);
-    }
-    
-    
-
-    //
-    //  TODO: Serialization code
-    //
-    /*static HistoryTree makeFromConfig(Serialization.Config config) {
-    	return null;
-    }*/
-    
-    /** Parse from a protocol buffer. I assume that the history tree has 
-     * been configured with the right aggobj and a datastore. */
-    public void parseTree(Serialization.HistTree in) {
-    	this.time = in.getVersion();
-    	if (in.hasRoot()) {
-    		root = datastore.makeRoot(log2(in.getVersion()));
-    		parseNode(root,in.getRoot());    		
-    	}
-    }
-
-    public void parseTree(byte data[]) throws InvalidProtocolBufferException {
-		parseTree(HistTree.parseFrom(data));
-    }
-
-    /** Parse one node.
-     * 
-     * @return Returns true if this node is this node is a stub. I.e. if this node has an agg or value attached.     * 
-     * @param node A cursor pointing to the node to be changed.
-     * @param in The corresponding protobuf object.
-     */
-    private boolean parseThisNode(NodeCursor<A,V> node, Serialization.HistNode in) {
-    	if (in.hasVal()) {
-    		V val = aggobj.parseVal(in.getVal());
-    		node.setVal(val);
-    		node.setAgg(aggobj.aggVal(val));
-    		return true;
-    	}
-    	if (in.hasAgg()) {
-    		// If it has an agg, it should be a stub or a leaf stub.
-    		assert !in.hasLeft();
-    		assert !in.hasRight();
-    		A agg = aggobj.parseAgg(in.getAgg());
-    		node.setAgg(agg);
-    		return true;
-    	}
-    	return false;
-    }
-    private void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
+    void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
     	if (parseThisNode(node,in))
     		return; // If its a stub.
 
@@ -204,71 +111,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     			node.markValid();
     			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
     		}
-    	}
-    }
-    
-    public void mergeTree(TreeBase<A, V> peer) {
-    	NodeCursor <A,V> thisroot, peerroot;
-
-    	if (peer.version() <0) {
-    		// Nothing to merge.
-    		return;
-    	}
-
-    	if (this.version() <0 ) {
-    		// Need to make a root node to act as the destination
-    		this.root = new NodeCursor<A,V>(this.datastore,log2(peer.version()),0);
-    		assert log2(peer.version()) == peer.root.layer;
-    	}
-    	
-    	
-    	thisroot = this.root;
-    	peerroot = peer.root;
-
-    	// Get two new roots on the same layer before merging.
-    	if (this.version() < peer.version()) {
-    		while (peerroot.layer > this.root.layer)
-    			this.root = this.root.reparent();
-    		this.updateTime(peer.version());
-    		thisroot = this.root;
-    	} else {
-    		while (thisroot.layer > peerroot.layer)
-    			thisroot=thisroot.left();
-    	}
-
-    	mergeNode(peer,thisroot,peerroot);
-     }
-
-
-    private void mergeNode(TreeBase<A, V> peer, NodeCursor<A,V> thisnode, NodeCursor<A,V> peernode) {
-    	/*
-    	 * 
-    	 *  Invariant: The thisnode and peernode are always 'valid'
-    	 */
-    	assert thisnode.isAggValid();
-    	assert peernode.isAggValid();
-
-    	if (peernode.isLeaf()) {
-    		if (peernode.hasVal()) 
-    			thisnode.copyVal(peernode);
-    		return;
-    	}
-    	if (peernode.isStub()) {
-    		if (thisnode.getAgg() == null) {
-    			peernode.copyAgg(thisnode);
-    		}
-    		return;
-    	}
-
-    	// OK, now recurse the left subtrees.
-    	mergeNode(peer,thisnode.forceLeft(),peernode.left());
-
-    	// Do we recurse the right trees? The peer is not a stub.
-    	if (thisnode.right().index <= version() && peernode.right().index <= peer.version()) {
-    		// Both have valid right children for this snapshot version.
-    		mergeNode(peer,thisnode.forceRight(),peernode.right());
-    		if (thisnode.isFrozen(time) && thisnode.getAgg() == null)
-    			computeAggOnNode(thisnode);
     	}
     }
 }
