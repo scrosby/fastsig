@@ -71,19 +71,27 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 
     /** Make a path to one leaf and copy over its value or agg. 
      * @throws ProofError */
-    private NodeCursor<A,V> copyVersionHelper(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
-    	NodeCursor<A,V> origleaf, selfleaf;
-    	selfleaf = forceLeaf(version);
-    	origleaf = orig.leaf(version);
-    	
-    	if (!origleaf.isAggValid())
-    		throw new ProofError("Leaf not in the tree");    	
-    	selfleaf.copyAgg(origleaf);
-    	// If we want a value, have one to copy from, and don't have one already... Copy it.
-    	if (copyValFlag && !selfleaf.hasVal() && origleaf.hasVal())
-    		selfleaf.copyVal(origleaf);
-    	return selfleaf;
-    	}
+	private NodeCursor<A,V> copyLeaf(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
+		NodeCursor<A,V> origleaf, selfleaf;
+		selfleaf = forceLeaf(version);
+		origleaf = orig.leaf(version);
+
+		if (!origleaf.isAggValid())
+			throw new ProofError("Leaf not in the tree");    	
+		selfleaf.copyAgg(origleaf);
+		// If we want a value 
+		if (copyValFlag) {
+			// have one to copy from
+			if (!origleaf.hasVal()) {
+				throw new ProofError("Leaf source does not have value to copy");
+			}
+			// and don't have one already
+			if (!selfleaf.hasVal()) {
+				selfleaf.copyVal(origleaf); //Copy it.
+			}
+		}
+		return selfleaf;
+	}
 
     
     private void _copyAgg(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
@@ -144,17 +152,9 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     		// If the leaf is already in the tree...
     		assert selfleaf.getAgg().equals(origleaf.getAgg());
     	} else {
-    		copyVersionHelper(orig,version,copyValueFlag);
+    		copyLeaf(orig,version,copyValueFlag);
     		_copyAgg(orig,origleaf,selfleaf,false);
-    	}    			
-    	if (copyValueFlag) {
-    		if (!origleaf.hasVal())
-    			throw new ProofError("Missing value in proof");
-    	} else {
-    		if (!selfleaf.hasVal() && origleaf.hasVal()) 
-    			selfleaf.copyVal(origleaf);
-    	}
-    
+    	}    			    
     }
     
     
