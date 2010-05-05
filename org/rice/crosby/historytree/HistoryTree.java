@@ -78,8 +78,14 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 
 		if (!origleaf.isAggValid())
 			throw new ProofError("Leaf not in the tree");    	
-		selfleaf.copyAgg(origleaf);
-		// If we want a value 
+
+    	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
+    		// If the leaf is already in the tree...
+    		assert selfleaf.getAgg().equals(origleaf.getAgg());
+    	} else {
+    		selfleaf.copyAgg(origleaf);
+    	}
+    	// If we want a value 
 		if (copyValFlag) {
 			// have one to copy from
 			if (!origleaf.hasVal()) {
@@ -135,26 +141,16 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
     	if (root == null) {
     		root = datastore.makeRoot(orig.root.layer);
-    		//copyVersionHelper(orig,this.time,false);
     	}
-    		
+
+    	
     	NodeCursor<A,V> origleaf, selfleaf;
     	selfleaf = forceLeaf(version);
     	origleaf = orig.leaf(version);
-
-    	selfleaf.equals(root);
-    	origleaf.equals(orig);
-    	
-   		//System.out.println("copyV"+selfleaf+"  "+origleaf);
    	    	
     	assert origleaf.getAgg() != null;
-    	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
-    		// If the leaf is already in the tree...
-    		assert selfleaf.getAgg().equals(origleaf.getAgg());
-    	} else {
-    		copyLeaf(orig,version,copyValueFlag);
-    		_copyAgg(orig,origleaf,selfleaf,false);
-    	}    			    
+    	copyLeaf(orig,version,copyValueFlag);
+    	_copyAgg(orig,origleaf,selfleaf,false);
     }
     
     
