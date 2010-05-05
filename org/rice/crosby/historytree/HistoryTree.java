@@ -69,36 +69,6 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	return out;
         }
 
-    /** Make a path to one leaf and copy over its value or agg. 
-     * @throws ProofError */
-	private NodeCursor<A,V> copyLeaf(HistoryTree<A,V> orig, int version, boolean copyValFlag) throws ProofError {
-		NodeCursor<A,V> origleaf, selfleaf;
-		selfleaf = forceLeaf(version);
-		origleaf = orig.leaf(version);
-
-		if (!origleaf.isAggValid())
-			throw new ProofError("Leaf not in the tree");    	
-
-    	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
-    		// If the leaf is already in the tree...
-    		assert selfleaf.getAgg().equals(origleaf.getAgg());
-    	} else {
-    		selfleaf.copyAgg(origleaf);
-    	}
-    	// If we want a value 
-		if (copyValFlag) {
-			// have one to copy from
-			if (!origleaf.hasVal()) {
-				throw new ProofError("Leaf source does not have value to copy");
-			}
-			// and don't have one already
-			if (!selfleaf.hasVal()) {
-				selfleaf.copyVal(origleaf); //Copy it.
-			}
-		}
-		return selfleaf;
-	}
-
     
     private void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force) {
 		assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
@@ -142,15 +112,35 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	if (root == null) {
     		root = datastore.makeRoot(orig.root.layer);
     	}
-
     	
     	NodeCursor<A,V> origleaf, selfleaf;
     	selfleaf = forceLeaf(version);
     	origleaf = orig.leaf(version);
-   	    	
+
     	assert origleaf.getAgg() != null;
-    	copyLeaf(orig,version,copyValueFlag);
-    	copySiblingAggs(orig,origleaf,selfleaf,false);
+
+		if (!origleaf.isAggValid())
+			throw new ProofError("Leaf not in the tree");    	
+
+    	if (selfleaf.isAggValid() && selfleaf.getAgg() != null) {
+    		// If the leaf is already in the tree...
+    		assert selfleaf.getAgg().equals(origleaf.getAgg());
+    	} else {
+    		selfleaf.copyAgg(origleaf);
+    	}
+    	// If we want a value 
+		if (copyValueFlag) {
+			// have one to copy from
+			if (!origleaf.hasVal()) {
+				throw new ProofError("Leaf source does not have value to copy");
+			}
+			// and don't have one already
+			if (!selfleaf.hasVal()) {
+				selfleaf.copyVal(origleaf); //Copy it.
+			}
+		}    	
+    	
+		copySiblingAggs(orig,origleaf,selfleaf,false);
     }
     
     
