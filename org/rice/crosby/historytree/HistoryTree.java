@@ -179,13 +179,19 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     public void parseTree(byte data[]) throws InvalidProtocolBufferException {
 		parseTree(HistTree.parseFrom(data));
     }
-    
-    private void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
+
+    /** Parse one node.
+     * 
+     * @return Returns true if this node is this node is a stub. I.e. if this node has an agg or value attached.     * 
+     * @param node A cursor pointing to the node to be changed.
+     * @param in The corresponding protobuf object.
+     */
+    private boolean parseThisNode(NodeCursor<A,V> node, Serialization.HistNode in) {
     	if (in.hasVal()) {
     		V val = aggobj.parseVal(in.getVal());
     		node.setVal(val);
     		node.setAgg(aggobj.aggVal(val));
-    		return;
+    		return true;
     	}
     	if (in.hasAgg()) {
     		// If it has an agg, it should be a stub or a leaf stub.
@@ -193,10 +199,17 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     		assert !in.hasRight();
     		A agg = aggobj.parseAgg(in.getAgg());
     		node.setAgg(agg);
-    		return;
+    		return true;
     	}
-    	// Must always have a left and right child.
-    	assert in.hasLeft();
+    	return false;
+    }
+    private void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
+      if (parseThisNode(node,in))
+        return; // If its a stub.
+
+      // Not a stub. Must always have a left and right child.
+      assert in.hasLeft();
+
     	parseNode(node.forceLeft(),in.getLeft());
 
     	if (in.hasRight()) {
