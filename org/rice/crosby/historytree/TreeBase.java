@@ -7,6 +7,15 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 public abstract class TreeBase<A,V> {
 
+
+	/** Make an empty history tree with a given aggobj and datastore.  */
+	public TreeBase(AggregationInterface<A,V> aggobj,
+	    		   HistoryDataStoreInterface<A,V> datastore) {
+	    this.time = -1;
+		this.root = null;
+		this.aggobj = aggobj;
+		this.datastore = datastore;
+	}
   /** Make an history at a given timestamp (used as a template for building a pruned trees or parsing trees.)
    */
   public TreeBase<A, V> updateTime(int time) {
@@ -217,7 +226,7 @@ private void computeAggOnNode(NodeCursor<A,V> node) {
 	}
 }
 
-public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) throws ProofError {
+public void copyV(TreeBase<A, V> orig, int version, boolean copyValueFlag) throws ProofError {
 	if (root == null) {
 		root = datastore.makeRoot(orig.root.layer);
 	}
@@ -252,7 +261,6 @@ public void copyV(HistoryTree<A,V> orig, int version, boolean copyValueFlag) thr
 	copySiblingAggs(orig,origleaf,selfleaf,false);
 }
 
-abstract void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf,NodeCursor<A,V> leaf, boolean force);
 abstract void parseNode(NodeCursor<A,V> node, Serialization.HistNode in);
 abstract public A agg();
 
@@ -359,6 +367,46 @@ private void mergeNode(TreeBase<A, V> peer, NodeCursor<A,V> thisnode, NodeCursor
 			computeAggOnNode(thisnode);
 	}
 }
+
+protected void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf, NodeCursor<A,V> leaf,
+		boolean force) {
+			assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
+			NodeCursor<A,V> node,orignode;
+			orignode = origleaf.getParent(orig.root);
+			node = leaf.getParent(root);
+		
+			boolean continuing = true;
+			// Invariant: We have a well-formed tree with all stubs include hashes EXCEPT possibly siblings in the path from the leaf to where it merged into the existing pruned tree.
+		    // Iterate up the tree, copying over sibling agg's for stubs. If we hit a node with two siblings. we're done. Earlier inserts will have already inserted sibling hashes for ancestor nodes.
+			while (continuing && node != null) {
+				//System.out.println("CA("+orig.version()+"): "+orignode+" --> "+node);
+				// FIX: THE INITAL TREE VIOLATES THE INVARIANTS.
+				if (!force && node.left() != null && node.right() != null)
+					continuing = false;
+				NodeCursor<A,V> origleft,origright;
+				//System.out.println("NO BREAK");
+				origleft = orignode.left();
+				//System.out.println("CL: "+origleft+" --> "+node.forceLeft());
+				if (origleft.isFrozen(this.time))
+					node.forceLeft().copyAgg(origleft);
+				
+				// A right node may or may not exist.
+				origright = orignode.right();
+				//System.out.println("RIGHT:"+origright+"  "+time); 
+				if (origright!= null && origright.isFrozen(time))
+						node.forceRight().copyAgg(origright);
+		
+				//System.out.println("LOOP");
+			
+				orignode = orignode.getParent(orig.root);
+				node = node.getParent(root);
+			}
+			// Handle the root-is-frozen case
+			if (root.isFrozen(time)) {
+				root.markValid();
+				root.copyAgg(orig.root);
+			}
+		}
 
 protected int time;
   protected NodeCursor<A,V> root;
