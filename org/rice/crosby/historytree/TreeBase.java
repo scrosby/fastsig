@@ -417,13 +417,13 @@ protected void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf, No
 				//System.out.println("NO BREAK");
 				origleft = orignode.left();
 				//System.out.println("CL: "+origleft+" --> "+node.forceLeft());
-				if (origleft.isFrozen(this.time))
+				if (origleft != null && origleft.getAgg() != null)
 					node.forceLeft().copyAgg(origleft);
 				
 				// A right node may or may not exist.
 				origright = orignode.right();
 				//System.out.println("RIGHT:"+origright+"  "+time); 
-				if (origright!= null && origright.isFrozen(time))
+				if (origright!= null && origright.getAgg() != null)
 						node.forceRight().copyAgg(origright);
 		
 				//System.out.println("LOOP");
