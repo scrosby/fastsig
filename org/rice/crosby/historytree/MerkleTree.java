@@ -57,6 +57,12 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	}
 
 	@Override
+	public void parseTree(Serialization.HistTree in) {
+		super.parseTree(in);
+		isFrozen = true;
+	}
+		
+	@Override
 	void parseSubtree(NodeCursor<A, V> node, HistNode in) {
     	if (parseNode(node,in))
     		return; // If its a stub.
