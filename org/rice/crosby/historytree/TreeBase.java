@@ -5,9 +5,15 @@ import org.rice.crosby.historytree.generated.Serialization.HistTree;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+
+/** Abstract class for storing a history tree, which is a complete tree, resembling a heap. New levels are added on automatically. 
+ * 
+ * @author crosby
+ *
+ * @param <A> Type of an aggregate (Hash or string or X)
+ * @param <V> Type of the value being stored.
+ */
 public abstract class TreeBase<A,V> {
-
-
 	/** Make an empty history tree with a given aggobj and datastore.  */
 	public TreeBase(AggregationInterface<A,V> aggobj,
 	    		   HistoryDataStoreInterface<A,V> datastore) {
@@ -200,7 +206,10 @@ public abstract class TreeBase<A,V> {
   	computefrozenaggs(leaf);
   }
 
-  /** Recurse from the leaf upwards, computing the agg for all frozen nodes */
+  /** Recurse from the leaf upwards, computing the agg for all frozen nodes.
+   * 
+   *  Frozen node == The subtree is complete and nothing more can be added.
+   */
   private void computefrozenaggs(NodeCursor<A,V> leaf) {
   	// First, set the leaf agg from the stored event (if it exists
   	if (leaf.hasVal() && leaf.getAgg() == null) {
