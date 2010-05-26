@@ -1,5 +1,6 @@
 package org.rice.crosby.historytree;
 
+import org.rice.crosby.historytree.generated.Serialization;
 import org.rice.crosby.historytree.generated.Serialization.HistNode;
 import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
 
