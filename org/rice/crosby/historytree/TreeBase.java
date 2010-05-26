@@ -226,15 +226,7 @@ public abstract class TreeBase<A,V> {
   	}
   }
 
-  /** Compute any frozen aggregates on a node */
-private void computeAggOnNode(NodeCursor<A,V> node) {
-	if (node.isLeaf()) {
-		if (node.hasVal() && node.getAgg() == null) 
-			node.setAgg(aggobj.aggVal(node.getVal()));
-	} else {
-		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
-	}
-}
+
 
 public void copyV(TreeBase<A, V> orig, int version, boolean copyValueFlag) throws ProofError {
 	if (root == null) {
@@ -313,6 +305,16 @@ protected boolean parseThisNode(NodeCursor<A,V> node, Serialization.HistNode in)
 	return false;
 }
 
+/** UNTESTED */
+/** Compute any frozen aggregates on a node */
+private void computeAggOnNode(NodeCursor<A,V> node) {
+	if (node.isLeaf()) {
+		if (node.hasVal() && node.getAgg() == null) 
+			node.setAgg(aggobj.aggVal(node.getVal()));
+	} else {
+		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
+	}
+}
 /** UNTESTED */
 public void mergeTree(TreeBase<A, V> peer) {
 	NodeCursor <A,V> thisroot, peerroot;
