@@ -187,9 +187,9 @@ public class TestHistory extends TestCase {
 	}	
 
 
-	public void benchTestCore(int iter, boolean doGetAgg, boolean doGetAggV, boolean doMakePrune,
+	public void benchTestCore(int keycount, int iter, boolean doGetAgg, boolean doGetAggV, boolean doMakePrune,
 			boolean doAddPruned, boolean doSerialize, boolean doDeserialize, boolean doVf) {
-		int LOOP = 44; // TODO: BUGGY WITH THIS AN EXACT POWER OF 2.
+		int LOOP = keycount; // TODO: BUGGY WITH THIS AN EXACT POWER OF 2.
 		HistoryTree<byte[],byte[]> histtree;
 		for (int i=0; i < iter ; i++) {
 			AggregationInterface<byte[],byte[]> aggobj = new SHA256AggB64();
@@ -239,51 +239,65 @@ public class TestHistory extends TestCase {
 	}
 
 
-	final int LOOPCOUNT = 10;
-	
+	final int LOOPCOUNT = 1;
+
 	@Test 
 	public void testdoAppend() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-			benchTestCore(10,false,false,false,false,false,false,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,false,false,false,false,false,false);
+			benchTestCore(13,10,false,false,false,false,false,false,false);
+		}
 	}
 	@Test 
 	public void testdoGetAgg() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,true,false,false,false,false,false,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,true,false,false,false,false,false,false);
+			benchTestCore(13,10,true,false,false,false,false,false,false);
+		}
 	}
 	@Test 
 	public void testdoGetAggV() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,false,true,false,false,false,false,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,true,false,false,false,false,false);
+			benchTestCore(13,10,false,true,false,false,false,false,false);
+		}
 	}
-	
 	@Test 
 	public void testdoSimplePruned() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,false,false,true,false,false,false,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,false,true,false,false,false,false);
+			benchTestCore(13,10,false,false,true,false,false,false,false);
+		}
 	}
 	@Test 
 	public void testdoAddPruned() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,false,false,false, true,false,false,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,false,false, true,false,false,false);
+			benchTestCore(13,10,false,false,false, true,false,false,false);
+		}
 	}
 	@Test 
 	public void testdoAddPrunedSerialize() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,false,false,false, true,true,false,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,false,false, true,true,false,false);
+			benchTestCore(13,10,false,false,false, true,true,false,false);
+		}
 	}
 	@Test 
 	public void testdoAddPrunedDeSerialize() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,false,false,false,true,true,true,false);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,false,false,true,true,true,false);
+			benchTestCore(13,10,false,false,false,true,true,true,false);
+		}
 	}
-	
+
 	@Test 
 	public void testdoAddPrunedDeSerializeVf() {
-		for (int i = 0 ; i < LOOPCOUNT ; i++)
-		benchTestCore(10,false,false,false,true,true,true,true);
+		for (int i = 0 ; i < LOOPCOUNT ; i++) {
+			benchTestCore(8,10,false,false,false,true,true,true,true);
+			benchTestCore(13,10,false,false,false,true,true,true,true);
+		}
 	}
-	
 }
 
 
