@@ -9,28 +9,35 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	    		   HistoryDataStoreInterface<A,V> datastore) {
 	    super(aggobj,datastore);
 	}
+
+	public MerkleTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
+    	MerkleTree<A,V> out = new MerkleTree<A,V>(this.aggobj,newdatastore);
+    	out.updateTime(this.time);
+        out.root = out.datastore.makeRoot(root.layer);
+    	out.isFrozen = true;
+    	//out.root.copyAgg(this.root);
+    	return out;
+	}
+	
 	
 	public void freezeHelper(NodeCursor<A,V> node) {
   		node.markValid();
-  		if (!node.isFrozen(time)) {
+  		if (node.right() == null)
   			node.forceRight().setAgg(aggobj.emptyAgg()); // Force every right child to be valid, will keep the NULL default agg.
-  			node.setAgg(aggobj.aggChildren(node.left().getAgg(), null));
-  		} else {
-  			node.setAgg(aggobj.aggChildren(node.left().getAgg(), node.right().getAgg()));
+  		node.setAgg(aggobj.aggChildren(node.left().getAgg(), node.right().getAgg()));
   		}	  			
-	}
+	
 	/** Freeze the tree. After this, nothing else should be added to the Merkle tree. 
 	 * Until being frozen, proofs and subtrees must not be built.
 	 *	
 	 * Take every node in path to leaf and mark it valid and set as a stub with a precomputed agg.
  	 */
 	public void freeze() {
-	  	isFrozen = true;
-	  	if (time == 0)
+		assert (isFrozen == false);
+		isFrozen = true;
+	  	if (time <= 0)
 	  		return;
-	  	NodeCursor<A,V> node,leaf=leaf(time);
-	  	
-	  	node = leaf.getParent(root);
+	  	NodeCursor<A,V> node=leaf(time);
 	  	while ((node=node.getParent(root)) != null) {
 	  		freezeHelper(node);
 	  	}
@@ -42,6 +49,8 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	public A agg() {
 		if (!isFrozen) 
 			throw new Error("Cannot compute agg from unfrozen MerkleTree");
+		if (root == null)
+			return aggobj.emptyAgg();
 		return root.getAgg();
 	}
 
