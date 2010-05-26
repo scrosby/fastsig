@@ -1,6 +1,7 @@
 package org.rice.crosby.historytree;
 
 import org.rice.crosby.historytree.generated.Serialization.HistNode;
+import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
 
 /** DOES NOT WORK WITH APPENDONLYARRAY */
 public class MerkleTree<A, V> extends TreeBase<A, V> {	
