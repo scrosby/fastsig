@@ -45,12 +45,12 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	}
 
 	@Override
-	void parseNode(NodeCursor<A, V> node, HistNode in) {
-    	if (parseThisNode(node,in))
+	void parseSubtree(NodeCursor<A, V> node, HistNode in) {
+    	if (parseNode(node,in))
     		return; // If its a stub.
 
-    	parseNode(node.forceLeft(),in.getLeft());
-    	parseNode(node.forceRight(),in.getRight());
+    	parseSubtree(node.forceLeft(),in.getLeft());
+    	parseSubtree(node.forceRight(),in.getRight());
     	node.markValid();
     	node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
 	}

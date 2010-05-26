@@ -263,17 +263,20 @@ public void copyV(TreeBase<A, V> orig, int version, boolean copyValueFlag) throw
 	copySiblingAggs(orig,origleaf,selfleaf,false);
 }
 
-abstract void parseNode(NodeCursor<A,V> node, Serialization.HistNode in);
+/** Parse a given node into the requested cursor. */
+abstract void parseSubtree(NodeCursor<A,V> node, Serialization.HistNode in);
+
+/** Compute the aggregate value for a subtree.*/
 abstract public A agg();
 
 
-/** Parse from a protocol buffer. I assume that the history tree has 
+/** Parse from a protocol buffer. I assume that 'this' history tree has 
  * been configured with the right aggobj and a datastore. */
 public void parseTree(Serialization.HistTree in) {
 	this.time = in.getVersion();
 	if (in.hasRoot()) {
 		root = datastore.makeRoot(log2(in.getVersion()));
-		parseNode(root,in.getRoot());    		
+		parseSubtree(root,in.getRoot());    		
 	}
 }
 
@@ -287,7 +290,7 @@ public void parseTree(byte data[]) throws InvalidProtocolBufferException {
  * @param node A cursor pointing to the node to be changed.
  * @param in The corresponding protobuf object.
  */
-protected boolean parseThisNode(NodeCursor<A,V> node, Serialization.HistNode in) {
+protected boolean parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
 	if (in.hasVal()) {
 		V val = aggobj.parseVal(in.getVal());
 		node.setVal(val);

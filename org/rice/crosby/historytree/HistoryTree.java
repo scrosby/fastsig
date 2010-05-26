@@ -52,17 +52,17 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
         }
 
     
-    void parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
-    	if (parseThisNode(node,in))
+    void parseSubtree(NodeCursor<A,V> node, Serialization.HistNode in) {
+    	if (parseNode(node,in))
     		return; // If its a stub.
 
     	// Not a stub. Must always have a left and may have right child.
     	assert in.hasLeft();
 
-    	parseNode(node.forceLeft(),in.getLeft());
+    	parseSubtree(node.forceLeft(),in.getLeft());
 
     	if (in.hasRight()) {
-    		parseNode(node.forceRight(),in.getRight());
+    		parseSubtree(node.forceRight(),in.getRight());
     		if (node.isFrozen(time)) {
     			node.markValid();
     			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
