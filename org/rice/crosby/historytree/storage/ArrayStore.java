@@ -32,7 +32,7 @@ public class ArrayStore<A,V> extends ArrayStoreBase<A, V>
 		this.time = time;		
 
 		
-		while (time+1 > valstore.size())
+		while (time+1+1 > valstore.size()) // An extra +1 to handle hasVal's on extra nodes with emptyVal's inserted into a merkle tree.
 			valstore.add(null);
 		while (4*time+1 > aggstore.size()) {
 			aggstore.add(null);
