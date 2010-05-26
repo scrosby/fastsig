@@ -25,6 +25,7 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	 * Take every node in path to leaf and mark it valid and set as a stub with a precomputed agg.
  	 */
 	public void freeze() {
+	  	isFrozen = true;
 	  	if (time == 0)
 	  		return;
 	  	NodeCursor<A,V> node,leaf=leaf(time);
@@ -33,14 +34,14 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	  	while ((node=node.getParent(root)) != null) {
 	  		freezeHelper(node);
 	  	}
-	  	isFrozen = true;
 	}
 	
 	boolean isFrozen = false;
 	
 	@Override
 	public A agg() {
-		assert (isFrozen);
+		if (!isFrozen) 
+			throw new Error("Cannot compute agg from unfrozen MerkleTree");
 		return root.getAgg();
 	}
 
@@ -54,5 +55,4 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
     	node.markValid();
     	node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
 	}
-
 }
