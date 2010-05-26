@@ -7,7 +7,9 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	/** Make an empty merkle tree with a given aggobj and datastore.  */
 	public MerkleTree(AggregationInterface<A,V> aggobj,
 	    		   HistoryDataStoreInterface<A,V> datastore) {
-	    super(aggobj,datastore);
+		super(aggobj,datastore);
+		if (datastore instanceof AppendOnlyArrayStore<?,?>) 
+			throw new Error("Merkle Tree incompatible with AppendOnlyArrayStore");
 	}
 
 	public MerkleTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
