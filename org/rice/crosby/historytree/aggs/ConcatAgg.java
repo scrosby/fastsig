@@ -25,7 +25,7 @@ public class ConcatAgg implements AggregationInterface<String, String> {
 
 	@Override
 	public String emptyAgg() {
-		return "";
+		return "<>";
 	}
 	
 	@Override
