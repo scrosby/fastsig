@@ -70,7 +70,7 @@ public class TestMerkle extends TestCase {
 	
 	MerkleTree<String, String> makeHistTree(int length) {
 		AggregationInterface<String,String> aggobj = new ConcatAgg();
-		HistoryDataStoreInterface<String,String> datastore = new AppendOnlyArrayStore<String,String>();
+		HistoryDataStoreInterface<String,String> datastore = new ArrayStore<String,String>();
 		MerkleTree<String,String> histtree=new MerkleTree<String,String>(aggobj,datastore);
 		
 		for (int i=0 ; i < length ; i++) {
@@ -139,8 +139,9 @@ public class TestMerkle extends TestCase {
 		
 		for (String s : x) {
 			histtree.append(s.getBytes());
-			System.out.println(aggobj.serializeAgg(histtree.agg()).toStringUtf8());
 		}
+		histtree.freeze();
+		System.out.println(aggobj.serializeAgg(histtree.agg()).toStringUtf8());
 		System.out.println(histtree.toString("Binary:"));
 		return histtree;
 	}
@@ -169,9 +170,11 @@ public class TestMerkle extends TestCase {
 			histtree=new MerkleTree<byte[],byte[]>(aggobj,datastore);
 			for (int j =0; j < LOOP ; j++) {
 				histtree.append(String.format("Foo%d",j).getBytes());
-				if (doGetAgg)
-					histtree.agg();
+
 			}
+			histtree.freeze();
+			if (doGetAgg)
+				histtree.agg();
 			if (doGetAggV)
 				;
 			if (doMakePrune||doAddPruned||doSerialize||doDeserialize||doVf) {
