@@ -5,13 +5,16 @@ import org.rice.crosby.historytree.generated.Serialization.HistTree;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-
-/** Abstract class for storing a history tree, which is a complete tree, resembling a heap. New levels are added on automatically. 
+/**
+ * Abstract class for storing a history tree, which is a complete tree,
+ * resembling a heap. New levels are added on automatically.
  * 
  * @author crosby
- *
- * @param <A> Type of an aggregate (Hash or string or X)
- * @param <V> Type of the value being stored.
+ * 
+ * @param <A>
+ *            Type of an aggregate (Hash or string or X)
+ * @param <V>
+ *            Type of the value being stored.
  */
 public abstract class TreeBase<A,V> {
 	/** Make an empty history tree with a given aggobj and datastore.  */
@@ -229,6 +232,7 @@ public abstract class TreeBase<A,V> {
 
 
 public void copyV(TreeBase<A, V> orig, int version, boolean copyValueFlag) throws ProofError {
+	// If source tree is null
 	if (root == null) {
 		root = datastore.makeRoot(orig.root.layer);
 	}
@@ -383,6 +387,16 @@ private void mergeNode(TreeBase<A, V> peer, NodeCursor<A,V> thisnode, NodeCursor
 	}
 }
 
+	/**
+	 * Traverse from a leaf to the root, copying any sibling agg objects, as
+	 * appropriate.
+	 * 
+	 * To make a well-formed pruned tree, we need to include a path to whatever
+	 * leaf. We also need to ensure that each sibling node on that path that is
+	 * a stub also has an agg.
+	 * 
+	 * WORKS: with history tree. UNTESTED: with a merkle tree.
+	 * */
 protected void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf, NodeCursor<A,V> leaf,
 		boolean force) {
 			assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
