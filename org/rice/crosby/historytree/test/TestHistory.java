@@ -37,21 +37,6 @@ public class TestHistory extends TestCase {
 			"[[[[A,B],[C,D]],[[E,F],[G,H]]],[[[I,J],[K,L]],]]",
 	};
 
-	public interface TreeFactory {
-		public TreeBase<String,String> make(AggregationInterface<String,String> aggobj, HistoryDataStoreInterface<String,String> store);
-	}
-	public class HistoryTreeFactory implements TreeFactory {
-		public HistoryTree<String,String> make(AggregationInterface<String,String> aggobj, HistoryDataStoreInterface<String,String> store) {
-			return new HistoryTree<String,String>(aggobj,store);
-		}
-	}
-	public class MerkleTreeFactory implements TreeFactory {
-		public MerkleTree<String,String> make(AggregationInterface<String,String> aggobj, HistoryDataStoreInterface<String,String> store) {
-			return new MerkleTree<String,String>(aggobj,store);
-		}
-	}
-
-	
 	
 	public HistoryTree<String,String> doTestAppendOnStore(HistoryDataStoreInterface<String,String> store) {
 		String mynames[] = Arrays.copyOf(NAMES,9);
