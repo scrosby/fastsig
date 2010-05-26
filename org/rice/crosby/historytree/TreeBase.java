@@ -209,8 +209,9 @@ public abstract class TreeBase<A,V> {
   	}
   	NodeCursor<A,V> node=leaf.getParent(root);
   	//System.out.println("Adding leaf "+leaf+" ------------------------ " );
-  	while (node != null && node.isFrozen(time) && node.getAgg() == null) {
-      	//System.out.println("Adding leaf "+leaf+" visit node" +node);
+  	while (node != null && node.isFrozen(time)) {
+  		assert (node.getAgg() == null);
+  		//System.out.println("Adding leaf "+leaf+" visit node" +node);
   		node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
   		node = node.getParent(root);
   	}
