@@ -216,7 +216,7 @@ public final class NodeCursor<A,V> {
 	boolean hasVal() {
 		return datastore.hasVal(this);
 	}
-	V getVal() {
+	public V getVal() {
 		V out=datastore.getVal(this);
 		assert out != null;
 		return out;
@@ -225,7 +225,7 @@ public final class NodeCursor<A,V> {
 		assert (v != null);
 		datastore.setVal(this,v);
 	}
-	A getAgg() {
+	public A getAgg() {
 		return datastore.getAgg(this);
 	}
 	void setAgg(A v) {
