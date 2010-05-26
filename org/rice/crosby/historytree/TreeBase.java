@@ -157,8 +157,9 @@ public abstract class TreeBase<A,V> {
   }
 
   /** Make a cursor pointing to the given leaf, if possible */
-  protected NodeCursor<A,V> leaf(int version) {
-  	if (time == 0)
+  public NodeCursor<A,V> leaf(int version) {
+	if (version > time) throw new Error(String.format("Leaf %d in tree version %d",version,time));
+	if (time == 0)
   		return root;
   	NodeCursor<A,V> node=root,child;
   	for (int layer = log2(time) ; ; layer--) {
