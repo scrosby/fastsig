@@ -4,6 +4,7 @@ option java_package = "org.rice.crosby.historytree.generated";
 // A configuration message for an aggregator. An aggobj generates a config blob, which 
 // is placed in this message along with its name.
 
+/*
 message AggConfig {
   required string name = 1;
   optional bytes configblob =2;
@@ -13,6 +14,7 @@ message Config {
   required AggConfig aggconfig = 1;
   required string valtype = 2;
 }
+*/
 
 
 // For serializing a pruned tree. 
@@ -31,15 +33,45 @@ message HistNode {
 message PrunedTree {
      optional int32 version = 1; // Optional for merkle tree, required for the history tree
      required HistNode root = 2; // Root node.
-     repeated int32 leafs = 3; //Point out specific leafs.
 }
 
-// What is signed.
-message SingleTreeCommitment {
-     //required Config configblob = 1 ; // Serialized config blob. 
-     optional bytes treeid = 2;
-     required int32 version = 3; // Needed to calculate the depth.
-     required bytes roothash = 4; // Root hash.
+
+/* What is the type of the tree in the signature?
+   Its either Merkle or History.
+*/
+
+enum SigTreeType {HIST_TREE = 1;  MERKLE_TREE = 2; };
+
+/* What is the type of the tree in the proof?
+   For now, merkle or history, but we only prove a single message per tree signature proof blob
+*/
+
+enum TreeType {SINGLE_HIST_TREE = 1;  SINGLE_MERKLE_TREE = 2; };
+
+
+message SigConfig {
+   optional SigTreeType treetype = 1;
+}
+
+message BlobConfig {
+   optional TreeType treetype = 1;
+}
+
+
+
+// What is signed. (but is not sent)
+message TreeSigMessage {
+     required SigConfig config = 1 ; // Serialized config blob. 
+     optional int32 version = 3;
+     optional bytes roothash = 4;
+}
+
+// What is sent.
+message TreeSigBlob {
+   required BlobConfig config = 1;
+   required bytes sig = 2;
+   required PrunedTree tree = 3;
+   required int32 leaf = 4; //Point out specific leafs.
 }
 
 
