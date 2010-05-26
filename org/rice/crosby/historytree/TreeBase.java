@@ -1,7 +1,7 @@
 package org.rice.crosby.historytree;
 
 import org.rice.crosby.historytree.generated.Serialization;
-import org.rice.crosby.historytree.generated.Serialization.HistTree;
+import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -112,7 +112,7 @@ public abstract class TreeBase<A,V> {
   }
 
   /** Serialize a pruned tree to a protocol buffer */
-  public void serializeTree(Serialization.HistTree.Builder out) {
+  public void serializeTree(Serialization.PrunedTree.Builder out) {
   	out.setVersion(time);
   	if (root != null) {
   		Serialization.HistNode.Builder builder = Serialization.HistNode.newBuilder();
@@ -122,7 +122,7 @@ public abstract class TreeBase<A,V> {
   }
 
   public byte[] serializeTree() {
-  	Serialization.HistTree.Builder builder= Serialization.HistTree.newBuilder();
+  	Serialization.PrunedTree.Builder builder= Serialization.PrunedTree.newBuilder();
   	serializeTree(builder);
   	return builder.build().toByteArray();
   }
@@ -277,7 +277,7 @@ abstract public A agg();
 
 /** Parse from a protocol buffer. I assume that 'this' history tree has 
  * been configured with the right aggobj and a datastore. */
-public void parseTree(Serialization.HistTree in) {
+public void parseTree(Serialization.PrunedTree in) {
 	this.time = in.getVersion();
 	if (in.hasRoot()) {
 		root = datastore.makeRoot(log2(in.getVersion()));
@@ -286,7 +286,7 @@ public void parseTree(Serialization.HistTree in) {
 }
 
 public void parseTree(byte data[]) throws InvalidProtocolBufferException {
-	parseTree(HistTree.parseFrom(data));
+	parseTree(PrunedTree.parseFrom(data));
 }
 
 /** Parse one node.

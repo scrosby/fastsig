@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.rice.crosby.historytree.*;
 import org.rice.crosby.historytree.aggs.*;
 import org.rice.crosby.historytree.generated.Serialization;
-import org.rice.crosby.historytree.generated.Serialization.HistTree;
+import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
 import org.rice.crosby.historytree.storage.ArrayStore;
 import org.rice.crosby.historytree.storage.HashStore;
@@ -122,8 +122,8 @@ public class TestMerkle extends TestCase {
 	
 	
 	public MerkleTree<String,String> parseSerialization(byte serialized[]) throws InvalidProtocolBufferException {
-		Serialization.HistTree.Builder builder = Serialization.HistTree.newBuilder();
-		Serialization.HistTree pb = builder.mergeFrom(serialized).build();
+		Serialization.PrunedTree.Builder builder = Serialization.PrunedTree.newBuilder();
+		Serialization.PrunedTree pb = builder.mergeFrom(serialized).build();
 		//System.out.println(pb.toString());
 		MerkleTree<String,String> tree2= new MerkleTree<String,String>(new ConcatAgg(),new HashStore<String,String>());
 		tree2.updateTime(pb.getVersion());
@@ -150,8 +150,8 @@ public class TestMerkle extends TestCase {
 		makeShaHistTree();
 	}
 	public MerkleTree<byte[],byte[]> parseSerialization2(byte serialized[]) throws InvalidProtocolBufferException {
-		Serialization.HistTree.Builder builder = Serialization.HistTree.newBuilder();
-		Serialization.HistTree pb = builder.mergeFrom(serialized).build();
+		Serialization.PrunedTree.Builder builder = Serialization.PrunedTree.newBuilder();
+		Serialization.PrunedTree pb = builder.mergeFrom(serialized).build();
 		//System.out.println(pb.toString());
 		MerkleTree<byte[],byte[]> tree2= new MerkleTree<byte[],byte[]>(new SHA256AggB64(),new HashStore<byte[],byte[]>());
 		tree2.updateTime(pb.getVersion());

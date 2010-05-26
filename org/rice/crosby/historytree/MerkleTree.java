@@ -59,7 +59,7 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	}
 
 	@Override
-	public void parseTree(Serialization.HistTree in) {
+	public void parseTree(Serialization.PrunedTree in) {
 		super.parseTree(in);
 		isFrozen = true;
 	}

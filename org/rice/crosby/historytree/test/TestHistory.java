@@ -8,7 +8,7 @@ import org.junit.Test;
 import org.rice.crosby.historytree.*;
 import org.rice.crosby.historytree.aggs.*;
 import org.rice.crosby.historytree.generated.Serialization;
-import org.rice.crosby.historytree.generated.Serialization.HistTree;
+import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
 import org.rice.crosby.historytree.storage.ArrayStore;
 import org.rice.crosby.historytree.storage.HashStore;
@@ -135,8 +135,8 @@ public class TestHistory extends TestCase {
 	
 	
 	public HistoryTree<String,String> parseSerialization(byte serialized[]) throws InvalidProtocolBufferException {
-		Serialization.HistTree.Builder builder = Serialization.HistTree.newBuilder();
-		Serialization.HistTree pb = builder.mergeFrom(serialized).build();
+		Serialization.PrunedTree.Builder builder = Serialization.PrunedTree.newBuilder();
+		Serialization.PrunedTree pb = builder.mergeFrom(serialized).build();
 		//System.out.println(pb.toString());
 		HistoryTree<String,String> tree2= new HistoryTree<String,String>(new ConcatAgg(),new HashStore<String,String>());
 		tree2.updateTime(pb.getVersion());
@@ -162,8 +162,8 @@ public class TestHistory extends TestCase {
 		makeShaHistTree();
 	}
 	public HistoryTree<byte[],byte[]> parseSerialization2(byte serialized[]) throws InvalidProtocolBufferException {
-		Serialization.HistTree.Builder builder = Serialization.HistTree.newBuilder();
-		Serialization.HistTree pb = builder.mergeFrom(serialized).build();
+		Serialization.PrunedTree.Builder builder = Serialization.PrunedTree.newBuilder();
+		Serialization.PrunedTree pb = builder.mergeFrom(serialized).build();
 		//System.out.println(pb.toString());
 		HistoryTree<byte[],byte[]> tree2= new HistoryTree<byte[],byte[]>(new SHA256AggB64(),new HashStore<byte[],byte[]>());
 		tree2.updateTime(pb.getVersion());

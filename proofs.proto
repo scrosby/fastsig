@@ -28,34 +28,37 @@ message HistNode {
      optional bytes agg = 4;
 }
 
-message HistTree {
-     required int32 version = 1; // Needed/hint to include the depth.
+message PrunedTree {
+     optional int32 version = 1; // Optional for merkle tree, required for the history tree
      required HistNode root = 2; // Root node.
+     repeated int32 leafs = 3; //Point out specific leafs.
 }
 
-
 // What is signed.
-message Commitment {
+message SingleTreeCommitment {
      //required Config configblob = 1 ; // Serialized config blob. 
-     optional int32 treeid = 2;
+     optional bytes treeid = 2;
      required int32 version = 3; // Needed to calculate the depth.
      required bytes roothash = 4; // Root hash.
 }
+
+
 
 
 ////////////////
 ////////////////   Stream signature design.
 ////////////////
 
+/*
 message StreamBundle {
    repeated int32 splicepoints=2; // Includes the end of the last epoch.
    required Commitment commitment=3;
    required bytes signature = 4;
 }
 
-/* Represents a signature over a single version. */ 
+// Represents a signature over a single version.
 message SigBlob {
    repeated int32 messageversion = 1;
    required Commitment commitment = 2;
 }
-
+*/
