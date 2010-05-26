@@ -18,7 +18,7 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
     	out.updateTime(this.time);
         out.root = out.datastore.makeRoot(root.layer);
     	out.isFrozen = true;
-    	//out.root.copyAgg(this.root);
+    	out.root.copyAgg(this.root);
     	return out;
 	}
 	
