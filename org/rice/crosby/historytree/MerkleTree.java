@@ -13,7 +13,7 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	public void freezeHelper(NodeCursor<A,V> node) {
   		node.markValid();
   		if (!node.isFrozen(time)) {
-  			node.forceRight(); // Force every right child to be valid, will keep the NULL default agg.
+  			node.forceRight().setAgg(aggobj.emptyAgg()); // Force every right child to be valid, will keep the NULL default agg.
   			node.setAgg(aggobj.aggChildren(node.left().getAgg(), null));
   		} else {
   			node.setAgg(aggobj.aggChildren(node.left().getAgg(), node.right().getAgg()));

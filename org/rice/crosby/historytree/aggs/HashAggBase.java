@@ -11,6 +11,12 @@ abstract public class HashAggBase implements AggregationInterface<byte[], byte[]
 	abstract public MessageDigest getAlgo(byte tag);
 
 	@Override
+	public byte[] emptyAgg() {
+		final byte empty[] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+		return empty;
+	}
+			
+	@Override
 	public String getConfig() {
 		return "";
 	}

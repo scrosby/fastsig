@@ -23,6 +23,9 @@ public interface AggregationInterface<A,V> {
 	/** Map from an event to its aggregate */
 	abstract A aggVal(V event);
 
+	/** Representation of an empty stub agg. Cannot be null. (I think) */
+	abstract A emptyAgg();
+	
 	/** Serialize a value to a ByteString */
 	abstract ByteString serializeVal(V val);
 	/** Serialize an aggregate to a ByteString */
