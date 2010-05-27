@@ -451,5 +451,8 @@ protected int time;
   	}
   	return i;
   }
+abstract public TreeBase<A,V> makePruned(
+		HistoryDataStoreInterface<A,V> datastore);
+
 
 }
