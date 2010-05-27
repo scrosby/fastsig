@@ -159,15 +159,15 @@ public class Bench {
 		Callable<TreeBase<byte[], byte[]>> treec = null;
 		String prefix = "";
 		if (mode == 1) {
-			treec = makeTree1(keys);  prefix="Tree-HA";
+			treec = makeTree1(keys);  prefix="Tree-HA-";
 		} else if (mode == 2) {
-			treec = makeTree2(keys);  prefix="Tree-HAA";
+			treec = makeTree2(keys);  prefix="Tree-HAA-";
 		} else if (mode == 3) {
-			treec = makeTree3(keys);  prefix="Tree-HH";
+			treec = makeTree3(keys);  prefix="Tree-HH-";
 		} else if (mode == 4) {
-			treec = makeTree4(keys);  prefix="Tree-MA";
+			treec = makeTree4(keys);  prefix="Tree-MA-";
 		} else if (mode == 5) {
-			treec = makeTree5(keys);  prefix="Tree-MH";
+			treec = makeTree5(keys);  prefix="Tree-MH-";
 		} else
 			throw new Error();
 
@@ -199,14 +199,4 @@ public class Bench {
 			e.printStackTrace();
 		}	
 	}	
-
-	
-	/*
-				callback.handle("Hist:Array",makeHistoryTree(keys,new ArrayStore<byte[],byte[]>()));
-		callback.handle("Hist:Array2",makeHistoryTree(keys,new AppendOnlyArrayStore<byte[],byte[]>()));
-		callback.handle("Hist:Hash",makeHistoryTree(keys,new HashStore<byte[],byte[]>()));
-		callback.handle("Merk:Array",makeMerkleTree(keys,new ArrayStore<byte[],byte[]>()));
-		callback.handle("Merk:Hash",makeMerkleTree(keys,new HashStore<byte[],byte[]>()));
-	}
-	*/
 }
