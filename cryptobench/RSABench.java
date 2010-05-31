@@ -9,6 +9,9 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.util.Date;
+import java.util.concurrent.Callable;
+
+import bb.util.Benchmark;
 
 
 public class RSABench {
@@ -34,49 +37,26 @@ public class RSABench {
 		} catch (SignatureException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 	}
-	void bench() throws SignatureException {
+		
+	void bench() throws IllegalArgumentException, IllegalStateException, Exception {
 		byte src[] = {0,2,4,6,8};
-		byte sig[];
 
-		int i;
-
-		Date start,stop;
+		byte[] sig=signOne(src).call();
 		
-		start = new Date(); i=0;
-		System.out.println("SIG: "+start.toString());
-
-		while (true) {
-			i++;
-			sig =signOne(src);
-			if (i%10 == 0) {
-				stop = new Date();
-				if ((stop.getTime()-start.getTime())/1000 > 10) 
-					break;
-			}
-		}
-		System.out.format("SIG: %s  %d   %d/sec\n",stop.toString(),i,1000*i/(stop.getTime()-start.getTime()));
-
-		
-		start = new Date(); i=0;
-		stop = new Date();
-		System.out.println("VFY: "+start.toString());
-
-		while (true) {
-			i++;
-			verifyOne(src,sig);
-			if (i%10 == 0) {
-				stop = new Date();
-				if ((stop.getTime()-start.getTime())/1000 > 10) 
-					break;
-			}
-		}
-		System.out.format("VFH: %s  %d     %d/sec\n",stop.toString(),i,1000*i/(stop.getTime()-start.getTime()));
-
-	
-	
+		System.out.println("SignBench: "+(new Benchmark(signOne(src))));
+		System.out.println("VerifyBench: "+(new Benchmark(verifyOne(src,sig))));
 	}
 
 	
@@ -96,14 +76,35 @@ public class RSABench {
 		verifier.initVerify(publicKey);
 	}
 	
-	public byte[] signOne (byte src[]) throws SignatureException {
-		signer.update(src);
-		return signer.sign();
+	public Callable<byte[]> signOne (final byte src[]) {
+		return new Callable<byte[]>() {
+			public byte [] call() {
+				try {
+					signer.update(src);
+					return signer.sign();
+				} catch (SignatureException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				}
+			}
+		};
 	}
 	
-	public void verifyOne (byte src[], byte signature[]) throws  SignatureException {
-		verifier.update(src);
-		verifier.verify(signature);
+	public Callable<Void> verifyOne (final byte src[], final byte signature[]) {
+		return new Callable<Void>() {
+			public Void call() {
+				try {
+				verifier.update(src);
+				verifier.verify(signature);
+				} catch (SignatureException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return null;
+				
+			}
+		};
 	}
 		
 	PublicKey publicKey;
