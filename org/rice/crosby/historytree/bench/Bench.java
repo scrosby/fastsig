@@ -152,7 +152,24 @@ public class Bench {
     		}
     	};
     }
-	
+
+    public void estimateSizes(String prefix, Callable<TreeBase<byte[], byte[]>> treec) {
+    	try {
+    	long bytes = 0, count = 0;
+    	for (int i=0 ; i < 10 ; i++) {
+    		Callable<Proof> maker = makeSerializedProof(treec.call());
+    		for (int j=0 ; j < 1000 ; j++) {
+    			count++;
+    			bytes += maker.call().blob.length;
+    		}
+    	}	
+    	System.out.format("%s-Prooflen: %d\n",prefix,bytes/count);
+    	} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+       	}
+    }
+    
 	
 	public void doBenchmark(int mode, int keycount) throws Exception {
 		ArrayList<byte[]> keys = makeKeyList(keycount);
@@ -171,11 +188,16 @@ public class Bench {
 		} else
 			throw new Error();
 
-		System.out.println("Prooflen: "+makeSerializedProof(treec.call()).call().blob.length);
+		makeSerializedProof(treec.call()).call();
+
+		estimateSizes(prefix, treec);
+		if (true) {
+			return;
+		}
 		
 		System.out.println(prefix+"Build " + new Benchmark(treec));
 		TreeBase<byte[], byte[]> tree = treec.call();
-		System.out.println(prefix+"Proof " + new Benchmark(makeProof(tree)));
+		System.out.println(prefix+"ProofGen " + new Benchmark(makeProof(tree)));
 		System.out.println(prefix+"ProofString " + new Benchmark(makeSerializedProof(tree)));
 
 		int COUNT = 1000;
@@ -183,7 +205,7 @@ public class Bench {
 		Callable<Proof> maker = makeSerializedProof(tree);
 		for (int i = 0 ; i < COUNT ; i++)
 			proofs.add(maker.call());
-		System.out.println(prefix+"ProofString " + new Benchmark(verifyProofs(proofs)));
+		System.out.println(prefix+"Verify " + new Benchmark(verifyProofs(proofs)));
 
 		
 	
