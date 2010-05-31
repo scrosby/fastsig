@@ -69,9 +69,9 @@ message TreeSigMessage {
 // What is sent.
 message TreeSigBlob {
    required BlobConfig config = 1;
-   required bytes sig = 2;
-   required PrunedTree tree = 3;
-   required int32 leaf = 4; //Point out specific leafs.
+   optional bytes sig = 2;
+   optional PrunedTree tree = 3;
+   optional int32 leaf = 4; //Point out specific leafs.
 }
 
 
