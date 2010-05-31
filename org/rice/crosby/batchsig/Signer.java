@@ -1,4 +1,4 @@
-package wave.util.signing;
+package org.rice.crosby.batchsig;
 
 import com.google.protobuf.MessageLite;
 

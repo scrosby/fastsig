@@ -1,4 +1,4 @@
-package wave.util.signing;
+package org.rice.crosby.batchsig;
 
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 
