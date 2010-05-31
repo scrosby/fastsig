@@ -13,7 +13,7 @@ public interface Message {
 	 * @param message The protocol buffer message denoting the proof. May be null if proof generation failed.
 	 * 
 	 * */
-	void setSigBlob(TreeSigBlob message);
+	void signatureResult(TreeSigBlob message);
 
 	/** Used to get the signature blob for verifying signatures. */
 	TreeSigBlob getSigBlob();

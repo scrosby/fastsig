@@ -86,10 +86,10 @@ public class SignerQueue {
 				blobbuilder.setSig(ByteString.copyFrom(rootSig));
 				blobbuilder.setTree(treebuilder);
 				blobbuilder.setLeaf(i);
-				oldqueue.get(i).setSigBlob(blobbuilder.build());
+				oldqueue.get(i).signatureResult(blobbuilder.build());
 			} catch (ProofError e) {
 				// Should never occur.
-				oldqueue.get(i).setSigBlob(null); // Indicate error.
+				oldqueue.get(i).signatureResult(null); // Indicate error.
 				e.printStackTrace();
 			}
 		}
