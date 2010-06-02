@@ -3,11 +3,11 @@ package org.rice.crosby.batchsig;
 import java.util.ArrayList;
 
 public abstract class QueueBase implements SignerQueue {
-
-	protected ArrayList<Message> queue;
+	private ArrayList<Message> queue;
 
 	public QueueBase() {
 		super();
+		initQueue();
 	}
 
 	/* (non-Javadoc)
@@ -19,7 +19,7 @@ public abstract class QueueBase implements SignerQueue {
 		}
 	}
 
-	protected void initQueue() {
+	private void initQueue() {
 		queue = new ArrayList<Message>(32);
 	}
 
