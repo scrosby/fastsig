@@ -1,10 +1,10 @@
 package org.rice.crosby.batchsig;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
-import org.rice.crosby.historytree.AggregationInterface;
 import org.rice.crosby.historytree.HistoryTree;
-import org.rice.crosby.historytree.MerkleTree;
 import org.rice.crosby.historytree.ProofError;
 import org.rice.crosby.historytree.aggs.SHA256Agg;
 import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
@@ -13,17 +13,20 @@ import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigMessage;
 import org.rice.crosby.historytree.generated.Serialization.TreeType;
 import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
-import org.rice.crosby.historytree.storage.ArrayStore;
 import org.rice.crosby.historytree.storage.HashStore;
 
 import com.google.protobuf.ByteString;
 
 public class HistoryQueue extends QueueBase {
+	/** Largest size we want the history tree to grow to before rotating  */
+	private final int MAX_SIZE=1000;
 	private Signer signer;
 	
+	/** Track when we last contacted a given recipient */
+	public HashMap<Object,Integer> lastcontacts;
 	/** As a history tree may be used among multiple messages, indicate which message this is dealing with. */
-	long treeid;
-	HistoryTree<byte[], byte[]> tree;
+	public long treeid;
+	public HistoryTree<byte[], byte[]> histtree;
 	
 	public HistoryQueue(Signer signer) {
 		super();
@@ -31,61 +34,83 @@ public class HistoryQueue extends QueueBase {
 		initTree();
 	}
 
-	private void initTree() {
-		//treeid = RandomLong();
-		tree = new HistoryTree<byte[],byte[]>(new SHA256Agg(),new AppendOnlyArrayStore<byte[], byte[]>());
+	private void initTree() {		
+		treeid = new Random().nextLong();
+		histtree = new HistoryTree<byte[],byte[]>(new SHA256Agg(),new AppendOnlyArrayStore<byte[], byte[]>());
+		lastcontacts = new HashMap<Object,Integer>();
+	}
+
+	private void rotateStore() {
+			if (histtree.version() > MAX_SIZE)
+				initTree();
 	}
 	
-	
-	public void process(Message message) {
+	public synchronized void process() {
 		ArrayList<Message> oldqueue = atomicGetQueue();
-		
-		AggregationInterface<byte[], byte[]> aggobj = new SHA256Agg();
-		ArrayStore<byte[], byte[]> datastore = new ArrayStore<byte[], byte[]>();
-		MerkleTree<byte[], byte[]> histtree = new MerkleTree<byte[], byte[]>(
-				aggobj, datastore);
 
-		for (Message m : oldqueue) {
-			histtree.append(m.getData());
+		/**
+		 * For now, only a single history tree process can be outstanding. The
+		 * current pruned tree building code does not support building pruned
+		 * trees around anything but the latest commitment. This means that we
+		 * cannot drop the tree lock to do RSA concurrently; the tree will grow
+		 * and we'll be unable to generating proofs.
+		 */
+		synchronized (histtree) {
+
+			/* Leaf indices are offset by the initial size of the tree */
+			int leaf_offset = histtree.version();
+
+			for (Message m : oldqueue) {
+				histtree.append(m.getData());
+			}
+
+			// Make the unified signature of all.
+			TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
+					.setTreetype(SigTreeType.HISTORY_TREE)
+					.setVersion(histtree.version())
+					.setRoothash(ByteString.copyFrom(histtree.agg()));
+
+			final byte[] rootSig = signer
+					.sign(msgbuilder.build().toByteArray());
+
+			// Although the tree is semantically read-only, its still possible
+			// for it to be mutated. Eg, during array resizing.
+			for (int i = 0; i < oldqueue.size(); i++) {
+				processMessage(oldqueue.get(i), leaf_offset + i, rootSig);
+			}
+
+			rotateStore();
 		}
-		histtree.freeze();
+	}
 
-		// At this point, everything is read-only. I can generate signatures and
-		// pruned trees concurrently.
-		// 
-		// The only data-dependency is on rootSig; I need to sign before I can
-		// generate the output messages.
+	private void processMessage(Message message, int leaf_offset, final byte[] rootSig) {
+		try {
+			TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder();
 
-		final byte[] rootHash = histtree.agg();
+			// Make the pruned tree.
+			HistoryTree<byte[], byte[]> pruned = histtree
+					.makePruned(new HashStore<byte[], byte[]>());
+			pruned.copyV(histtree, leaf_offset, true);
 
-		// Make the unified signature of all.
-		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
-			.setTreetype(SigTreeType.MERKLE_TREE)
-			.setVersion(histtree.version())
-			.setRoothash(ByteString.copyFrom(rootHash));
-		final byte[] rootSig = signer.sign(msgbuilder.build().toByteArray());
+			if (lastcontacts.containsKey(message.getRecipient())) {
+				pruned.copyV(histtree, lastcontacts.get(message.getRecipient()),false);
+				blobbuilder.addSpliceHint(lastcontacts.get(message.getRecipient()));
+			}
+			lastcontacts.put(message.getRecipient(),histtree.version());
+			
+			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
+			pruned.serializeTree(treebuilder);
 
-		for (int i = 0; i < oldqueue.size(); i++) {
-			try {
-				// Make the pruned tree.
-				MerkleTree<byte[], byte[]> pruned = histtree
-						.makePruned(new HashStore<byte[], byte[]>());
-				pruned.copyV(histtree, i, true);
-
-				PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
-				pruned.serializeTree(treebuilder);
-
-				TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder()
-				.setTreetype(TreeType.SINGLE_HISTORY_TREE)
+			blobbuilder.setTreetype(TreeType.SINGLE_HISTORY_TREE)
 				.setSig(ByteString.copyFrom(rootSig))
 				.setTreeId(treeid)
 				.setTree(treebuilder)
-				.setLeaf(i);
-			} catch (ProofError e) {
-				// Should never occur.
-				oldqueue.get(i).signatureResult(null); // Indicate error.
-				e.printStackTrace();
-			}
+				.setLeaf(leaf_offset);
+			message.signatureResult(blobbuilder.build());
+		} catch (ProofError e) {
+			// Should never occur.
+			message.signatureResult(null); // Indicate error.
+			e.printStackTrace();
 		}
 	}
 }

@@ -65,6 +65,7 @@ message TreeSigBlob {
 
    // For a history tree, used to demultiplex
    optional sfixed64 tree_id = 16;
+   repeated int32 splice_hint = 17;
 }
 
 
