@@ -40,38 +40,31 @@ message PrunedTree {
    Its either Merkle or History.
 */
 
-enum SigTreeType {HIST_TREE = 1;  MERKLE_TREE = 2; };
+enum SigTreeType {HISTORY_TREE = 1;  MERKLE_TREE = 2; };
 
 /* What is the type of the tree in the proof?
    For now, merkle or history, but we only prove a single message per tree signature proof blob
 */
 
-enum TreeType {SINGLE_HIST_TREE = 1;  SINGLE_MERKLE_TREE = 2; };
-
-
-message SigConfig {
-   optional SigTreeType treetype = 1;
-}
-
-message BlobConfig {
-   optional TreeType treetype = 1;
-}
-
+enum TreeType {SINGLE_HISTORY_TREE = 1;  SINGLE_MERKLE_TREE = 2; };
 
 
 // What is signed. (but is not sent)
 message TreeSigMessage {
-     required SigConfig config = 1 ; // Serialized config blob. 
+     required SigTreeType treetype = 1;
      optional int32 version = 3;
      optional bytes roothash = 4;
 }
 
 // What is sent.
 message TreeSigBlob {
-   required BlobConfig config = 1;
+   optional TreeType treetype = 1;
    optional bytes sig = 2;
    optional PrunedTree tree = 3;
    optional int32 leaf = 4; //Point out specific leafs.
+
+   // For a history tree, used to demultiplex
+   optional sfixed64 tree_id = 16;
 }
 
 

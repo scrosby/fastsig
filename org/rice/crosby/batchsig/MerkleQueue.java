@@ -6,9 +6,7 @@ import org.rice.crosby.historytree.AggregationInterface;
 import org.rice.crosby.historytree.MerkleTree;
 import org.rice.crosby.historytree.ProofError;
 import org.rice.crosby.historytree.aggs.SHA256Agg;
-import org.rice.crosby.historytree.generated.Serialization.BlobConfig;
 import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
-import org.rice.crosby.historytree.generated.Serialization.SigConfig;
 import org.rice.crosby.historytree.generated.Serialization.SigTreeType;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigMessage;
@@ -20,16 +18,10 @@ import com.google.protobuf.ByteString;
 
 public class MerkleQueue extends QueueBase {
 	private Signer signer;
-	final SigConfig sigconfig;
-	final BlobConfig blobconfig;
 
 	public MerkleQueue(Signer signer) {
+		super();
 		this.signer = signer;
-		initQueue();
-		sigconfig = SigConfig.newBuilder().setTreetype(SigTreeType.MERKLE_TREE)
-				.build();
-		blobconfig = BlobConfig.newBuilder().setTreetype(
-				TreeType.SINGLE_MERKLE_TREE).build();
 	}
 
 
@@ -55,10 +47,11 @@ public class MerkleQueue extends QueueBase {
 		final byte[] rootHash = histtree.agg();
 
 		// Make the unified signature of all.
-		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder();
-		msgbuilder.setConfig(sigconfig);
-		msgbuilder.setVersion(histtree.version());
-		msgbuilder.setRoothash(ByteString.copyFrom(rootHash));
+		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
+			.setTreetype(SigTreeType.MERKLE_TREE)
+			.setVersion(histtree.version())
+			.setRoothash(ByteString.copyFrom(rootHash));
+
 		final byte[] rootSig = signer.sign(msgbuilder.build().toByteArray());
 
 		for (int i = 0; i < oldqueue.size(); i++) {
@@ -71,11 +64,11 @@ public class MerkleQueue extends QueueBase {
 				PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
 				pruned.serializeTree(treebuilder);
 
-				TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder();
-				blobbuilder.setConfig(blobconfig);
-				blobbuilder.setSig(ByteString.copyFrom(rootSig));
-				blobbuilder.setTree(treebuilder);
-				blobbuilder.setLeaf(i);
+				TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder()
+					.setTreetype(TreeType.SINGLE_MERKLE_TREE)
+					.setSig(ByteString.copyFrom(rootSig))
+					.setTree(treebuilder)
+					.setLeaf(i);
 				oldqueue.get(i).signatureResult(blobbuilder.build());
 			} catch (ProofError e) {
 				// Should never occur.

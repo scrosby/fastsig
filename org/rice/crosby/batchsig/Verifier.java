@@ -7,7 +7,6 @@ import org.rice.crosby.historytree.MerkleTree;
 import org.rice.crosby.historytree.NodeCursor;
 import org.rice.crosby.historytree.aggs.SHA256Agg;
 import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
-import org.rice.crosby.historytree.generated.Serialization.SigConfig;
 import org.rice.crosby.historytree.generated.Serialization.SigTreeType;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigMessage;
@@ -18,18 +17,16 @@ import com.google.protobuf.ByteString;
 
 public class Verifier {
 	private Signer signer;
-	final SigConfig sigconfig;
 
 	public Verifier(Signer signer) {
 		this.signer=signer;
-		sigconfig = SigConfig.newBuilder().setTreetype(SigTreeType.MERKLE_TREE).build();
 	}
 	
 	boolean verify(Message message) {
 		TreeSigBlob sigblob = message.getSigBlob();
 		
 		// Other choices are unsupported in this code.
-		if (sigblob.getConfig().getTreetype() != TreeType.SINGLE_MERKLE_TREE)
+		if (sigblob.getTreetype() != TreeType.SINGLE_MERKLE_TREE)
 			return false;
 		
 		// Parse the tree.
@@ -48,10 +45,10 @@ public class Verifier {
 			// Nope, we fail.
 			return false;
 		
-		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder();
-		msgbuilder.setConfig(sigconfig);
-		msgbuilder.setVersion(parsed.version());
-		msgbuilder.setRoothash(ByteString.copyFrom(rootHash));
+		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
+			.setTreetype(SigTreeType.MERKLE_TREE)
+			.setVersion(parsed.version())
+			.setRoothash(ByteString.copyFrom(rootHash));
 
 		byte[] signeddata = msgbuilder.build().toByteArray();
 		byte[] sig = sigblob.getSig().toByteArray();
