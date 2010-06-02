@@ -1,6 +1,5 @@
 package org.rice.crosby.batchsig;
 
-import com.google.protobuf.MessageLite;
 
 public interface Signer {
 
