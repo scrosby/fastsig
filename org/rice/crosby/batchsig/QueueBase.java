@@ -40,5 +40,5 @@ public abstract class QueueBase implements SignerQueue {
 	/* (non-Javadoc)
 	 * @see org.rice.crosby.batchsig.SignerQueue#process(org.rice.crosby.batchsig.Message)
 	 */
-	abstract public void process(Message message);
+	abstract public void process();
 }

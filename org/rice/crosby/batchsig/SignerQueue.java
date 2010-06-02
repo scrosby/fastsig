@@ -9,6 +9,6 @@ public interface SignerQueue {
 	 * Process all of the messages, signing every one. May be done in a separate
 	 * signing thread
 	 */
-	abstract public void process(Message message);
+	abstract public void process();
 
 }
