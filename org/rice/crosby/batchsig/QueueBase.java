@@ -2,7 +2,7 @@ package org.rice.crosby.batchsig;
 
 import java.util.ArrayList;
 
-public class QueueBase {
+public abstract class QueueBase implements SignerQueue {
 
 	protected ArrayList<Message> queue;
 
@@ -10,6 +10,9 @@ public class QueueBase {
 		super();
 	}
 
+	/* (non-Javadoc)
+	 * @see org.rice.crosby.batchsig.SignerQueue#add(org.rice.crosby.batchsig.Message)
+	 */
 	public void add(Message message) {
 		synchronized(this) {
 			queue.add(message);
@@ -34,4 +37,8 @@ public class QueueBase {
 		return oldqueue;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.rice.crosby.batchsig.SignerQueue#process(org.rice.crosby.batchsig.Message)
+	 */
+	abstract public void process(Message message);
 }

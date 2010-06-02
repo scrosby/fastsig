@@ -32,10 +32,7 @@ public class MerkleQueue extends QueueBase {
 				TreeType.SINGLE_MERKLE_TREE).build();
 	}
 
-	/**
-	 * Process all of the messages, signing every one. May be done in a separate
-	 * signing thread
-	 */
+
 	public void process(Message message) {
 		ArrayList<Message> oldqueue = atomicGetQueue();
 		
