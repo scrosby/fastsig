@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.rice.crosby.historytree.MerkleTree;
+import org.rice.crosby.historytree.NodeCursor;
 import org.rice.crosby.historytree.aggs.SHA256Agg;
 import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.generated.Serialization.SigConfig;
@@ -36,7 +37,10 @@ public class Verifier {
 		final byte[] rootHash = parsed.agg();
 
 		// See if the message is in the tree.
-		byte [] leafagg = parsed.leaf(sigblob.getLeaf()).getAgg();
+		NodeCursor<byte[], byte[]> leaf = parsed.leaf(sigblob.getLeaf());
+		if (leaf == null)
+			return false;
+		byte [] leafagg = leaf.getAgg();
 		byte [] msgagg = parsed.getAggObj().aggVal(message.getData());
 		
 		// FIXME! THIS WILL THROW AN ERROR THATS NOT BEING CAUGHT ON INVALID PROOF.
