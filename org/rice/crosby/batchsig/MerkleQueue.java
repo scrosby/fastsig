@@ -55,26 +55,28 @@ public class MerkleQueue extends QueueBase {
 		final byte[] rootSig = signer.sign(msgbuilder.build().toByteArray());
 
 		for (int i = 0; i < oldqueue.size(); i++) {
-			try {
-				// Make the pruned tree.
-				MerkleTree<byte[], byte[]> pruned = histtree
-						.makePruned(new HashStore<byte[], byte[]>());
-				pruned.copyV(histtree, i, true);
+			processMessage(histtree,oldqueue.get(i), i, rootSig);
+		}
+	}
+	private void processMessage(MerkleTree<byte[], byte[]> histtree, Message message, int i, final byte[] rootSig) {	
+		try {
+			// Make the pruned tree.
+			MerkleTree<byte[], byte[]> pruned = histtree
+					.makePruned(new HashStore<byte[], byte[]>());
+			pruned.copyV(histtree, i, true);
 
-				PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
-				pruned.serializeTree(treebuilder);
+			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
+			pruned.serializeTree(treebuilder);
 
-				TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder()
-					.setTreetype(TreeType.SINGLE_MERKLE_TREE)
-					.setSig(ByteString.copyFrom(rootSig))
-					.setTree(treebuilder)
+			TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder()
+					.setTreetype(TreeType.SINGLE_MERKLE_TREE).setSig(
+							ByteString.copyFrom(rootSig)).setTree(treebuilder)
 					.setLeaf(i);
-				oldqueue.get(i).signatureResult(blobbuilder.build());
-			} catch (ProofError e) {
-				// Should never occur.
-				oldqueue.get(i).signatureResult(null); // Indicate error.
-				e.printStackTrace();
-			}
+			message.signatureResult(blobbuilder.build());
+		} catch (ProofError e) {
+			// Should never occur.
+			message.signatureResult(null); // Indicate error.
+			e.printStackTrace();
 		}
 	}
 }
