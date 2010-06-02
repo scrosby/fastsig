@@ -1,14 +1,12 @@
 package org.rice.crosby.historytree.test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
 import org.rice.crosby.historytree.*;
 import org.rice.crosby.historytree.aggs.*;
 import org.rice.crosby.historytree.generated.Serialization;
-import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
 import org.rice.crosby.historytree.storage.ArrayStore;
 import org.rice.crosby.historytree.storage.HashStore;
