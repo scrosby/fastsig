@@ -18,12 +18,12 @@ import org.rice.crosby.historytree.storage.HashStore;
 
 import com.google.protobuf.ByteString;
 
-public class SignerQueue extends QueueBase {
+public class MerkleQueue extends QueueBase {
 	private Signer signer;
 	final SigConfig sigconfig;
 	final BlobConfig blobconfig;
 
-	public SignerQueue(Signer signer) {
+	public MerkleQueue(Signer signer) {
 		this.signer = signer;
 		initQueue();
 		sigconfig = SigConfig.newBuilder().setTreetype(SigTreeType.MERKLE_TREE)
