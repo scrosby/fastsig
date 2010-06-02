@@ -156,7 +156,9 @@ public abstract class TreeBase<A,V> {
   	}
   }
 
-  /** Make a cursor pointing to the given leaf, if possible */
+  /** Make a cursor pointing to the given leaf, if possible. 
+   * @return The cursor for the relevant leaf node or null if the leaf is not in the tree.
+   */
   public NodeCursor<A,V> leaf(int version) {
 	if (version > time) throw new Error(String.format("Leaf %d in tree version %d",version,time));
 	if (time == 0)
@@ -169,6 +171,8 @@ public abstract class TreeBase<A,V> {
   			child = node.right();
   		else
   			child = node.left();
+  		if (child == null)
+  			return null;
   		if (layer == 1)
   			return child;
   		node = child;
