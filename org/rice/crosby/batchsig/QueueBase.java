@@ -13,10 +13,9 @@ public abstract class QueueBase implements ProcessQueue {
 	/* (non-Javadoc)
 	 * @see org.rice.crosby.batchsig.SignerQueue#add(org.rice.crosby.batchsig.Message)
 	 */
-	public void add(Message message) {
-		synchronized(this) {
-			queue.add(message);
-		}
+	public synchronized void add(Message message) {
+		queue.add(message);
+		this.notify();
 	}
 
 	private void initQueue() {
@@ -37,6 +36,15 @@ public abstract class QueueBase implements ProcessQueue {
 		return oldqueue;
 	}
 
+	/** Suspend the calling thread until the queue is non-empty */
+	public synchronized void suspendTillNonEmpty() {
+		try {
+			this.wait();
+		} catch (InterruptedException e) {
+		}
+	}
+	
+	
 	/* (non-Javadoc)
 	 * @see org.rice.crosby.batchsig.SignerQueue#process(org.rice.crosby.batchsig.Message)
 	 */
