@@ -237,6 +237,8 @@ public abstract class TreeBase<A,V> {
 
 
 public void copyV(TreeBase<A, V> orig, int version, boolean copyValueFlag) throws ProofError {
+	if (version < 0 || version > version())
+		throw new IllegalArgumentException(String.format("Version %d beyond the bounds of the tree [0,%d]",version,version()));
 	// If source tree is null
 	if (root == null) {
 		root = datastore.makeRoot(orig.root.layer);
