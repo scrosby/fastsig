@@ -7,6 +7,7 @@ import java.util.Arrays;
 import org.rice.crosby.batchsig.SignaturePrimitives;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob.Builder;
+import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob.SignatureAlgorithm;
 
 import com.google.protobuf.ByteString;
 
@@ -21,7 +22,7 @@ import com.google.protobuf.ByteString;
  */
 public class DigestPrimitive implements SignaturePrimitives {
 
-	public byte[] hash(byte[] data) {
+	static public byte[] hash(byte[] data) {
 		try {
 			MessageDigest md=MessageDigest.getInstance("SHA-256");
 			md.update(data);
@@ -34,12 +35,16 @@ public class DigestPrimitive implements SignaturePrimitives {
 	
 	@Override
 	public void sign(byte[] data, Builder out) {
+		out.setSignatureAlgorithm(SignatureAlgorithm.TEST_DIGEST);
 		out.setSignatureBytes(ByteString.copyFrom(hash(data)));
 	}
 
 	@Override
 	public boolean verify(byte[] data, TreeSigBlob sig) {
-		return Arrays.equals(hash(data),sig.getSignatureBytes().toByteArray());
+		if (sig.getSignatureAlgorithm() == SignatureAlgorithm.TEST_DIGEST)
+			return Arrays.equals(hash(data),sig.getSignatureBytes().toByteArray());
+		System.out.println("A non-'test' signature sent under test");
+		return false;
 	}
 
 }

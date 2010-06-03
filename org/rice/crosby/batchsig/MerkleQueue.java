@@ -17,6 +17,7 @@ import org.rice.crosby.historytree.storage.HashStore;
 
 import com.google.protobuf.ByteString;
 
+/** Process the messages by placing them into a Merkle, one for each batch. */
 public class MerkleQueue extends QueueBase {
 	private SignaturePrimitives signer;
 

@@ -18,9 +18,10 @@ import org.rice.crosby.historytree.storage.HashStore;
 
 import com.google.protobuf.ByteString;
 
+/** Process the messages by placing them into a History tree, one for each batch. */
 public class HistoryQueue extends QueueBase {
 	/** Largest size we want the history tree to grow to before rotating  */
-	private final int MAX_SIZE=1000;
+	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
 	private SignaturePrimitives signer;
 	
 	/** Track when we last contacted a given recipient */
@@ -41,9 +42,10 @@ public class HistoryQueue extends QueueBase {
 		lastcontacts = new HashMap<Object,Integer>();
 	}
 
-	private void rotateStore() {
-			if (histtree.version() > MAX_SIZE)
-				initTree();
+	/** Make a new fresh history tree if the additional nodes would make it bigger than the target size. */
+	private void rotateStore(int additionalNodes) {
+		if (additionalNodes + histtree.version() > MAX_SIZE)
+			initTree();
 	}
 	
 	public synchronized void process() {
@@ -55,8 +57,13 @@ public class HistoryQueue extends QueueBase {
 		 * trees around anything but the latest commitment. This means that we
 		 * cannot drop the tree lock to do RSA concurrently; the tree will grow
 		 * and we'll be unable to generating proofs.
+		 *
+		 * TODO: If we fix that, then a simple many-readers/one-writers lock will 
+		 * allow concurrency between RSA, adding to the history tree and generating proofs.
 		 */
 		synchronized (histtree) {
+			// First, is it big enough to build a new tree?
+			rotateStore(oldqueue.size());
 
 			/* Leaf indices are offset by the initial size of the tree */
 			int leaf_offset = histtree.version();
@@ -79,13 +86,12 @@ public class HistoryQueue extends QueueBase {
 			// Make the read-only template.
 			TreeSigBlob template=sigblob.build();
 
-			// Although the tree is semantically read-only, its still possible
-			// for it to be mutated. Eg, during array resizing.
+			// Although the tree is semantically read-only, it is still possible
+			// for it to be mutated. Eg, during array resizing. A one-writer/many-readers 
+			// lock is still needed, but RSA can run in parallel as well as threads generating proofs.
 			for (int i = 0; i < oldqueue.size(); i++) {
 				processMessage(oldqueue.get(i), leaf_offset + i, TreeSigBlob.newBuilder(template));
 			}
-
-			rotateStore();
 		}
 	}
 
