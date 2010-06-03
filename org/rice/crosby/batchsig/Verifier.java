@@ -29,7 +29,7 @@ public class Verifier {
 		// Other choices are unsupported in this code.
 		if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE)
 			return verifyMerkle(message);
-		else if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE)
+		else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE)
 			return verifyHistory(message);
 		else 
 			return false;
@@ -91,7 +91,7 @@ public class Verifier {
 		return true;
 	}
 
-	private boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
+	boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
 		byte[] signeddata = msgbuilder.build().toByteArray();
 		return signer.verify(signeddata, sigblob);
 	}

@@ -7,12 +7,16 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 import org.rice.crosby.historytree.HistoryTree;
+import org.rice.crosby.historytree.generated.Serialization.SignatureType;
+import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 
 public class VerifyQueue extends QueueBase {
 	private Verifier verifier;
-
+	private SignaturePrimitives signer;
+	
 	public VerifyQueue(SignaturePrimitives signer) {
 		super();
+		this.signer = signer;
 		this.verifier = new Verifier(signer);
 	}
 	
@@ -21,17 +25,30 @@ public class VerifyQueue extends QueueBase {
 
 		HashMap<Object,ArrayList<Message>> messages = new HashMap<Object,ArrayList<Message>>();
 
-		// Place into a hash table, one for each signer.
+		// Go over each message
 		for (Message m : oldqueue) {
-			if (!messages.containsKey(m.getSigner()))
-				messages.put(m.getSigner(),new ArrayList<Message>());
-			messages.get(m.getSigner()).add(m);
+			TreeSigBlob sigblob = m.getSignatureBlob();
+			if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE) {
+				// If it is a singlely signed message, check.
+				// TODO: Do concurrently; dispatch into thread pool.
+				m.signatureValidity(signer.verify(m.getData(),sigblob));
+			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE) {
+				// If its is a merkle tree message, check.
+				// TODO: Do concurrently; dispatch into thread pool.
+				m.signatureValidity(verifier.verifyMerkle(m));
+			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE) {
+				// If a history tree, put into a set of queues, one for each signer.
+				if (!messages.containsKey(m.getSigner()))
+					messages.put(m.getSigner(),new ArrayList<Message>());
+				messages.get(m.getSigner()).add(m);
+			} else {
+				System.out.println("Unrecognized SignatureType");
+			}
 		}
 		
 		// Process each signer's list of messages in turn.
 		for (ArrayList<Message> l : messages.values()) {
 			processMessagesFromSigner(l);
-
 		}
 	}
 	
@@ -53,19 +70,20 @@ public class VerifyQueue extends QueueBase {
 			}});
 
 		// Now break it down into one-arraylist per tree.
-		int i=0,j;
+		int i=0,j=1;
 		ArrayList<Message> out;
-		for (j = 1 ; j < l.size(); j++) {
-			if (l.get(i).getSignatureBlob().getTreeId() != l.get(i).getSignatureBlob().getTreeId()) {
+		
+		// Has to have at least one message.
+		do {
+			if (l.get(i).getSignatureBlob().getTreeId() != l.get(j).getSignatureBlob().getTreeId()
+					|| j == l.size()) {
 				out = new ArrayList<Message>();
 				out.addAll(l.subList(i,j));
 				processMessagesFromTree(out);
 				i=j;
 			}
-		}
-		out = new ArrayList<Message>();
-		out.addAll(l.subList(i,j));
-		processMessagesFromTree(out);
+			j++;
+		} while (i < l.size());
 	}
 	
 	/** Handle all messages with the same treeID */
