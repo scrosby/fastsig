@@ -17,9 +17,9 @@ import org.rice.crosby.historytree.storage.HashStore;
 import com.google.protobuf.ByteString;
 
 public class MerkleQueue extends QueueBase {
-	private Signer signer;
+	private SignaturePrimitives signer;
 
-	public MerkleQueue(Signer signer) {
+	public MerkleQueue(SignaturePrimitives signer) {
 		super();
 		this.signer = signer;
 	}

@@ -1,7 +1,7 @@
 package org.rice.crosby.batchsig;
 
 
-public interface Signer {
+public interface SignaturePrimitives {
 
 	/** Sign an input message in protobuf format. */
 	byte[] sign(byte[] data);

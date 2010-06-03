@@ -11,7 +11,7 @@ import org.rice.crosby.historytree.HistoryTree;
 public class VerifyQueue extends QueueBase {
 	private Verifier verifier;
 
-	public VerifyQueue(Signer signer) {
+	public VerifyQueue(SignaturePrimitives signer) {
 		super();
 		this.verifier = new Verifier(signer);
 	}

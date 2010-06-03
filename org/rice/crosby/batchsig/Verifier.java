@@ -17,9 +17,9 @@ import org.rice.crosby.historytree.storage.HashStore;
 import com.google.protobuf.ByteString;
 
 public class Verifier {
-	private Signer signer;
+	private SignaturePrimitives signer;
 
-	public Verifier(Signer signer) {
+	public Verifier(SignaturePrimitives signer) {
 		this.signer=signer;
 	}
 	

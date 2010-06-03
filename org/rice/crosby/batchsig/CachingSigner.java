@@ -1,10 +1,10 @@
 package org.rice.crosby.batchsig;
 
 /** Wraps a signer with one that caches signature verifications so that the same signature and data need only be verified once */
-public class CachingSigner implements Signer {
-	final private Signer orig;
+public class CachingSigner implements SignaturePrimitives {
+	final private SignaturePrimitives orig;
 
-	CachingSigner(Signer orig) {
+	CachingSigner(SignaturePrimitives orig) {
 		this.orig = orig;
 	}
 		

@@ -20,7 +20,7 @@ import com.google.protobuf.ByteString;
 public class HistoryQueue extends QueueBase {
 	/** Largest size we want the history tree to grow to before rotating  */
 	private final int MAX_SIZE=1000;
-	private Signer signer;
+	private SignaturePrimitives signer;
 	
 	/** Track when we last contacted a given recipient */
 	public HashMap<Object,Integer> lastcontacts;
@@ -28,7 +28,7 @@ public class HistoryQueue extends QueueBase {
 	public long treeid;
 	public HistoryTree<byte[], byte[]> histtree;
 	
-	public HistoryQueue(Signer signer) {
+	public HistoryQueue(SignaturePrimitives signer) {
 		super();
 		this.signer = signer;
 		initTree();
