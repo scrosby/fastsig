@@ -31,7 +31,7 @@ public class VerifyQueue extends QueueBase {
 			if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE) {
 				// If it is a singlely signed message, check.
 				// TODO: Do concurrently; dispatch into thread pool.
-				m.signatureValidity(signer.verify(m.getData(),sigblob));
+				m.signatureValidity(verifier.verifyMessage(m));
 			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE) {
 				// If its is a merkle tree message, check.
 				// TODO: Do concurrently; dispatch into thread pool.

@@ -23,6 +23,7 @@ public class Verifier {
 		this.signer=signer;
 	}
 	
+	/*
 	boolean verify(Message message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 		
@@ -31,9 +32,24 @@ public class Verifier {
 			return verifyMerkle(message);
 		else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE)
 			return verifyHistory(message);
+		else if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE)
+			return verifyMessage(message);
 		else 
 			return false;
 
+	}
+	*/
+
+	boolean verifyMessage(Message message) {
+		TreeSigBlob sigblob = message.getSignatureBlob();
+
+		// Parse the tree.
+		final byte[] rootHash = message.getData();
+		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
+			.setTreetype(SigTreeType.MESSAGE)
+			.setRoothash(ByteString.copyFrom(SimpleQueue.hash(rootHash)));
+
+		return checkSig(sigblob, msgbuilder);
 	}
 
 	boolean verifyMerkle(Message message) {
