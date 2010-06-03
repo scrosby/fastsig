@@ -1,7 +1,7 @@
 package org.rice.crosby.batchsig;
 
 /** Represent a queue of messages to be signed with some sort of bulk signature mechanism. */
-public interface SignerQueue {
+public interface ProcessQueue {
 
 	public abstract void add(Message message);
 

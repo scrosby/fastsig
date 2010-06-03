@@ -2,7 +2,7 @@ package org.rice.crosby.batchsig;
 
 import java.util.ArrayList;
 
-public abstract class QueueBase implements SignerQueue {
+public abstract class QueueBase implements ProcessQueue {
 	private ArrayList<Message> queue;
 
 	public QueueBase() {
