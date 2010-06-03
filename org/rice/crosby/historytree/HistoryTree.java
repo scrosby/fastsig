@@ -12,15 +12,18 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 	    		   HistoryDataStoreInterface<A,V> datastore) {
 	    super(aggobj,datastore);
 	}
+	@Override
 	public A agg() {
     	return aggV(time);
     }
+
+	/** Get the aggregate at a particular historical version number */
     public A aggV(int version) {
     	assert (version <= time);
     	NodeCursor<A,V>  child, leaf, node;
 
     	child = leaf = this.leaf(version);
-    	node= leaf.getParent(root);
+    	node = leaf.getParent(root);
     	A agg = leaf.getAgg();
 		//System.out.println("leaf"+node);
 
@@ -59,10 +62,10 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	// Not a stub. Must always have a left and may have right child.
     	assert in.hasLeft();
 
-    	parseSubtree(node.forceLeft(),in.getLeft());
+    	parseSubtree(node.forceLeft(), in.getLeft());
 
     	if (in.hasRight()) {
-    		parseSubtree(node.forceRight(),in.getRight());
+    		parseSubtree(node.forceRight(), in.getRight());
     		if (node.isFrozen(time)) {
     			node.markValid();
     			node.setAgg(aggobj.aggChildren(node.left().getAgg(),node.right().getAgg()));
