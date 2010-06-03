@@ -10,7 +10,7 @@ import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.generated.Serialization.SigTreeType;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigMessage;
-import org.rice.crosby.historytree.generated.Serialization.TreeType;
+import org.rice.crosby.historytree.generated.Serialization.SignatureType;
 import org.rice.crosby.historytree.storage.ArrayStore;
 import org.rice.crosby.historytree.storage.HashStore;
 
@@ -69,7 +69,7 @@ public class MerkleQueue extends QueueBase {
 			pruned.serializeTree(treebuilder);
 
 			TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder()
-					.setTreetype(TreeType.SINGLE_MERKLE_TREE).setSig(
+					.setSignatureType(SignatureType.SINGLE_MERKLE_TREE).setSignatureBytes(
 							ByteString.copyFrom(rootSig)).setTree(treebuilder)
 					.setLeaf(i);
 			message.signatureResult(blobbuilder.build());

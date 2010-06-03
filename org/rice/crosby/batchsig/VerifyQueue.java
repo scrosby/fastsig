@@ -46,17 +46,17 @@ public class VerifyQueue extends QueueBase {
 		// Sort based on treeID first, then message index.
 		Collections.sort(l,new Comparator<Message>(){
 			public int compare(Message a, Message b) {
-				long diff1 = a.getSigBlob().getTreeId()-b.getSigBlob().getTreeId();
+				long diff1 = a.getSignatureBlob().getTreeId()-b.getSignatureBlob().getTreeId();
 				if (diff1 > 0) return 1; 
 				if (diff1 < 0) return -1;
-				return a.getSigBlob().getTree().getVersion()-b.getSigBlob().getTree().getVersion();
+				return a.getSignatureBlob().getTree().getVersion()-b.getSignatureBlob().getTree().getVersion();
 			}});
 
 		// Now break it down into one-arraylist per tree.
 		int i=0,j;
 		ArrayList<Message> out;
 		for (j = 1 ; j < l.size(); j++) {
-			if (l.get(i).getSigBlob().getTreeId() != l.get(i).getSigBlob().getTreeId()) {
+			if (l.get(i).getSignatureBlob().getTreeId() != l.get(i).getSignatureBlob().getTreeId()) {
 				out = new ArrayList<Message>();
 				out.addAll(l.subList(i,j));
 				processMessagesFromTree(out);
@@ -120,10 +120,10 @@ public class VerifyQueue extends QueueBase {
 			}
 
 			// Save the splices, if any, of this message, if validated.
-			if (validated && m.getSigBlob().getSpliceHintCount() > 0) {
+			if (validated && m.getSignatureBlob().getSpliceHintCount() > 0) {
 					trees.put(m, tree);
 
-					for (int splice: m.getSigBlob().getSpliceHintList()) {
+					for (int splice: m.getSignatureBlob().getSpliceHintList()) {
 						if (tree.leaf(splice) == null) {
 							// Claims it has splice, but doesn't have the leaf.
 							System.out.println("Claims splice, but no splice included.");

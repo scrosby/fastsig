@@ -11,7 +11,7 @@ import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.generated.Serialization.SigTreeType;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigMessage;
-import org.rice.crosby.historytree.generated.Serialization.TreeType;
+import org.rice.crosby.historytree.generated.Serialization.SignatureType;
 import org.rice.crosby.historytree.storage.AppendOnlyArrayStore;
 import org.rice.crosby.historytree.storage.HashStore;
 
@@ -92,17 +92,18 @@ public class HistoryQueue extends QueueBase {
 					.makePruned(new HashStore<byte[], byte[]>());
 			pruned.copyV(histtree, leaf_offset, true);
 
-			if (lastcontacts.containsKey(message.getRecipient())) {
-				pruned.copyV(histtree, lastcontacts.get(message.getRecipient()),false);
-				blobbuilder.addSpliceHint(lastcontacts.get(message.getRecipient()));
+			Object recipient = message.getRecipient();
+			if (lastcontacts.containsKey(recipient)) {
+				pruned.copyV(histtree, lastcontacts.get(recipient),false);
+				blobbuilder.addSpliceHint(lastcontacts.get(recipient));
 			}
-			lastcontacts.put(message.getRecipient(),histtree.version());
+			lastcontacts.put(recipient,histtree.version());
 			
 			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
 			pruned.serializeTree(treebuilder);
 
-			blobbuilder.setTreetype(TreeType.SINGLE_HISTORY_TREE)
-				.setSig(ByteString.copyFrom(rootSig))
+			blobbuilder.setSignatureType(SignatureType.SINGLE_HISTORY_TREE)
+				.setSignatureBytes(ByteString.copyFrom(rootSig))
 				.setTreeId(treeid)
 				.setTree(treebuilder)
 				.setLeaf(leaf_offset);

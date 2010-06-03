@@ -46,7 +46,7 @@ enum SigTreeType {HISTORY_TREE = 1;  MERKLE_TREE = 2; };
    For now, merkle or history, but we only prove a single message per tree signature proof blob
 */
 
-enum TreeType {SINGLE_HISTORY_TREE = 1;  SINGLE_MERKLE_TREE = 2; };
+enum SignatureType {SINGLE_HISTORY_TREE = 1;  SINGLE_MERKLE_TREE = 2; };
 
 
 // What is signed. (but is not sent)
@@ -58,9 +58,19 @@ message TreeSigMessage {
 
 // What is sent.
 message TreeSigBlob {
-   optional TreeType treetype = 1;
-   optional bytes sig = 2;
-   optional PrunedTree tree = 3;
+
+  // Borrowed from ProtocolSignature (google wave) for the low-level signature.
+  enum SignatureAlgorithm {
+    SHA1_RSA = 1;
+  }
+
+  optional bytes signature_bytes = 1;
+  required bytes signer_id = 2;
+  required SignatureAlgorithm signature_algorithm = 3;
+
+  // Additional fields used to authenticate the blob.
+   optional SignatureType signature_type = 5;
+   optional PrunedTree tree = 6;
    optional int32 leaf = 4; //Point out specific leafs.
 
    // For a history tree, used to demultiplex
