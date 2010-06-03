@@ -6,6 +6,7 @@ import java.util.Random;
 
 import org.rice.crosby.historytree.HistoryTree;
 import org.rice.crosby.historytree.ProofError;
+import org.rice.crosby.historytree.TreeBase;
 import org.rice.crosby.historytree.aggs.SHA256Agg;
 import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.generated.Serialization.SigTreeType;
@@ -70,44 +71,46 @@ public class HistoryQueue extends QueueBase {
 					.setVersion(histtree.version())
 					.setRoothash(ByteString.copyFrom(histtree.agg()));
 
-			final byte[] rootSig = signer
-					.sign(msgbuilder.build().toByteArray());
+			// Make the template sigblob containing the RSA signature.
+			TreeSigBlob.Builder sigblob = TreeSigBlob.newBuilder();
+			sigblob.setSignatureType(SignatureType.SINGLE_HISTORY_TREE);
+			signer.sign(msgbuilder.build().toByteArray(),sigblob);
+
+			// Make the read-only template.
+			TreeSigBlob template=sigblob.build();
 
 			// Although the tree is semantically read-only, its still possible
 			// for it to be mutated. Eg, during array resizing.
 			for (int i = 0; i < oldqueue.size(); i++) {
-				processMessage(oldqueue.get(i), leaf_offset + i, rootSig);
+				processMessage(oldqueue.get(i), leaf_offset + i, TreeSigBlob.newBuilder(template));
 			}
 
 			rotateStore();
 		}
 	}
 
-	private void processMessage(Message message, int leaf_offset, final byte[] rootSig) {
+	private void processMessage(Message message, int leaf_offset, TreeSigBlob.Builder template) {
 		try {
-			TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder();
-
 			// Make the pruned tree.
-			HistoryTree<byte[], byte[]> pruned = histtree
+			TreeBase<byte[], byte[]> pruned = histtree
 					.makePruned(new HashStore<byte[], byte[]>());
 			pruned.copyV(histtree, leaf_offset, true);
 
 			Object recipient = message.getRecipient();
 			if (lastcontacts.containsKey(recipient)) {
 				pruned.copyV(histtree, lastcontacts.get(recipient),false);
-				blobbuilder.addSpliceHint(lastcontacts.get(recipient));
+				template.addSpliceHint(lastcontacts.get(recipient));
 			}
 			lastcontacts.put(recipient,histtree.version());
 			
 			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
 			pruned.serializeTree(treebuilder);
 
-			blobbuilder.setSignatureType(SignatureType.SINGLE_HISTORY_TREE)
-				.setSignatureBytes(ByteString.copyFrom(rootSig))
+			template
 				.setTreeId(treeid)
 				.setTree(treebuilder)
 				.setLeaf(leaf_offset);
-			message.signatureResult(blobbuilder.build());
+			message.signatureResult(template.build());
 		} catch (ProofError e) {
 			// Should never occur.
 			message.signatureResult(null); // Indicate error.

@@ -93,9 +93,7 @@ public class Verifier {
 
 	private boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
 		byte[] signeddata = msgbuilder.build().toByteArray();
-		byte[] sig = sigblob.getSignatureBytes().toByteArray();
-
-		return signer.verify(signeddata, sig);
+		return signer.verify(signeddata, sigblob);
 	}
 
 	static public MerkleTree<byte[],byte[]> parseMerkleTree(Message message) {

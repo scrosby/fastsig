@@ -5,6 +5,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import org.rice.crosby.batchsig.SignaturePrimitives;
+import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
+import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob.Builder;
+
+import com.google.protobuf.ByteString;
 
 
 /** 'Sign' a string by computing a digest over it. 
@@ -17,8 +21,7 @@ import org.rice.crosby.batchsig.SignaturePrimitives;
  */
 public class DigestPrimitive implements SignaturePrimitives {
 
-	@Override
-	public byte[] sign(byte[] data) {
+	public byte[] hash(byte[] data) {
 		try {
 			MessageDigest md=MessageDigest.getInstance("SHA-256");
 			md.update(data);
@@ -28,11 +31,15 @@ public class DigestPrimitive implements SignaturePrimitives {
 			return null;
 		}
 	}
+	
+	@Override
+	public void sign(byte[] data, Builder out) {
+		out.setSignatureBytes(ByteString.copyFrom(hash(data)));
+	}
 
 	@Override
-	public boolean verify(byte[] data, byte[] sig) {
-		byte digest[] = sign(data);
-		return Arrays.equals(digest,sig);
+	public boolean verify(byte[] data, TreeSigBlob sig) {
+		return Arrays.equals(hash(data),sig.getSignatureBytes().toByteArray());
 	}
 
 }

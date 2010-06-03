@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.rice.crosby.historytree.AggregationInterface;
 import org.rice.crosby.historytree.MerkleTree;
 import org.rice.crosby.historytree.ProofError;
+import org.rice.crosby.historytree.TreeBase;
 import org.rice.crosby.historytree.aggs.SHA256Agg;
 import org.rice.crosby.historytree.generated.Serialization.PrunedTree;
 import org.rice.crosby.historytree.generated.Serialization.SigTreeType;
@@ -52,27 +53,32 @@ public class MerkleQueue extends QueueBase {
 			.setVersion(histtree.version())
 			.setRoothash(ByteString.copyFrom(rootHash));
 
-		final byte[] rootSig = signer.sign(msgbuilder.build().toByteArray());
+		// Make the template sigblob containing the RSA signature.
+		TreeSigBlob.Builder sigblob = TreeSigBlob.newBuilder();
+		sigblob.setSignatureType(SignatureType.SINGLE_MERKLE_TREE);
+		signer.sign(msgbuilder.build().toByteArray(),sigblob);
 
+		// Make the read-only template.
+		TreeSigBlob template=sigblob.build();
+				
 		for (int i = 0; i < oldqueue.size(); i++) {
-			processMessage(histtree,oldqueue.get(i), i, rootSig);
+			processMessage(histtree,oldqueue.get(i), i, TreeSigBlob.newBuilder(template));
 		}
 	}
-	private void processMessage(MerkleTree<byte[], byte[]> histtree, Message message, int i, final byte[] rootSig) {	
+	private void processMessage(TreeBase<byte[], byte[]> histtree, Message message, int i, TreeSigBlob.Builder template) {	
 		try {
 			// Make the pruned tree.
-			MerkleTree<byte[], byte[]> pruned = histtree
+			TreeBase<byte[], byte[]> pruned = histtree
 					.makePruned(new HashStore<byte[], byte[]>());
 			pruned.copyV(histtree, i, true);
 
 			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
 			pruned.serializeTree(treebuilder);
 
-			TreeSigBlob.Builder blobbuilder = TreeSigBlob.newBuilder()
-					.setSignatureType(SignatureType.SINGLE_MERKLE_TREE).setSignatureBytes(
-							ByteString.copyFrom(rootSig)).setTree(treebuilder)
+			template
+					.setTree(treebuilder)
 					.setLeaf(i);
-			message.signatureResult(blobbuilder.build());
+			message.signatureResult(template.build());
 		} catch (ProofError e) {
 			// Should never occur.
 			message.signatureResult(null); // Indicate error.

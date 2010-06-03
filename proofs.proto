@@ -42,11 +42,13 @@ message PrunedTree {
 
 enum SigTreeType {HISTORY_TREE = 1;  MERKLE_TREE = 2; };
 
-/* What is the type of the tree in the proof?
-   For now, merkle or history, but we only prove a single message per tree signature proof blob
+/* What is the type of proof blob that we have? At present, a merkle tree, history tree (containing a proof of ONE blob), or a single message.
 */
 
-enum SignatureType {SINGLE_HISTORY_TREE = 1;  SINGLE_MERKLE_TREE = 2; };
+enum SignatureType {SINGLE_MESSAGE = 1;
+                    SINGLE_HISTORY_TREE = 2;  
+                    SINGLE_MERKLE_TREE = 3; 
+};
 
 
 // What is signed. (but is not sent)
@@ -58,18 +60,22 @@ message TreeSigMessage {
 
 // What is sent.
 message TreeSigBlob {
+  // Overall type of this signature.
+   required SignatureType signature_type = 5;
 
   // Borrowed from ProtocolSignature (google wave) for the low-level signature.
+  // Indicate how the 'TreeSigMessage' is signed.
   enum SignatureAlgorithm {
-    SHA1_RSA = 1;
+    TEST_DIGEST = 1;
+    SHA1_RSA = 2;
   }
 
   optional bytes signature_bytes = 1;
   required bytes signer_id = 2;
   required SignatureAlgorithm signature_algorithm = 3;
 
-  // Additional fields used to authenticate the blob.
-   optional SignatureType signature_type = 5;
+  // Stuff set by bundled signatures.
+
    optional PrunedTree tree = 6;
    optional int32 leaf = 4; //Point out specific leafs.
 
