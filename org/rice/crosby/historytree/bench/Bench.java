@@ -191,9 +191,8 @@ public class Bench {
 		makeSerializedProof(treec.call()).call();
 
 		estimateSizes(prefix, treec);
-		if (true) {
-			return;
-		}
+		//if (true)
+		//	return;
 		
 		System.out.println(prefix+"Build " + new Benchmark(treec));
 		TreeBase<byte[], byte[]> tree = treec.call();
