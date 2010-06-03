@@ -38,9 +38,9 @@ public class VerifyQueue extends QueueBase {
 				m.signatureValidity(verifier.verifyMerkle(m));
 			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE) {
 				// If a history tree, put into a set of queues, one for each signer.
-				if (!messages.containsKey(m.getSigner()))
-					messages.put(m.getSigner(),new ArrayList<Message>());
-				messages.get(m.getSigner()).add(m);
+				if (!messages.containsKey(m.getAuthor()))
+					messages.put(m.getAuthor(),new ArrayList<Message>());
+				messages.get(m.getAuthor()).add(m);
 			} else {
 				System.out.println("Unrecognized SignatureType");
 			}
@@ -75,8 +75,7 @@ public class VerifyQueue extends QueueBase {
 		
 		// Has to have at least one message.
 		do {
-			if (l.get(i).getSignatureBlob().getTreeId() != l.get(j).getSignatureBlob().getTreeId()
-					|| j == l.size()) {
+			if (j == l.size() || l.get(i).getSignatureBlob().getTreeId() != l.get(j).getSignatureBlob().getTreeId()) {
 				out = new ArrayList<Message>();
 				out.addAll(l.subList(i,j));
 				processMessagesFromTree(out);

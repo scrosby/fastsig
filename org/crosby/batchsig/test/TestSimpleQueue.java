@@ -1,7 +1,10 @@
 package org.crosby.batchsig.test;
 
 import org.junit.Test;
+import org.rice.crosby.batchsig.HistoryQueue;
+import org.rice.crosby.batchsig.MerkleQueue;
 import org.rice.crosby.batchsig.Message;
+import org.rice.crosby.batchsig.ProcessQueue;
 import org.rice.crosby.batchsig.SimpleQueue;
 import org.rice.crosby.batchsig.VerifyQueue;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
@@ -14,11 +17,25 @@ public class TestSimpleQueue extends TestCase {
 		byte data[];
 		TreeSigBlob signature;
 		Boolean targetvalidity = null;
+		Object recipient;
+		Object author;
 		
 		public MessageWrap(int i) {
 			data = String.format("Foo%d",i).getBytes(); 
+			recipient = this;
+			author = getClass();
 		}
 
+		MessageWrap setRecipient(Object o) {
+			recipient = o;
+			return this;
+		}
+
+		MessageWrap setSigner(Object o) {
+			author = o;
+			return this;
+		}
+		
 		@Override
 		public byte[] getData() {
 			return data;
@@ -26,7 +43,7 @@ public class TestSimpleQueue extends TestCase {
 
 		@Override
 		public Object getRecipient() {
-			return new Object();
+			return recipient;
 		}
 
 		@Override
@@ -35,8 +52,8 @@ public class TestSimpleQueue extends TestCase {
 		}
 
 		@Override
-		public Object getSigner() {
-			return getClass();
+		public Object getAuthor() {
+			return author;
 		}
 
 		@Override
@@ -54,12 +71,8 @@ public class TestSimpleQueue extends TestCase {
 		public void wantValid() {targetvalidity = true;}
 		public void wantInValid() {targetvalidity = false;}
 	}
-	
-	
-	@Test 
-	public void testInsertAndProcess() {
-		SimpleQueue signqueue = new SimpleQueue(new DigestPrimitive());
-		
+
+	public void insertAndProcess(int offset, ProcessQueue signqueue) {
 		MessageWrap msg1 = new MessageWrap(1001);
 		MessageWrap msg2 = new MessageWrap(1002);
 		MessageWrap msg3 = new MessageWrap(1003);
@@ -82,8 +95,44 @@ public class TestSimpleQueue extends TestCase {
 		verifyqueue.add(msg3);
 		verifyqueue.process();
 
+		// The validity callback resets the targetValidity. Check to make sure it was invoked.
 		assertNull(msg1.targetvalidity);
 		assertNull(msg2.targetvalidity);
 		assertNull(msg3.targetvalidity);
-	}
+	}	@Test
+ 
+	public void testInsertAndProcessSimple() {
+		insertAndProcess(1000, new SimpleQueue(new DigestPrimitive()));
+    }
+	
+	@Test
+    public void testInsertAndProcessMerkle() {
+		insertAndProcess(1000, new MerkleQueue(new DigestPrimitive()));
+    }
+
+	@Test
+    public void testInsertAndProcessHistory() {
+		insertAndProcess(1000, new HistoryQueue(new DigestPrimitive()));
+    }
+	
+
+	public void testInsertAndProcessSimpleTwice() {
+		ProcessQueue queue = new SimpleQueue(new DigestPrimitive());
+		insertAndProcess(1000, queue);
+		insertAndProcess(2000, queue);
+    }
+	
+	@Test
+    public void testInsertAndProcessMerkleTwice() {
+		ProcessQueue queue = new SimpleQueue(new DigestPrimitive());
+		insertAndProcess(1000, queue);
+		insertAndProcess(2000, queue);
+    }
+
+	@Test
+    public void testInsertAndProcessHistoryTwice() {
+		ProcessQueue queue = new SimpleQueue(new DigestPrimitive());
+		insertAndProcess(1000, queue);
+		insertAndProcess(2000, queue);
+    }
 }

@@ -66,7 +66,7 @@ public class HistoryQueue extends QueueBase {
 			rotateStore(oldqueue.size());
 
 			/* Leaf indices are offset by the initial size of the tree */
-			int leaf_offset = histtree.version();
+			int leaf_offset = histtree.version()+1; // Add one because message is inserted at the NEXT index.
 
 			for (Message m : oldqueue) {
 				histtree.append(m.getData());
