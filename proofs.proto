@@ -40,7 +40,7 @@ message PrunedTree {
    Its either Merkle or History.
 */
 
-enum SigTreeType {HISTORY_TREE = 1;  MERKLE_TREE = 2; };
+enum SigTreeType {MESSAGE = 1; HISTORY_TREE = 2;  MERKLE_TREE = 3; };
 
 /* What is the type of proof blob that we have? At present, a merkle tree, history tree (containing a proof of ONE blob), or a single message.
 */
@@ -55,7 +55,7 @@ enum SignatureType {SINGLE_MESSAGE = 1;
 message TreeSigMessage {
      required SigTreeType treetype = 1;
      optional int32 version = 3;
-     optional bytes roothash = 4;
+     optional bytes roothash = 4;  // Or datahash
 }
 
 // What is sent.
@@ -71,7 +71,7 @@ message TreeSigBlob {
   }
 
   optional bytes signature_bytes = 1;
-  required bytes signer_id = 2;
+  optional bytes signer_id = 2;
   required SignatureAlgorithm signature_algorithm = 3;
 
   // Stuff set by bundled signatures.
