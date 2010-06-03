@@ -27,9 +27,13 @@ public class Verifier {
 		TreeSigBlob sigblob = message.getSigBlob();
 		
 		// Other choices are unsupported in this code.
-		if (sigblob.getTreetype() != TreeType.SINGLE_MERKLE_TREE)
+		if (sigblob.getTreetype() == TreeType.SINGLE_MERKLE_TREE)
+			return verifyMerkle(message);
+		else if (sigblob.getTreetype() == TreeType.SINGLE_MERKLE_TREE)
+			return verifyHistory(message);
+		else 
 			return false;
-		return verifyMerkle(message);
+
 	}
 
 	boolean verifyMerkle(Message message) {
@@ -51,7 +55,10 @@ public class Verifier {
 		return checkSig(sigblob, msgbuilder);
 	}
 
-	
+	boolean verifyHistory(Message message) {
+		return verifyHistory(message,parseHistoryTree(message));
+	}
+		
 	boolean verifyHistory(Message message, HistoryTree<byte[],byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSigBlob();
 

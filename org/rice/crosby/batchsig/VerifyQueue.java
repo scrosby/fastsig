@@ -28,7 +28,7 @@ public class VerifyQueue extends QueueBase {
 			messages.get(m.getSigner()).add(m);
 		}
 		
-		// Try to sort all of the messages from the same signer.
+		// Process each signer's list of messages in turn.
 		for (ArrayList<Message> l : messages.values()) {
 			processMessagesFromSigner(l);
 
