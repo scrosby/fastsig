@@ -3,7 +3,8 @@ package org.rice.crosby.batchsig;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 
 public interface Message {
-	/** Return the hash value associated with the message that is to be signed. */
+	/** Return the hash value associated with the message that is to be signed. The returned data 
+	 * *is* stored in the history tree. */
 	byte []getData();
 
 	/** Callback invoked with the signed result. Used by the message signing thread to set the signature when it is computed. May be executed concurrently.
