@@ -136,6 +136,13 @@ public class VerifyQueue extends QueueBase {
 				}
 			}
 
+			// Put in a 'splice' for the tree's version
+			if (validated && !splices.containsKey(version)) {
+				System.out.format("Store self-splice at %d with tree-version %d\n",tree.version(),version);
+				splices.put(tree.version(), m);
+				trees.put(m, tree);
+			}
+			
 			// Save the splices, if any, of this message, if validated.
 			if (validated && m.getSignatureBlob().getSpliceHintCount() > 0) {
 					trees.put(m, tree);

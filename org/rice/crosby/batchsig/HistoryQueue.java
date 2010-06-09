@@ -104,9 +104,13 @@ public class HistoryQueue extends QueueBase {
 
 			Object recipient = message.getRecipient();
 			if (lastcontacts.containsKey(recipient)) {
-				pruned.copyV(histtree, lastcontacts.get(recipient),false);
-				template.addSpliceHint(lastcontacts.get(recipient));
+				int lastcontact = lastcontacts.get(recipient);
+				if (lastcontact != histtree.version()) {
+					pruned.copyV(histtree, lastcontacts.get(recipient),false);
+					template.addSpliceHint(lastcontacts.get(recipient));
+				}
 			}
+			// Indicate that we want a splicepoint to the end of the bundle.
 			lastcontacts.put(recipient,histtree.version());
 			
 			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
