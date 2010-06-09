@@ -24,7 +24,14 @@ import com.sun.org.apache.xml.internal.security.utils.Base64;
  *
  */
 public class DigestPrimitive implements SignaturePrimitives {
-
+	/** Trackthe number of signs and verifies, for unittesting */
+	int signcount = 0, verifycount = 0;
+	
+	void reset() {
+		signcount = 0;
+		verifycount = 0;
+	}
+	
 	static public byte[] hash(byte[] data) {
 		try {
 			MessageDigest md=MessageDigest.getInstance("SHA-256");
@@ -38,6 +45,7 @@ public class DigestPrimitive implements SignaturePrimitives {
 	
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
+		signcount++;
 		out.setSignatureAlgorithm(SignatureAlgorithm.TEST_DIGEST);
 
 		//System.out.println("Signing '"+new String(data)+"' with "+new String(hash(data)));
@@ -47,6 +55,7 @@ public class DigestPrimitive implements SignaturePrimitives {
 
 	@Override
 	public boolean verify(byte[] data, TreeSigBlob sig) {
+		verifycount++;
 		//System.out.println("Validating '"+new String(data)+"' : "+new String(hash(data)) + "  == " + new String(sig.getSignatureBytes().toByteArray()));
 		if (sig.getSignatureAlgorithm() == SignatureAlgorithm.TEST_DIGEST)
 			return Arrays.equals(hash(data),sig.getSignatureBytes().toByteArray());
