@@ -18,6 +18,11 @@ public abstract class QueueBase implements ProcessQueue {
 		this.notify();
 	}
 
+	/** Get the current queue size */
+	public synchronized int peekSize() {
+		return queue.size();
+	}
+	
 	private void initQueue() {
 		queue = new ArrayList<Message>(32);
 	}
