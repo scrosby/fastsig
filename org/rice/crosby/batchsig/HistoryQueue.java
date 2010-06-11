@@ -50,6 +50,8 @@ public class HistoryQueue extends QueueBase {
 	
 	public synchronized void process() {
 		ArrayList<Message> oldqueue = atomicGetQueue();
+		if (oldqueue.size() == 0)
+			return;
 
 		/**
 		 * For now, only a single history tree process can be outstanding. The

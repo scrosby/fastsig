@@ -23,6 +23,8 @@ public class SimpleQueue extends QueueBase {
 
 	public void process() {
 		ArrayList<Message> oldqueue = atomicGetQueue();
+		if (oldqueue.size() == 0)
+			return;
 		for (Message m : oldqueue) {
 			TreeSigBlob.Builder sigblob = TreeSigBlob.newBuilder();
 			sigblob.setSignatureType(SignatureType.SINGLE_MESSAGE);

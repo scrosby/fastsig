@@ -29,6 +29,8 @@ public class MerkleQueue extends QueueBase {
 
 	public void process() {
 		ArrayList<Message> oldqueue = atomicGetQueue();
+		if (oldqueue.size() == 0)
+			return;
 		
 		AggregationInterface<byte[], byte[]> aggobj = new SHA256Agg();
 		ArrayStore<byte[], byte[]> datastore = new ArrayStore<byte[], byte[]>();
