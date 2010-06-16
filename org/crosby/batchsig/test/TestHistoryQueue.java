@@ -2,6 +2,7 @@ package org.crosby.batchsig.test;
 
 import org.junit.Test;
 import org.rice.crosby.batchsig.HistoryQueue;
+import org.rice.crosby.batchsig.ProcessQueue;
 import org.rice.crosby.batchsig.VerifyQueue;
 
 import junit.framework.TestCase;
@@ -72,7 +73,7 @@ public class TestHistoryQueue extends TestCase {
 		assertEquals(0,msg8.getSignatureBlob().getSpliceHintCount());
 		assertEquals(0,msg9.getSignatureBlob().getSpliceHintCount());
 	}
-
+	@Test
 	public void testVerify() {
 		DigestPrimitive prims = new DigestPrimitive();
 		HistoryQueue signqueue=new HistoryQueue(prims);
@@ -137,7 +138,7 @@ public class TestHistoryQueue extends TestCase {
 		msg3.wantValid(); verifyqueue.add(msg3);
 		msg4.wantValid(); verifyqueue.add(msg4);
 		verifyqueue.process();
-		assertEquals(2,prims.verifycount); // One for msg8, to a new recipient.
+		assertEquals(1,prims.verifycount); // One for msg8, to a new recipient.
 		
 		// Corrupt message 5.
 		msg5.data[1]=0;
@@ -150,8 +151,113 @@ public class TestHistoryQueue extends TestCase {
 		verifyqueue.process();
 	}
 
+	public void testVerify2() {
+		DigestPrimitive prims = new DigestPrimitive();
+		HistoryQueue signqueue=new HistoryQueue(prims);
+		
+		Object targets[] = new Object[20];
+		for (int i=0 ; i < targets.length ; i++) {
+			targets[i] = new Object();
+		}
 
+		MessageWrap msgA[] = {
+				new MessageWrap(1000).setRecipient(targets[1]), // A Two messages in the same group.
+				new MessageWrap(1001).setRecipient(targets[2]), // B Two messages in consecutive groups.
+				new MessageWrap(1002).setRecipient(targets[3]), // C Two messages in non-consecutive groups.
+				new MessageWrap(1003).setRecipient(targets[4]), 
+				new MessageWrap(1004).setRecipient(targets[1]), // A Two messages in the same group. 
+		};
 
+		MessageWrap msgB[] = {
+				new MessageWrap(1004).setRecipient(targets[2]), // B
+				new MessageWrap(1005).setRecipient(targets[4]), // D
+				new MessageWrap(1006).setRecipient(targets[0]), 
+				new MessageWrap(1007).setRecipient(targets[0])
+		};
 
+		MessageWrap msgC[] = {
+				new MessageWrap(1008).setRecipient(targets[3]), // C
+				new MessageWrap(1009).setRecipient(targets[4]), // D
+				new MessageWrap(1008).setRecipient(targets[0]), 
+				new MessageWrap(1009).setRecipient(targets[0]), 
+		};
+		
+		MessageWrap msgD[] = {
+				new MessageWrap(1008).setRecipient(targets[3]), // C
+				new MessageWrap(1009).setRecipient(targets[4]), // D
+				new MessageWrap(1008).setRecipient(targets[0]), 
+				new MessageWrap(1009).setRecipient(targets[0]), 
+		};
+		
+		HistoryQueue signqueue1=new HistoryQueue(prims);
+		playBatch(signqueue1,msgA);
+		playBatch(signqueue1,msgB);
+		playBatch(signqueue1,msgC);
+		
+		VerifyQueue verify;
+		
+		prims.reset();
+		verify = new VerifyQueue(prims);
+		verify.add(msgA[0]); msgA[0].wantValid();
+		verify.process();
+		assertEquals(1,prims.verifycount); // One redundant hash; two in same group.
+		
+		prims.reset();
+		verify = new VerifyQueue(prims);
+		verify.add(msgA[0]); msgA[0].wantValid();
+		verify.add(msgA[4]); msgA[4].wantValid();
+		verify.process();
+		assertEquals(1,prims.verifycount); // One redundant hash; two in same group.
+		
+		// This should splice together, only requiring one signature.
+		prims.reset();
+		verify = new VerifyQueue(prims);
+		verify.add(msgA[1]); msgA[1].wantValid();
+		verify.add(msgB[0]); msgB[0].wantValid();
+		verify.process();
+		assertEquals(1,prims.verifycount);
 
+		// This should splice together, only requiring one signature.
+		prims.reset();
+		verify = new VerifyQueue(prims);
+		verify.add(msgA[2]); msgA[2].wantValid();
+		verify.add(msgC[0]); msgC[0].wantValid();
+		verify.process();
+		assertEquals(1,prims.verifycount); // One redundant hash; two in same group.
+		
+		// TODO: This should not splice together, requiring two signatures.
+		prims.reset();
+		verify = new VerifyQueue(prims);
+		verify.add(msgA[1]); msgA[1].wantValid();
+		verify.add(msgC[1]); msgC[1].wantValid();
+		verify.process();
+		assertEquals(2,prims.verifycount); // One redundant hash; two in same group.
+		
+
+		
+		
+		
+		
+		
+		// Alternate version, to test bad hashes histories, but good (local) signatures.
+		MessageWrap msgAalt[] = {
+				new MessageWrap(2000).setRecipient(targets[1]),
+				new MessageWrap(2001).setRecipient(targets[1]),
+				new MessageWrap(2002).setRecipient(targets[2]),
+				new MessageWrap(2003).setRecipient(targets[3]),
+				new MessageWrap(2003).setRecipient(targets[4]), 
+		};
+		
+		
+		
+	}
+	static void playBatch(ProcessQueue queue, MessageWrap msg[]) {
+		play(queue,msg);
+		queue.process();
+	}
+	static void play(ProcessQueue queue, MessageWrap msg[]) {
+		for (int i = 0 ; i < msg.length ; i++) {
+			queue.add(msg[i]);
+		}
+	}
 }
