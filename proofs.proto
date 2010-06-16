@@ -1,5 +1,5 @@
 option java_outer_classname = "Serialization";
-option java_package = "org.rice.crosby.historytree.generated";
+option java_package = "edu.rice.historytree.generated";
 
 // A configuration message for an aggregator. An aggobj generates a config blob, which 
 // is placed in this message along with its name.
