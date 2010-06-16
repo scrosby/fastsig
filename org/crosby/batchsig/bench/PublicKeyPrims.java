@@ -13,15 +13,21 @@ import java.util.Date;
 
 import org.rice.crosby.batchsig.SignaturePrimitives;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
+import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob.SignatureAlgorithm;
 
 import com.google.protobuf.ByteString;
 
 public class PublicKeyPrims implements SignaturePrimitives {
-	static final byte default_signerid_bytes[] = "Test Public Signature".getBytes();
-	static final ByteString default_signerid = ByteString.copyFrom(default_signerid_bytes);
+	
+	final byte signer_id_bytes[];
+	final ByteString signer_id;
 	final Signature signer, verifier;
-
-	public PublicKeyPrims(String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException  {
+	final SignatureAlgorithm sigalgo;
+	
+	public PublicKeyPrims(String signer_id_string, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException  {
+		this.signer_id_bytes = signer_id_string.getBytes();
+		this.signer_id = ByteString.copyFrom(signer_id_bytes);
+		
 		System.out.println("START: "+(new Date()).toString());
 		KeyPairGenerator kpg = KeyPairGenerator.getInstance(algo);
 		kpg.initialize(size);
@@ -33,6 +39,15 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		signer.initSign(privateKey);
 		verifier = Signature.getInstance("SHA1with"+algo);
 		verifier.initVerify(publicKey);
+
+		if (algo.toLowerCase().equals("rsa")) {
+			sigalgo = SignatureAlgorithm.SHA1_RSA;
+		} else if (algo.toLowerCase().equals("dsa")) {
+			sigalgo = SignatureAlgorithm.SHA1_DSA;
+		} else {
+			throw new Error("Unknown signature algorithm");
+		}
+	
 	}
 
 	@Override
@@ -40,24 +55,25 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		try {
 		signer.update(data);
 		out.setSignatureBytes(ByteString.copyFrom(signer.sign()));
-		out.setSignerId(default_signerid);
+		out.setSignerId(signer_id);
 		} catch (SignatureException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 	@Override
 	public boolean verify(byte[] data, TreeSigBlob sig) {
-		// TODO Auto-generated method stub
-		if (!Arrays.equals(default_signerid_bytes, sig.getSignerId().toByteArray())) {
-			System.out.println("Mismatched signerids");
+		if (sig.getSignatureAlgorithm() != sigalgo) {
+			System.out.println("Info: Mismatched signature algorithms");
+			return false;
+		}
+		if (!Arrays.equals(signer_id_bytes, sig.getSignerId().toByteArray())) {
+			System.out.println("Info: Mismatched signerids");
 			return false;
 		}
 		try {
 			return verifier.verify(sig.getSignatureBytes().toByteArray());
 		} catch (SignatureException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}
