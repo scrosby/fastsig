@@ -32,6 +32,8 @@ public class HistoryQueue extends QueueBase {
 	
 	public HistoryQueue(SignaturePrimitives signer) {
 		super();
+		if (signer == null)
+			throw new NullPointerException();
 		this.signer = signer;
 		initTree();
 	}
