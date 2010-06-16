@@ -1,7 +1,7 @@
 /**
  * 
  */
-package edu.rice.batchsig.test;
+package edu.rice.batchsig;
 
 
 import edu.rice.batchsig.Message;

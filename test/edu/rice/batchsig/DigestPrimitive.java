@@ -1,4 +1,4 @@
-package edu.rice.batchsig.test;
+package edu.rice.batchsig;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

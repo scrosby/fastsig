@@ -1,4 +1,4 @@
-package edu.rice.historytree.test;
+package edu.rice.historytree;
 
 import java.util.Arrays;
 import java.util.List;
