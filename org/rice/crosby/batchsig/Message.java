@@ -4,7 +4,7 @@ import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 
 public interface Message {
 	/** Return the hash value associated with the message that is to be signed. The returned data 
-	 * *is* stored in the history tree. */
+	 * *is* stored in the history tree, so should probably be a hash of the actual underlying data being authenticated. */
 	byte []getData();
 
 	/** Callback invoked with the signed result. Used by the message signing thread to set the signature when it is computed. May be executed concurrently.
@@ -35,8 +35,5 @@ public interface Message {
 	 *  Used to optimize trying to splice history trees together. If unknown, use a singleton object 
 	 *  and splice-merging code will do the right thing using the tree_id.
 	 *  Return value must be suitable for a key in a hash table */
-	public Object getAuthor();
-	
-	
-	
+	public Object getAuthor();	
 }

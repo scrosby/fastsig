@@ -6,6 +6,7 @@ package org.crosby.batchsig.test;
 import org.rice.crosby.batchsig.Message;
 import org.rice.crosby.historytree.generated.Serialization.TreeSigBlob;
 
+/** Simple message creator that can store signatures and all the rest. */
 class MessageWrap implements Message {
 	final byte data[];
 	TreeSigBlob signature;
@@ -63,4 +64,8 @@ class MessageWrap implements Message {
 
 	public void wantValid() {targetvalidity = true;}
 	public void wantInValid() {targetvalidity = false;}
+	
+
+	
+	
 }
