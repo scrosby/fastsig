@@ -101,6 +101,7 @@ public class HistoryQueue extends QueueBase {
 
 	private void processMessage(Message message, int leaf_offset, TreeSigBlob.Builder template) {
 		try {
+			//System.out.println("Processing leaf " + leaf_offset);
 			// Make the pruned tree.
 			TreeBase<byte[], byte[]> pruned = histtree
 					.makePruned(new HashStore<byte[], byte[]>());
@@ -108,6 +109,8 @@ public class HistoryQueue extends QueueBase {
 
 			Object recipient = message.getRecipient();
 			if (lastcontacts.containsKey(recipient)) {
+				//System.out.println(lastcontacts.toString());
+				//System.out.println("Found a lastcontact of "+leaf_offset+"  "+lastcontacts.get(recipient));
 				int lastcontact = lastcontacts.get(recipient);
 				if (lastcontact != histtree.version()) {
 					pruned.copyV(histtree, lastcontacts.get(recipient),false);
