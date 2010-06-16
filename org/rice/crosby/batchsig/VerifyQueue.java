@@ -16,6 +16,8 @@ public class VerifyQueue extends QueueBase {
 	
 	public VerifyQueue(SignaturePrimitives signer) {
 		super();
+		if (signer == null)
+			throw new NullPointerException();
 		this.signer = signer;
 		this.verifier = new Verifier(signer);
 	}

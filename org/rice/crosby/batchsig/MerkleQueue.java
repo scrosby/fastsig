@@ -23,6 +23,8 @@ public class MerkleQueue extends QueueBase {
 
 	public MerkleQueue(SignaturePrimitives signer) {
 		super();
+		if (signer == null)
+			throw new NullPointerException();
 		this.signer = signer;
 	}
 
