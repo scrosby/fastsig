@@ -66,13 +66,15 @@ message TreeSigBlob {
   // Borrowed from ProtocolSignature (google wave) for the low-level signature.
   // Indicate how the 'TreeSigMessage' is signed.
   enum SignatureAlgorithm {
-    TEST_DIGEST = 1;
-    SHA1_RSA = 2;
+    UNKNOWN = 1; // Illegal
+    TEST_DIGEST = 2;
+    SHA1_RSA = 3;
+    SHA1_DSA = 4;
   }
 
   optional bytes signature_bytes = 1;
   optional bytes signer_id = 2;
-  required SignatureAlgorithm signature_algorithm = 3;
+  required SignatureAlgorithm signature_algorithm = 3 [default = UNKNOWN];
 
   // Stuff set by bundled signatures.
 
@@ -84,6 +86,10 @@ message TreeSigBlob {
    repeated int32 splice_hint = 17;
 }
 
+// Denotes a message data being signed.
+message MessageData {
+   required bytes message =1;
+}
 
 
 
