@@ -50,6 +50,9 @@ public class HistoryQueue extends QueueBase {
 	public long treeid;
 	public HistoryTree<byte[], byte[]> histtree;
 	
+	Object processLock = new Object();
+	
+	
 	public HistoryQueue(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
@@ -70,7 +73,7 @@ public class HistoryQueue extends QueueBase {
 			initTree();
 	}
 	
-	public synchronized void process() {
+	public void process() {
 		ArrayList<Message> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
@@ -85,7 +88,7 @@ public class HistoryQueue extends QueueBase {
 		 * TODO: If we fix that, then a simple many-readers/one-writers lock will 
 		 * allow concurrency between RSA, adding to the history tree and generating proofs.
 		 */
-		synchronized (histtree) {
+		synchronized (processLock) {
 			// First, is it big enough to build a new tree?
 			rotateStore(oldqueue.size());
 
@@ -150,6 +153,7 @@ public class HistoryQueue extends QueueBase {
 			message.signatureResult(template.build());
 		} catch (ProofError e) {
 			// Should never occur.
+			System.out.println("SHOULDNT OCCUR");
 			message.signatureResult(null); // Indicate error.
 			e.printStackTrace();
 		}
