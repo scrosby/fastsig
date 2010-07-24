@@ -42,7 +42,7 @@ public class IncomingMessage extends MessageBase {
 
 	@Override
 	public Object getRecipient() {
-		// TODO: Used when creating a message to be logged. Leaf unspecified for now.
+		// TODO: Used when creating a message to be logged. Leave unspecified for now.
 		throw new Error("Unimplemented");
 	}
 
@@ -53,7 +53,7 @@ public class IncomingMessage extends MessageBase {
 
 	@Override
 	public void signatureResult(TreeSigBlob message) {
-		// TODO: Used when creating a message to be logged. Leaf unspecified for now.
+		// TODO: Used when creating a message to be logged. Leave unspecified for now.
 		throw new Error("Unimplemented");
 	}
 

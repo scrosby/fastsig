@@ -48,21 +48,24 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		this.signer_id_bytes = signer_id_string.getBytes();
 		this.signer_id = ByteString.copyFrom(signer_id_bytes);
 		
-		System.out.println("START: "+(new Date()).toString());
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance(algo);
+		KeyPairGenerator kpg = KeyPairGenerator.getInstance(algo.substring(algo.length()-3));
 		kpg.initialize(size);
 		KeyPair kp = kpg.genKeyPair();
 		PublicKey publicKey = kp.getPublic();
 		PrivateKey privateKey = kp.getPrivate();
-
-		signer = Signature.getInstance("SHA1with"+algo);
+		
+		signer = Signature.getInstance(algo);
 		signer.initSign(privateKey);
-		verifier = Signature.getInstance("SHA1with"+algo);
+		verifier = Signature.getInstance(algo);
 		verifier.initVerify(publicKey);
 
-		if (algo.toLowerCase().equals("rsa")) {
+		if (algo.toLowerCase().equals("sha1withrsa")) {
 			sigalgo = SignatureAlgorithm.SHA1_RSA;
-		} else if (algo.toLowerCase().equals("dsa")) {
+		} else if (algo.toLowerCase().equals("sha1withdsa")) {
+			sigalgo = SignatureAlgorithm.SHA1_DSA;
+		} else if (algo.toLowerCase().equals("sha256withrsa")) {
+			sigalgo = SignatureAlgorithm.SHA1_RSA;
+		} else if (algo.toLowerCase().equals("sha256withdsa")) {
 			sigalgo = SignatureAlgorithm.SHA1_DSA;
 		} else {
 			throw new Error("Unknown signature algorithm");
@@ -74,6 +77,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
 		try {
 		signer.update(data);
+		out.setSignatureAlgorithm(sigalgo);
 		out.setSignatureBytes(ByteString.copyFrom(signer.sign()));
 		out.setSignerId(signer_id);
 		} catch (SignatureException e) {

@@ -35,6 +35,7 @@ public abstract class QueueBase implements ProcessQueue {
 	public synchronized void add(Message message) {
 		queue.add(message);
 		this.notify();
+		//System.out.println("QUEUE");
 	}
 
 	/** Get the current queue size */

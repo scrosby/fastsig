@@ -19,10 +19,15 @@
 
 package edu.rice.batchsig.bench;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 
 import edu.rice.historytree.generated.Serialization.MessageData;
@@ -31,10 +36,15 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 public class OutgoingMessage extends MessageBase {
 	CodedOutputStream output;
 	Object recipient;
+	LatencyTracker tracker;
+	long timestamp;
 	
-	public OutgoingMessage(CodedOutputStream output, byte data[], Object recipient) {
+	public OutgoingMessage(LatencyTracker tracker, CodedOutputStream output, byte data[], Object recipient) {
+		this.tracker = tracker;
+		this.output = output;
 		this.data = data;
 		this.recipient = recipient;
+		this.timestamp = System.currentTimeMillis();
 	}
 	
 	@Override
@@ -56,7 +66,9 @@ public class OutgoingMessage extends MessageBase {
 	public void signatureResult(TreeSigBlob sigblob) {
 		this.sigblob = sigblob;
 		try {
-			write();
+			track();
+			if (output != null)
+				writeTo(output);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -65,15 +77,14 @@ public class OutgoingMessage extends MessageBase {
 	@Override
 	public void signatureValidity(boolean valid) {
 		// TODO Auto-generated method stub
-
 	}
-
-	void write() throws IOException {
-		MessageData messagedata = MessageData.newBuilder().setMessage(ByteString.copyFrom(data)).build();
-		output.writeRawVarint32(messagedata.getSerializedSize());
-		messagedata.writeTo(output);
-		
-		output.writeRawVarint32(sigblob.getSerializedSize());
-		sigblob.writeTo(output);
+	
+	void track() {
+		if (tracker != null) {
+			tracker.add((int)(System.currentTimeMillis() - timestamp));
+			tracker.msgSize(this.sigblob.getSerializedSize());
+		}
 	}
+	
+
 }

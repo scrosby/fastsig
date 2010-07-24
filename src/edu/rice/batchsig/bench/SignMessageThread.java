@@ -23,19 +23,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.rice.batchsig.QueueBase;
 
-public class SignQueueProcessor implements Runnable {
-	final private int epochlength;
+/** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
+
+public class SignMessageThread extends Thread {
+	private int epochlength;
 	private QueueBase signqueue;
 	private AtomicBoolean finished = new AtomicBoolean(false);
 	
 	
-	SignQueueProcessor(QueueBase signqueue, int epochtime) {
+	SignMessageThread(QueueBase signqueue, int epochtime) {
 		this.signqueue = signqueue;
 		this.epochlength = epochtime;
 	}
 	
 
 	public void shutdown() {
+		this.interrupt();
 		finished.set(true);
 	}
 	
@@ -43,20 +46,25 @@ public class SignQueueProcessor implements Runnable {
 	@Override
 	public void run() {
 		while (!finished.get()) {
-			System.out.println("SIgning loop");
-			final long epochstart = System.currentTimeMillis();
+			//System.out.println("SigningLoop");
+			long epochstart = System.currentTimeMillis();
+			signqueue.suspendTillNonEmpty();
 			signqueue.process();
 
 			long now = System.currentTimeMillis();
 			while (now < epochlength+epochstart) {
 				try {
+					//System.out.println("SLEEPyy:"+(epochlength+epochstart-now));
 					Thread.sleep(epochlength+epochstart-now);
 				} catch (InterruptedException e) {
 				}
 				now = System.currentTimeMillis();
 			}
 		}
-		System.out.println("Exit signing loop");
+		//System.out.println("FinishSigning");
+		// Handle any trailing unprocessed stuff
 		signqueue.process();
+		signqueue.finish();
 	}
+	
 }
