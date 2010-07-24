@@ -73,4 +73,10 @@ public abstract class QueueBase implements ProcessQueue {
 	 * @see edu.rice.batchsig.SignerQueue#process(edu.rice.batchsig.Message)
 	 */
 	abstract public void process();
+
+	@Override
+	public void finish() {
+		// Do nothing.
+	}
 }
+

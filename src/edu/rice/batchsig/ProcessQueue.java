@@ -31,4 +31,8 @@ public interface ProcessQueue {
 	 */
 	abstract public void process();
 
+	/**
+	 * Indicate that all processing is done.
+	 */
+	abstract public void finish();
 }
