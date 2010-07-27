@@ -19,13 +19,18 @@
 
 package edu.rice.batchsig.bench;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 
 import edu.rice.batchsig.QueueBase;
@@ -33,21 +38,33 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class MakeMessagesThread extends Thread {
+public class ReplayMessagesThread extends Thread {
 	final private int rate;
-	final private QueueBase signqueue;
+	final private QueueBase verifyqueue;
 	final private Tracker tracker;
 	final private AtomicBoolean finished = new AtomicBoolean(false);
-	final private CodedOutputStream output;
+	final private FileInputStream fileinput;
+	private CodedInputStream input;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	MakeMessagesThread(QueueBase signqueue, CodedOutputStream output, Tracker tracker, int rate) {
-		this.signqueue = signqueue;
+	ReplayMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, Tracker tracker, int rate) {
+		this.verifyqueue = verifyqueue;
 		this.rate = rate;
 		this.tracker = tracker;
-		this.output = output;
+		this.fileinput = fileinput;
+		resetStream();
+	}
+	
+	private void resetStream() {
+		try {
+			fileinput.getChannel().position(0);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		this.input = CodedInputStream.newInstance(fileinput);
 	}
 	
 	public void shutdown() {
@@ -78,16 +95,14 @@ public class MakeMessagesThread extends Thread {
 				}
 			}
 		}
-		signqueue.finish();
+		verifyqueue.finish();
 	}
 
 	static long lastErr = 0;
 	static long skip = 0;
 	
-	long seqno = 0;
 	void addToQueue() {
-		seqno++;
-		if (signqueue.peekSize() > rate) {
+		if (verifyqueue.peekSize() > rate) {
 			skip++;
 			if (System.currentTimeMillis() > lastErr + 1000) {
 				System.err.format("Queue overfull(%d)\n",skip);
@@ -96,24 +111,15 @@ public class MakeMessagesThread extends Thread {
 				skip=0; lastErr = System.currentTimeMillis();
 			}
 		}
-		signqueue.add(new OutgoingMessage(tracker,output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
+		// Repeat until we get a good message.
+		do {
+			IncomingMessage msg = IncomingMessage.readFrom(input,tracker);
+			// Bad message. Reset the stream and try again.
+			if (msg != null ) {
+				verifyqueue.add(msg);
+				return;
+			}
+			resetStream();
+		} while (true);
 	}
-
-	void replayQueue() {
-	}
-	
-	
-	/* Future code for an unimplemented message generator subclass.
-	static Random rand = new Random();
-	static Object objs[] = new Object[20];
-	static {
-		for (int i = 0 ; i < objs.length ; i++)
-			objs[i] = new Object();
-	}
-
-	Object pickSource() {
-		return new Object();
-		// TODO: return objs[rand.nextInt(objs.length)];
-	}
-    */
 }

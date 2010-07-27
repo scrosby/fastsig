@@ -19,6 +19,13 @@
 
 package edu.rice.batchsig.bench;
 
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -34,23 +41,47 @@ import java.util.Date;
 import com.google.protobuf.ByteString;
 
 import edu.rice.batchsig.SignaturePrimitives;
+import edu.rice.historytree.generated.Serialization.SignatureType;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob.SignatureAlgorithm;
 
 public class PublicKeyPrims implements SignaturePrimitives {
 	
-	final byte signer_id_bytes[];
-	final ByteString signer_id;
-	final Signature signer, verifier;
-	final SignatureAlgorithm sigalgo;
+	byte signer_id_bytes[];
+	ByteString signer_id;
+	Signature signer, verifier;
+	SignatureAlgorithm sigalgo;
+	KeyPair kp;
 	
-	public PublicKeyPrims(String signer_id_string, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException  {
-		this.signer_id_bytes = signer_id_string.getBytes();
-		this.signer_id = ByteString.copyFrom(signer_id_bytes);
+	private PublicKeyPrims() {
+	}
+	
+	public static PublicKeyPrims make(String signer_id_string, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException  {
+		PublicKeyPrims out = new PublicKeyPrims();
 		
+		out.signer_id_bytes = signer_id_string.getBytes();
+		out.signer_id = ByteString.copyFrom(out.signer_id_bytes);
+
+		// If we already have it....
+		if (out.load(signer_id_string,algo,size))
+			return out;
+
+		System.err.println("Making new keypair");
+		
+		// Otherwise, generate it.
 		KeyPairGenerator kpg = KeyPairGenerator.getInstance(algo.substring(algo.length()-3));
 		kpg.initialize(size);
-		KeyPair kp = kpg.genKeyPair();
+		out.initialize(kpg.genKeyPair(),algo, size);
+		out.save(makeFilename(signer_id_string,algo,size));
+		return out;
+	}
+		
+	static String makeFilename(String signer_id_string, String algo, int size) {
+		return String.format("KEY.%s-%s-%d.key",signer_id_string,algo,size);
+	}
+	
+	void initialize(KeyPair kp, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException {
+		this.kp = kp;
 		PublicKey publicKey = kp.getPublic();
 		PrivateKey privateKey = kp.getPrivate();
 		
@@ -70,9 +101,47 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		} else {
 			throw new Error("Unknown signature algorithm");
 		}
+	}
 	
+	public void save(String filename) {
+		try {
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+			out.writeObject(kp);
+			out.close();
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 
+	public boolean load(String signer_id_string, String algo, int size) {
+		try {
+			ObjectInputStream input = new ObjectInputStream(new FileInputStream(makeFilename(signer_id_string,algo,size)));
+			initialize((KeyPair)input.readObject(),algo,size);
+			input.close();
+			return true;
+		} catch (IOException e) {
+			// If it fails, just generate it.
+			e.printStackTrace();
+			return false;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
 		try {
@@ -96,6 +165,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 			return false;
 		}
 		try {
+			verifier.update(data);
 			return verifier.verify(sig.getSignatureBytes().toByteArray());
 		} catch (SignatureException e) {
 			e.printStackTrace();

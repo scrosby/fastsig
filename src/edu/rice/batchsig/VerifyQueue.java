@@ -48,6 +48,10 @@ public class VerifyQueue extends QueueBase {
 
 		// Go over each message
 		for (Message m : oldqueue) {
+			if (m == null) {
+				System.err.println("Null message in queue?");
+				continue;
+			}
 			TreeSigBlob sigblob = m.getSignatureBlob();
 			if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE) {
 				// If it is a singlely signed message, check.

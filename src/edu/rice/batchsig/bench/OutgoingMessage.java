@@ -36,10 +36,10 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 public class OutgoingMessage extends MessageBase {
 	CodedOutputStream output;
 	Object recipient;
-	LatencyTracker tracker;
+	Tracker tracker;
 	long timestamp;
 	
-	public OutgoingMessage(LatencyTracker tracker, CodedOutputStream output, byte data[], Object recipient) {
+	public OutgoingMessage(Tracker tracker, CodedOutputStream output, byte data[], Object recipient) {
 		this.tracker = tracker;
 		this.output = output;
 		this.data = data;
@@ -67,9 +67,11 @@ public class OutgoingMessage extends MessageBase {
 		this.sigblob = sigblob;
 		try {
 			track();
-			if (output != null)
+			if (output != null) {
 				writeTo(output);
-		} catch (IOException e) {
+				output.flush();
+				}
+			} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -81,10 +83,21 @@ public class OutgoingMessage extends MessageBase {
 	
 	void track() {
 		if (tracker != null) {
-			tracker.add((int)(System.currentTimeMillis() - timestamp));
-			tracker.msgSize(this.sigblob.getSerializedSize());
+			tracker.trackLatency((int)(System.currentTimeMillis() - timestamp));
+			//System.out.println(this.sigblob.toString());
+			tracker.trackSize(this.sigblob.getSerializedSize());
 		}
 	}
-	
+	void writeTo(CodedOutputStream output) throws IOException {
+		//System.out.println("Writing");
+		MessageData messagedata = MessageData.newBuilder().setMessage(ByteString.copyFrom(data)).build();
 
+		output.writeDoubleNoTag(virtual_clock);
+		
+		output.writeRawVarint32(messagedata.getSerializedSize());
+		messagedata.writeTo(output);
+		
+		output.writeRawVarint32(sigblob.getSerializedSize());
+		sigblob.writeTo(output);
+	}
 }

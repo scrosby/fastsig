@@ -1,82 +1,67 @@
 package edu.rice.batchsig.bench;
 
-public abstract class Tracker {
-	boolean disabled;
-	protected int bucketcount;
-
-	public void reset() {
-		buckets = new long[bucketcount];
-		sum = 0;
-		n = 0;
-		max = -1;
-		disabled = true;
-	}
-
-	protected long buckets[];
-	protected long sum;
-	protected long n;
-	protected long max;
-
-	public Tracker() {
-		this(4001);
+public class Tracker {
+	static Tracker singleton = new Tracker();
+	
+	Histogram latencyhist = new Histogram();
+	Histogram sizehist = new Histogram();
+	boolean aborting;
+	
+	public void enable() {
+		latencyhist.enable();
+		sizehist.enable();
 	}
 	
-	private Tracker(int bucketcount) {
-		this.bucketcount = bucketcount;
-		reset();
+	public void reset() {
+		sizehist.reset();
+		latencyhist.reset();
+		aborting = false;
+	}
+	
+	public void markAbort() {
+		aborting = true;
 	}
 
-	void enable() {
-		disabled = false;
+	public boolean isAborting() {
+		return aborting;
+	}
+	
+	void trackSize(int i) {
+		sizehist.add(i);
 	}
 
-	public void add(int time) {
-		if (disabled)
-			return;
-		sum += time;
-		n++;
-		if (time > max) 
-			max = time;
-		if (time >= bucketcount) {
-			time = bucketcount-1;
-		}
-		buckets[time]++;
+	void trackLatency(int i) {
+		latencyhist.add(i);
 	}
-
-	long sum(int i, int j) {
-		long out=0;
-		for (int k=i ; k < j ; k++)
-			out += buckets[k];
-		return out;
-	}
-
-	void histLine(int i, int j) {
-		if (sum(i,bucketcount) == 0)
+	
+	private void latencyhistline(Histogram hist, int i, int j) {
+		if (latencyhist.sum(i,hist.bucketcount) == 0)
 			return;
 		if (i+1==j)
-			System.out.format("     % 4d : %d\n",i,sum(i,j));
+			System.out.format("     % 4d : %d\n",i,hist.sum(i,j));
 		else
-			System.out.format("% 4d-% 4d : %d\n",i,j,sum(i,j));	
+			System.out.format("% 4d-% 4d : %d\n",i,j,hist.sum(i,j));	
 	}
 
-	protected void print() {
-		System.out.format("N=%d  Avg=%f  Max=%d\n",n,(double)sum/n,max);
+	
+	protected void print(String prefix) {
+		System.out.format("%s:lat: N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
 		for (int i=0 ; i < 50 ; i++)
-			histLine(i,i+1);
-		histLine(50,60);
-		histLine(60,70);
-		histLine(70,80);
-		histLine(80,90);
-		histLine(90,100);
-		histLine(100,200);
-		histLine(200,300);
-		histLine(300,400);
-		histLine(400,500);
-		histLine(500,1000);
-		histLine(1000,2000);
-		histLine(2000,3000);
-		histLine(3000,4000);
-		histLine(4000,4001);
+			latencyhistline(latencyhist,i,i+1);
+		latencyhistline(latencyhist,50,60);
+		latencyhistline(latencyhist,60,70);
+		latencyhistline(latencyhist,70,80);
+		latencyhistline(latencyhist,80,90);
+		latencyhistline(latencyhist,90,100);
+		latencyhistline(latencyhist,100,200);
+		latencyhistline(latencyhist,200,300);
+		latencyhistline(latencyhist,300,400);
+		latencyhistline(latencyhist,400,500);
+		latencyhistline(latencyhist,500,1000);
+		latencyhistline(latencyhist,1000,2000);
+		latencyhistline(latencyhist,2000,3000);
+		latencyhistline(latencyhist,3000,4000);
+		latencyhistline(latencyhist,4000,4001);
+		System.out.format("%s:siz: N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
 	}
-
 }

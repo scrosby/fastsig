@@ -29,9 +29,16 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class IncomingMessage extends MessageBase {
-	private IncomingMessage(TreeSigBlob sig, MessageData data) {
+	private Tracker tracker;
+	/** The time that this message was created. Used to get processing latency */
+	private long creation_time;
+
+	private IncomingMessage(TreeSigBlob sig, MessageData data, double virtual_clock, Tracker tracker) {
 		this.sigblob = sig;
 		this.data = data.getMessage().toByteArray();
+		this.creation_time = System.currentTimeMillis();
+		this.virtual_clock = virtual_clock;
+		this.tracker = tracker;
 	}
 
 	@Override
@@ -59,16 +66,21 @@ public class IncomingMessage extends MessageBase {
 
 	@Override
 	public void signatureValidity(boolean valid) {
+		tracker.trackLatency((int)(System.currentTimeMillis()- creation_time));
+		/*
 		if (valid)
 			System.out.println("Signature valid");
 		else
 			System.out.println("Signature failed");
+	*/
 	}
 
-	static public IncomingMessage readFrom(CodedInputStream input) {
+	static public IncomingMessage readFrom(CodedInputStream input, Tracker tracker) {
 		try {
 			MessageData.Builder databuilder = MessageData.newBuilder();
 			TreeSigBlob.Builder sigbuilder= TreeSigBlob.newBuilder();
+			double virtual_clock = input.readDouble();
+			
 			input.readMessage(databuilder, ExtensionRegistryLite.getEmptyRegistry());
 			MessageData data = databuilder.build();
 			// No data means we're done.
@@ -76,7 +88,7 @@ public class IncomingMessage extends MessageBase {
 				return null;
 			input.readMessage(sigbuilder, ExtensionRegistryLite.getEmptyRegistry());
 			TreeSigBlob sig = sigbuilder.build();
-			return new IncomingMessage(sig,data);
+			return new IncomingMessage(sig,data,virtual_clock,tracker);
 	} catch (IOException e) {
 		return null;
 	}

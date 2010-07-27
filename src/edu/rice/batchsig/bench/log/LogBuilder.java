@@ -17,31 +17,26 @@
  *
  */
 
-package edu.rice.batchsig.bench;
+package edu.rice.batchsig.bench.log;
 
+import java.util.ArrayList;
 
-import java.io.IOException;
-import java.io.InputStream;
+import edu.rice.batchsig.bench.MessageBase;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedOutputStream;
+public class LogBuilder {
+	ArrayList <MessageBase> log;
 
-import edu.rice.batchsig.Message;
-import edu.rice.historytree.generated.Serialization.MessageData;
-import edu.rice.historytree.generated.Serialization.TreeSigBlob;
-
-abstract public class MessageBase implements Message {
-	protected TreeSigBlob sigblob;
-	protected byte [] data;
-	/** Contains a virtual clock time, for simulations */
-	protected double virtual_clock = 0.0;
 	
-	public MessageBase() {
-		super();
-	}
+	/* For signing benchmark, we look at outgoing messages.
+	 * 
+	 * 
+	 *  
+	 *  */
 
-	@Override
-	public byte[] getData() {
-		return data;
+	void handleMessage() {
+		// TODO
 	}
+	
+	
+	
 }
