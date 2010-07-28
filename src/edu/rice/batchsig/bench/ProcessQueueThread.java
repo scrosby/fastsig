@@ -23,15 +23,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.rice.batchsig.QueueBase;
 
-/** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
+/** Run processs over a at a given minimum epoch time. */
 
-public class SignMessageThread extends Thread {
+public class ProcessQueueThread extends Thread {
 	private int epochlength;
 	private QueueBase signqueue;
 	private AtomicBoolean finished = new AtomicBoolean(false);
 	
 	
-	SignMessageThread(QueueBase signqueue, int epochtime) {
+	ProcessQueueThread(QueueBase signqueue, int epochtime) {
 		if (signqueue == null)
 			throw new Error();
 		this.signqueue = signqueue;
