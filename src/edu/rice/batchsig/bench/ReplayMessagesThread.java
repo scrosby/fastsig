@@ -41,7 +41,6 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 public class ReplayMessagesThread extends Thread {
 	final private int rate;
 	final private QueueBase verifyqueue;
-	final private Tracker tracker;
 	final private AtomicBoolean finished = new AtomicBoolean(false);
 	final private FileInputStream fileinput;
 	private CodedInputStream input;
@@ -49,10 +48,13 @@ public class ReplayMessagesThread extends Thread {
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplayMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, Tracker tracker, int rate) {
+	ReplayMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+		if (fileinput == null)
+			throw new Error();
+		if (verifyqueue == null)
+			throw new Error();
 		this.verifyqueue = verifyqueue;
 		this.rate = rate;
-		this.tracker = tracker;
 		this.fileinput = fileinput;
 		resetStream();
 	}
@@ -107,13 +109,13 @@ public class ReplayMessagesThread extends Thread {
 			if (System.currentTimeMillis() > lastErr + 1000) {
 				System.err.format("Queue overfull(%d)\n",skip);
 				if (skip > 1)
-					tracker.markAbort();
+					Tracker.singleton.markAbort();
 				skip=0; lastErr = System.currentTimeMillis();
 			}
 		}
 		// Repeat until we get a good message.
 		do {
-			IncomingMessage msg = IncomingMessage.readFrom(input,tracker);
+			IncomingMessage msg = IncomingMessage.readFrom(input);
 			// Bad message. Reset the stream and try again.
 			if (msg != null ) {
 				verifyqueue.add(msg);

@@ -1,11 +1,16 @@
 package edu.rice.batchsig.bench;
 
 public class Tracker {
-	static Tracker singleton = new Tracker();
+	public static Tracker singleton = new Tracker();
 	
 	Histogram latencyhist = new Histogram();
 	Histogram sizehist = new Histogram();
 	boolean aborting;
+	int signcount,verifycount;
+	
+	private Tracker() {
+		reset();
+	}
 	
 	public void enable() {
 		latencyhist.enable();
@@ -16,6 +21,7 @@ public class Tracker {
 		sizehist.reset();
 		latencyhist.reset();
 		aborting = false;
+		signcount = verifycount = 0;
 	}
 	
 	public void markAbort() {

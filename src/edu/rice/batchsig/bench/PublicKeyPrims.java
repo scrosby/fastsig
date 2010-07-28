@@ -145,6 +145,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
 		try {
+		Tracker.singleton.signcount++;
 		signer.update(data);
 		out.setSignatureAlgorithm(sigalgo);
 		out.setSignatureBytes(ByteString.copyFrom(signer.sign()));
@@ -165,6 +166,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 			return false;
 		}
 		try {
+			Tracker.singleton.verifycount++;
 			verifier.update(data);
 			return verifier.verify(sig.getSignatureBytes().toByteArray());
 		} catch (SignatureException e) {

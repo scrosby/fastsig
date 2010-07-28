@@ -51,7 +51,7 @@ public class SignLog implements Runnable {
 
 	public void run() {
 		Message message;
-		while ((message = IncomingMessage.readFrom(input,null)) != null) {
+		while ((message = IncomingMessage.readFrom(input)) != null) {
 			queue.add(message);
 		}
 	}

@@ -32,6 +32,8 @@ public class SignMessageThread extends Thread {
 	
 	
 	SignMessageThread(QueueBase signqueue, int epochtime) {
+		if (signqueue == null)
+			throw new Error();
 		this.signqueue = signqueue;
 		this.epochlength = epochtime;
 	}

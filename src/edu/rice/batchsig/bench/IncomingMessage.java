@@ -29,16 +29,14 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class IncomingMessage extends MessageBase {
-	private Tracker tracker;
 	/** The time that this message was created. Used to get processing latency */
 	private long creation_time;
 
-	private IncomingMessage(TreeSigBlob sig, MessageData data, double virtual_clock, Tracker tracker) {
+	private IncomingMessage(TreeSigBlob sig, MessageData data, long virtual_clock) {
 		this.sigblob = sig;
 		this.data = data.getMessage().toByteArray();
 		this.creation_time = System.currentTimeMillis();
 		this.virtual_clock = virtual_clock;
-		this.tracker = tracker;
 	}
 
 	@Override
@@ -66,7 +64,7 @@ public class IncomingMessage extends MessageBase {
 
 	@Override
 	public void signatureValidity(boolean valid) {
-		tracker.trackLatency((int)(System.currentTimeMillis()- creation_time));
+		Tracker.singleton.trackLatency((int)(System.currentTimeMillis()- creation_time));
 		/*
 		if (valid)
 			System.out.println("Signature valid");
@@ -75,11 +73,11 @@ public class IncomingMessage extends MessageBase {
 	*/
 	}
 
-	static public IncomingMessage readFrom(CodedInputStream input, Tracker tracker) {
+	static public IncomingMessage readFrom(CodedInputStream input) {
 		try {
 			MessageData.Builder databuilder = MessageData.newBuilder();
 			TreeSigBlob.Builder sigbuilder= TreeSigBlob.newBuilder();
-			double virtual_clock = input.readDouble();
+			long virtual_clock = input.readUInt64();
 			
 			input.readMessage(databuilder, ExtensionRegistryLite.getEmptyRegistry());
 			MessageData data = databuilder.build();
@@ -88,7 +86,7 @@ public class IncomingMessage extends MessageBase {
 				return null;
 			input.readMessage(sigbuilder, ExtensionRegistryLite.getEmptyRegistry());
 			TreeSigBlob sig = sigbuilder.build();
-			return new IncomingMessage(sig,data,virtual_clock,tracker);
+			return new IncomingMessage(sig,data,virtual_clock);
 	} catch (IOException e) {
 		return null;
 	}

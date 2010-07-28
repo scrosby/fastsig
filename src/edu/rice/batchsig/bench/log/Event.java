@@ -5,10 +5,10 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class Event {
 	Object sender, recipient;
-	double timestamp;
+	long timestamp;
 	int size;
 	
-	Event(Object sender, Object recipient, double timestamp, int size) {
+	Event(Object sender, Object recipient, long timestamp, int size) {
 		this.sender = sender;
 		this.recipient = recipient;
 		this.timestamp = timestamp;
@@ -16,10 +16,10 @@ public class Event {
 	}
 	
 	
-	public double getTimestamp() {
+	public long getTimestamp() {
 		return timestamp;
 	}
-	public void setTimestamp(double d) {
+	public void setTimestamp(long d) {
 		this.timestamp = d;
 	}
 

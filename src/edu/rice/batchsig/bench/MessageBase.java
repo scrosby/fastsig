@@ -34,7 +34,7 @@ abstract public class MessageBase implements Message {
 	protected TreeSigBlob sigblob;
 	protected byte [] data;
 	/** Contains a virtual clock time, for simulations */
-	protected double virtual_clock = 0.0;
+	protected long virtual_clock = -1;
 	
 	public MessageBase() {
 		super();
@@ -44,4 +44,12 @@ abstract public class MessageBase implements Message {
 	public byte[] getData() {
 		return data;
 	}
+
+	public long getVirtualClock() {
+		return virtual_clock;
+	}
+	public void setVirtualClock(long d) {
+		this.virtual_clock = d;
+	}
+
 }

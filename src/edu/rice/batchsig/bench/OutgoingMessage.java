@@ -36,15 +36,13 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 public class OutgoingMessage extends MessageBase {
 	CodedOutputStream output;
 	Object recipient;
-	Tracker tracker;
-	long timestamp;
+	long creation_time;
 	
-	public OutgoingMessage(Tracker tracker, CodedOutputStream output, byte data[], Object recipient) {
-		this.tracker = tracker;
+	public OutgoingMessage(CodedOutputStream output, byte data[], Object recipient) {
 		this.output = output;
 		this.data = data;
 		this.recipient = recipient;
-		this.timestamp = System.currentTimeMillis();
+		this.creation_time = System.currentTimeMillis();
 	}
 	
 	@Override
@@ -82,8 +80,9 @@ public class OutgoingMessage extends MessageBase {
 	}
 	
 	void track() {
+		Tracker tracker = Tracker.singleton;
 		if (tracker != null) {
-			tracker.trackLatency((int)(System.currentTimeMillis() - timestamp));
+			tracker.trackLatency((int)(System.currentTimeMillis() - creation_time));
 			//System.out.println(this.sigblob.toString());
 			tracker.trackSize(this.sigblob.getSerializedSize());
 		}
@@ -92,7 +91,7 @@ public class OutgoingMessage extends MessageBase {
 		//System.out.println("Writing");
 		MessageData messagedata = MessageData.newBuilder().setMessage(ByteString.copyFrom(data)).build();
 
-		output.writeDoubleNoTag(virtual_clock);
+		output.writeUInt64NoTag(virtual_clock);
 		
 		output.writeRawVarint32(messagedata.getSerializedSize());
 		messagedata.writeTo(output);

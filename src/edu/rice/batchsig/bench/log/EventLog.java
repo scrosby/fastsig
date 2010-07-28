@@ -20,11 +20,18 @@
 package edu.rice.batchsig.bench.log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import com.google.protobuf.CodedOutputStream;
+
+import edu.rice.batchsig.QueueBase;
+import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.MessageBase;
+import edu.rice.batchsig.bench.OutgoingMessage;
+import edu.rice.batchsig.bench.PublicKeyPrims;
 
 /** Contain a queue of timestamped messages queued by arrival time. */
 public class EventLog implements Iterable<Event> {
@@ -148,6 +155,61 @@ public class EventLog implements Iterable<Event> {
 				tmp.add(e);
 		log = tmp.toArray(new Event[0]);
 	}
+
+	final double EPOCHLENGTH = .100;
+
+	/** Replay signers from a single source to many recipients */
+	void replaySign(QueueBase senderqueue, HashMap<Object,CodedOutputStream> streammap) {
+		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
+		for (Event e : log) {
+			OutgoingMessage msg = new OutgoingMessage(streammap.get(e.getRecipient()),new byte[e.size], e.getRecipient());
+			if (e.getTimestamp() > epochend) {
+				epochend = e.getTimestamp() + EPOCHLENGTH;
+				senderqueue.process();
+			}
+			senderqueue.add(msg);
+		}
+	}
+	
+	/** Replay signers from from many sources to many recipients */
+	void replaySign(HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
+		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
+		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();
+		for (Event e : log) {
+			OutgoingMessage msg = new OutgoingMessage(streammap.get(e.getRecipient()),new byte[e.size], e.getRecipient());
+			QueueBase senderqueue = queuemap.get(e.getSender());
+			if (e.getTimestamp() > epochend) {
+				epochend = e.getTimestamp() + EPOCHLENGTH;
+				for (QueueBase queue : needsProcessing)
+					queue.process();
+				needsProcessing.clear();
+			}
+			senderqueue.add(msg);
+			needsProcessing.add(senderqueue);
+		}
+	}
+
+	MultiplexedPublicKeyPrims prims;
+	
+	/** Verify a log of messages */
+	void replayVerify(String algo, int size) {
+		long bias = -1; // Difference betweeen 'real' clock and virtual clock.
+
+		// First pass: Preload all of the verification keys and get the timestamp bias.
+		while (true) {
+			IncomingMessage im = null; // TODO: PUT IN REAL FETCH HERE.
+			if (bias == -1)
+				bias = im.getVirtualClock();
+			prims.load(im.getSignatureBlob())
+
+		// Second pass (and until termination)
+		while (true) {
+			IncomingMessage im = null;
+			
+			
+		}
+		
+	}
 	
 	
 	/* Simulation infrastructure:
@@ -155,6 +217,9 @@ public class EventLog implements Iterable<Event> {
 	 *  When signing: 
 	 *     We have one queue for each sender object; we model each sender independently and use a virtual clock, triggering process()'s when appropriate. 
 	 *     Each destination is placed into a different output file. 
+     *         This is done by instantiating OutgoingMessage with the correct outgoing stream.
+	 *
+     *     Each distinct signer has a separate queue for processing, and its own publickeyprims.
 	 *
 	 *  When verifying:
 	 *

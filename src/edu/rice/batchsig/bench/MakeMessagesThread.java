@@ -36,17 +36,15 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 public class MakeMessagesThread extends Thread {
 	final private int rate;
 	final private QueueBase signqueue;
-	final private Tracker tracker;
 	final private AtomicBoolean finished = new AtomicBoolean(false);
 	final private CodedOutputStream output;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	MakeMessagesThread(QueueBase signqueue, CodedOutputStream output, Tracker tracker, int rate) {
+	MakeMessagesThread(QueueBase signqueue, CodedOutputStream output, int rate) {
 		this.signqueue = signqueue;
 		this.rate = rate;
-		this.tracker = tracker;
 		this.output = output;
 	}
 	
@@ -92,11 +90,11 @@ public class MakeMessagesThread extends Thread {
 			if (System.currentTimeMillis() > lastErr + 1000) {
 				System.err.format("Queue overfull(%d)\n",skip);
 				if (skip > 1)
-					tracker.markAbort();
+					Tracker.singleton.markAbort();
 				skip=0; lastErr = System.currentTimeMillis();
 			}
 		}
-		signqueue.add(new OutgoingMessage(tracker,output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
+		signqueue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
 	}
 
 	void replayQueue() {
