@@ -25,7 +25,7 @@ import edu.rice.batchsig.QueueBase;
 
 /** Run processs over a at a given minimum epoch time. */
 
-public class ProcessQueueThread extends Thread {
+public class ProcessQueueThread extends Thread implements ShutdownableThread {
 	private int epochlength;
 	private QueueBase signqueue;
 	private AtomicBoolean finished = new AtomicBoolean(false);

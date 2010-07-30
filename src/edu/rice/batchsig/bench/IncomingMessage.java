@@ -89,7 +89,7 @@ public class IncomingMessage extends MessageBase {
 			return new IncomingMessage(sig,data,virtual_clock);
 	} catch (IOException e) {
 		return null;
+	}	
 	}
-}
 
 }

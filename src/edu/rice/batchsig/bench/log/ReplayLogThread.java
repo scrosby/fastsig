@@ -17,7 +17,7 @@
  *
  */
 
-package edu.rice.batchsig.bench;
+package edu.rice.batchsig.bench.log;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,20 +34,26 @@ import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 
 import edu.rice.batchsig.QueueBase;
+import edu.rice.batchsig.bench.IncomingMessage;
+import edu.rice.batchsig.bench.IncomingMessageStream;
+import edu.rice.batchsig.bench.ShutdownableThread;
+import edu.rice.batchsig.bench.Tracker;
 import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class ReplayMessagesThread extends Thread implements ShutdownableThread {
+public class ReplayLogThread extends Thread implements ShutdownableThread {
 	final private int rate;
 	final private QueueBase verifyqueue;
 	final private AtomicBoolean finished = new AtomicBoolean(false);
 	final private IncomingMessageStream input;
+	long bias = -1; // Difference betweeen 'real' clock and virtual clock.
+
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplayMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+	ReplayLogThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
 		if (fileinput == null)
 			throw new Error();
 		if (verifyqueue == null)
@@ -57,6 +63,21 @@ public class ReplayMessagesThread extends Thread implements ShutdownableThread {
 		this.input = new IncomingMessageStream(fileinput);
 	}
 
+	/** Setup the replay log, preloading the bias and the keys. */
+	void setup(MultiplexedPublicKeyPrims prims) {
+		long bias = -1; // Difference betweeen 'real' clock and virtual clock.
+
+		// First pass: Preload all of the verification keys and get the timestamp bias.
+		IncomingMessage im;
+		while ((im = input.nextOnePass()) != null) {
+			if (bias == -1)
+				bias = im.getVirtualClock();
+			prims.load(im.getSignatureBlob()); // Fetch the signature blob.
+		}
+		input.resetStream();
+	}
+	
+	
 	/* (non-Javadoc)
 	 * @see edu.rice.batchsig.bench.ShutdownableThread#shutdown()
 	 */
@@ -70,23 +91,23 @@ public class ReplayMessagesThread extends Thread implements ShutdownableThread {
 		long initTime = System.currentTimeMillis(); // When we started.
 		long insertedNum = 0;
 		while (!finished.get()) {
+			IncomingMessage msg = input.next();
+			
+			// Offset in ms from the first message in the log.
+			long msgOffsetTime = msg.getVirtualClock()-bias;
+			// What time should we insert.
+			long injectTime = msgOffsetTime + initTime;
 			long now = System.currentTimeMillis();
-			long deltaTime = now-initTime; // Ok. In DELTA ms, we should have inserted..
-			long targetNum = deltaTime*rate/1000; // this many messages.
-			if (insertedNum < targetNum) {
-				while (insertedNum < targetNum) {
-					insertedNum++;
-					verifyqueue.add(input.next());
-					checkQueueOverflow();
-				}
-			} else { 
-				// (insertNum+1)/rate*1000  (but we rearrange for better roundoff
-				long wakeupTime = initTime + (insertedNum+1)*1000/rate;
+
+			if (injectTime > now) {
 				// Running ahead. Lets sleep for a little bit. 
 				try {
-					Thread.sleep(wakeupTime-now);
+					Thread.sleep(injectTime-now);
 				} catch (InterruptedException e) {
 				}
+			} else {
+				verifyqueue.add(input.nextOnePass());
+				checkQueueOverflow();
 			}
 		}
 		verifyqueue.finish();

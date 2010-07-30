@@ -38,46 +38,37 @@ class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 		this.size = size;
 	}
 	
+	public SignaturePrimitives load(String signer) {
+		try {
+			if (!map.containsKey(signer))
+				map.put(signer,PublicKeyPrims.make(signer, algo, size));
+			return map.get(signer);
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 	
-	SignaturePrimitives load(TreeSigBlob.Builder msg) throws InvalidKeyException, NoSuchAlgorithmException {
-		String signer = msg.getSignerId().toStringUtf8();
-		if (!map.containsKey(msg.getSignerId().toStringUtf8()))
-			map.put(signer,PublicKeyPrims.make(signer, algo, size));
-		return map.get(signer);
+	public SignaturePrimitives load(TreeSigBlob.Builder msg) {
+		return load(msg.getSignerId().toStringUtf8());
 	}
 
-	SignaturePrimitives load(TreeSigBlob msg) throws InvalidKeyException, NoSuchAlgorithmException {
-		String signer = msg.getSignerId().toStringUtf8();
-		if (!map.containsKey(msg.getSignerId().toStringUtf8()))
-			map.put(signer,PublicKeyPrims.make(signer, algo, size));
-		return map.get(signer);
+	public SignaturePrimitives load(TreeSigBlob msg) {
+		return load(msg.getSignerId().toStringUtf8());
 	}
 	
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
-		try {
-			load(out).sign(data, out);
-		} catch (InvalidKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		load(out).sign(data, out);
 	}
 
 	@Override
 	public boolean verify(byte[] data, TreeSigBlob sig) {
-		try {
-			return load(sig).verify(data, sig);
-		} catch (InvalidKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+		return load(sig).verify(data, sig);
 	}
 
 

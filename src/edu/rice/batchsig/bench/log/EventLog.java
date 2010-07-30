@@ -39,7 +39,7 @@ public class EventLog implements Iterable<Event> {
 
 
 	/** Add a timestamp offset to all messages in the log. */
-	public void offset(float offset) {
+	public void offset(long offset) {
 		for (Event i : log) {
 			i.setTimestamp(i.getTimestamp()+offset);
 		}		
@@ -171,7 +171,9 @@ public class EventLog implements Iterable<Event> {
 		}
 	}
 	
-	/** Replay signers from from many sources to many recipients */
+	/** Replay signers from from many sources to many recipients. 
+	 * 
+	 * Can be used to generate a replay file for verification.  */
 	void replaySign(HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
 		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
 		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();
@@ -190,28 +192,7 @@ public class EventLog implements Iterable<Event> {
 	}
 
 	MultiplexedPublicKeyPrims prims;
-	
-	/** Verify a log of messages */
-	void replayVerify(String algo, int size) {
-		long bias = -1; // Difference betweeen 'real' clock and virtual clock.
-
-		// First pass: Preload all of the verification keys and get the timestamp bias.
-		while (true) {
-			IncomingMessage im = null; // TODO: PUT IN REAL FETCH HERE.
-			if (bias == -1)
-				bias = im.getVirtualClock();
-			prims.load(im.getSignatureBlob())
-
-		// Second pass (and until termination)
-		while (true) {
-			IncomingMessage im = null;
-			
-			
-		}
 		
-	}
-	
-	
 	/* Simulation infrastructure:
 	 * 
 	 *  When signing: 

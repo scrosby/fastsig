@@ -33,7 +33,7 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class MakeMessagesThread extends Thread {
+public class MakeMessagesThread extends Thread implements ShutdownableThread {
 	final private int rate;
 	final private QueueBase signqueue;
 	final private AtomicBoolean finished = new AtomicBoolean(false);
@@ -64,7 +64,8 @@ public class MakeMessagesThread extends Thread {
 			if (insertedNum < targetNum) {
 				while (insertedNum < targetNum) {
 					insertedNum++;
-					addToQueue();
+					signqueue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
+					checkQueueOverflow();
 				}
 			} else { 
 				// (insertNum+1)/rate*1000  (but we rearrange for better roundoff
@@ -83,7 +84,7 @@ public class MakeMessagesThread extends Thread {
 	static long skip = 0;
 	
 	long seqno = 0;
-	void addToQueue() {
+	void checkQueueOverflow() {
 		seqno++;
 		if (signqueue.peekSize() > rate) {
 			skip++;
@@ -94,7 +95,6 @@ public class MakeMessagesThread extends Thread {
 				skip=0; lastErr = System.currentTimeMillis();
 			}
 		}
-		signqueue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
 	}
 
 	void replayQueue() {

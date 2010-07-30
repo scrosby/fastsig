@@ -54,72 +54,91 @@ import edu.rice.batchsig.VerifyQueue;
 
 
 public class BenchSigner {
-	boolean isBatch, isBig;
-	QueueBase signqueue, verifyqueue;
+	boolean isBatch, isBig, isVerifying;
+	QueueBase queue; // One of the three signing queues or a verifying queue 
 	SignaturePrimitives prims;
 	//String ciphertype;
 	CommandLine commands;
 	
 
-	public void initialization(CodedOutputStream output, int makeRate, int signRate, int sleepTime) throws InterruptedException {
-		MakeMessagesThread makeThread = new MakeMessagesThread(signqueue, output, makeRate);
-		SignMessageThread signThread = new SignMessageThread(signqueue, signRate);
+	/** Setup to do a single run of signing, creating and waiting for the threads to die. */
+	protected void doSigningRun(CodedOutputStream output, int makeRate, int signRate, int sleepTime) {
+		MakeMessagesThread makeThread = new MakeMessagesThread(queue, output, makeRate);
+		doCommon(sleepTime, makeThread);
+		}
+
+	/** Setup to do a single run of verifying, creating and waiting for the threads to die. */
+	protected void doVerifyingRun(FileInputStream input, int makeRate, int signRate, int sleepTime) {
+		ReplayMessagesThread makeThread = new ReplayMessagesThread(queue,input, makeRate);
+		doCommon(sleepTime, makeThread);
+		}
+
+	
+	private void doCommon(int sleepTime, ShutdownableThread makeThread) {
+		ProcessQueueThread processThread = new ProcessQueueThread(queue, 0);
 		makeThread.start();
-		signThread.start();
-		Thread.sleep(sleepTime);
-		makeThread.shutdown(); makeThread.join();
-		signThread.shutdown(); signThread.join();
+		processThread.start();
+		try {
+			Thread.sleep(sleepTime);
+			makeThread.shutdown(); makeThread.join();
+			processThread.shutdown(); processThread.join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		
-	public void hotSpot(CodedOutputStream output) throws InterruptedException {
+	}
+
+	/** Do some processing to warm up the hotspot compiler */
+	public void hotspotSigning(CodedOutputStream output) throws InterruptedException {
 		if (isBatch) {
-			this.initialization(output,100,1,500);
-			this.initialization(output,1000,1,1000);
-			this.initialization(output,10000,1,5000);
+			this.doSigningRun(output,100,1,500);
+			this.doSigningRun(output,1000,1,1000);
+			this.doSigningRun(output,10000,1,5000);
 			if (isBig) 
-				this.initialization(output,10000, 1, BIGTIME);
+				this.doSigningRun(output,10000, 1, BIGTIME);
 		} else {
-			this.initialization(output,10,1,100);
+			this.doSigningRun(output,10,1,100);
 			if (commands.hasOption("rsa")) {
-				this.initialization(output,50,1,1000);
-				this.initialization(output,50,1,5000);
+				this.doSigningRun(output,50,1,1000);
+				this.doSigningRun(output,50,1,5000);
 				if (isBig)
-					this.initialization(output,50, 1, BIGTIME);
+					this.doSigningRun(output,50, 1, BIGTIME);
 			} else {
-				this.initialization(output,50,1,1000);
-				this.initialization(output,300,1,5000);
+				this.doSigningRun(output,50,1,1000);
+				this.doSigningRun(output,300,1,5000);
 				if (isBig)
-					this.initialization(output,300, 1, BIGTIME);
+					this.doSigningRun(output,300, 1, BIGTIME);
 			}
 		}
 	}
 
-	public void hotSpot(FileInputStream input) throws InterruptedException {
+	/** Do some processing to warm up the hotspot compiler */
+	public void hotSpotVerifying(FileInputStream input) throws InterruptedException {
 		if (isBatch) {
-			this.initialization(input,100,1,500);
-			this.initialization(input,1000,1,1000);
-			this.initialization(input,10000,1,5000);
+			this.doVerifyingRun(input,100,1,500);
+			this.doVerifyingRun(input,1000,1,1000);
+			this.doVerifyingRun(input,10000,1,5000);
 			if (isBig) 
-				this.initialization(input,10000, 1, BIGTIME);
+				this.doVerifyingRun(input,10000, 1, BIGTIME);
 		} else {
-			this.initialization(input,10,1,100);
+			this.doVerifyingRun(input,10,1,100);
 			if (commands.hasOption("rsa")) {
-				this.initialization(input,50,1,1000);
-				this.initialization(input,50,1,5000);
+				this.doVerifyingRun(input,50,1,1000);
+				this.doVerifyingRun(input,50,1,5000);
 				if (isBig)
-					this.initialization(input,50, 1, BIGTIME);
+					this.doVerifyingRun(input,50, 1, BIGTIME);
 			} else {
-				this.initialization(input,50,1,1000);
-				this.initialization(input,300,1,5000);
+				this.doVerifyingRun(input,50,1,1000);
+				this.doVerifyingRun(input,300,1,5000);
 				if (isBig)
-					this.initialization(input,300, 1, BIGTIME);
+					this.doVerifyingRun(input,300, 1, BIGTIME);
 			}
 		}
 	}
 
 	
 	
-	/*
+	/*// IMPLEMENT LATER: Non-auto-scaling test. 
 	public void doBenchOne() throws InterruptedException {
 		Tracker.singleton.enable();
 		int time = isBig ? BIGTIME : 5000;
@@ -134,16 +153,20 @@ public class BenchSigner {
 	static final int BIGTIME = 120000;
 	static final int NORMALTIME = 5000;
 
-	public void doBenchMany(CodedOutputStream output) throws InterruptedException {
-		int time = isBig ? NORMALTIME : 5000;
+	public void doBenchMany(CallBack cb) throws InterruptedException {
 		int rate,incr;
 		if (isBatch) {
 			rate = 10000;
 			incr = 1000;
 		} else {
 			if (commands.hasOption("rsa")) {
-				rate = 12;
-				incr = 4;
+				if (isVerifying) {
+					rate = 1000;
+					incr = 100;
+				} else {
+					rate = 12;
+					incr = 4;
+				}
 			} else {
 				rate = 300;
 				incr = 5;
@@ -154,15 +177,18 @@ public class BenchSigner {
 			System.err.flush();
 			Tracker.singleton.reset();
 			Tracker.singleton.enable();
-			initialization(output,rate,1,time);
+			cb.run(rate);
 			Tracker.singleton.print(String.format("%05d",rate));
 			rate += incr;
 		} while(Tracker.singleton.isAborting() != true);
 	}
 
-	
+	interface CallBack {
+		void run(int rate);
+	}
+	/*
 	public void doBenchMany(FileInputStream input) throws InterruptedException {
-		int time = isBig ? NORMALTIME : 5000;
+		int time = isBig ? BIGTIME : NORMALTIME;
 		int rate,incr;
 		if (isBatch) {
 			rate = 10000;
@@ -181,12 +207,12 @@ public class BenchSigner {
 			System.err.flush();
 			Tracker.singleton.reset();
 			Tracker.singleton.enable();
-			initialization(input,rate,1,time);
+			doVerifyingRun(input,rate,1,time);
 			Tracker.singleton.print(String.format("%05d",rate));
 			rate += incr;
 		} while(Tracker.singleton.isAborting() != true);
 	}
-	
+	*/
 	
 	
 	@SuppressWarnings("static-access")
@@ -227,15 +253,6 @@ public class BenchSigner {
 		return o;
 	}
 
-	public void initialization(FileInputStream input, int makeRate, int signRate, int sleepTime) throws InterruptedException {
-		ReplayMessagesThread makeThread = new ReplayMessagesThread(verifyqueue,input, makeRate);
-		SignMessageThread signThread = new SignMessageThread(verifyqueue, 0);
-		makeThread.start();
-		signThread.start();
-		Thread.sleep(sleepTime);
-		makeThread.shutdown(); makeThread.join();
-		signThread.shutdown(); signThread.join();
-		}
 	
 	
 	
@@ -249,38 +266,43 @@ public class BenchSigner {
 			isBig = true;
 		else
 			isBig = false;
-		
+
+		final int time = isBig ? BIGTIME : NORMALTIME;
+				
 		if (commands.hasOption("history")) {
 			isBatch = true;
-			signqueue=new HistoryQueue(prims);
+			queue=new HistoryQueue(prims);
 		} else if (commands.hasOption("merkle")) {
 			isBatch = true;
-			signqueue=new MerkleQueue(prims);
+			queue=new MerkleQueue(prims);
 		} else if (commands.hasOption("simple")) {
 			isBatch = false;
-			signqueue=new SimpleQueue(prims);
+			queue=new SimpleQueue(prims);
 		} else if (commands.hasOption("verify")) {
-			verifyqueue = new VerifyQueue(prims);
-			FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
+			isVerifying = true;
+			queue = new VerifyQueue(prims);
+			final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
 			if (fileinput == null)
 				throw new Error();
-			hotSpot(fileinput);
-			doBenchMany(fileinput);
+			hotSpotVerifying(fileinput);
+			doBenchMany(new CallBack(){public void run(int rate) {doVerifyingRun(fileinput,rate,1,time);}});
 			return; // Done with handling verification.
 		} else {
 			throw new IllegalArgumentException("Unknown signqueue type. Please choose one of -history -merkle or -simple");
 		}
 
+		isVerifying = false;
+		
 		CodedOutputStream output = null, tmpoutput = null;
 
 		if (commands.hasOption("output")) {
 			tmpoutput = CodedOutputStream.newInstance(new FileOutputStream("/dev/null"));
 			output = CodedOutputStream.newInstance(new FileOutputStream(commands.getOptionValue("output")));
 		}
+		final CodedOutputStream output2 = output;
 		// Pre-load the hotspot.
-		hotSpot(tmpoutput);
-		doBenchMany(output);
-
+		hotspotSigning(tmpoutput);
+		doBenchMany(new CallBack(){public void run(int rate) {doSigningRun(output2,rate,1,time);}});
 		output.flush();
 		
 	}
