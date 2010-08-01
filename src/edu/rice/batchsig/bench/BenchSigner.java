@@ -50,7 +50,13 @@ import edu.rice.batchsig.SimpleQueue;
 import edu.rice.batchsig.VerifyQueue;
 
 
-// java -cp lib/bb.jar:lib/bcprov.jar:lib/jsci-core.jar:lib/mt-13.jar:bin/:/usr/share/java/protobuf.jar  edu.rice.batchsig.bench.BenchSigner simple sha1withrsa 1024
+/* 
+  
+PROG="java -cp lib/bb.jar:lib/bcprov.jar:lib/jsci-core.jar:lib/mt-13.jar:bin/:/usr/share/java/protobuf.jar:/usr/share/java/commons-cli.jar  edu.rice.batchsig.bench.BenchSigner"
+
+$PROG
+ 
+ */
 
 
 public class BenchSigner {
@@ -138,17 +144,15 @@ public class BenchSigner {
 
 	
 	
-	/*// IMPLEMENT LATER: Non-auto-scaling test. 
-	public void doBenchOne() throws InterruptedException {
+
+	public void doBenchOne(CallBack cb, int rate) {
+		System.err.format("**** RUNNING  rate=%d ****\n",rate);
+		System.err.flush();
+		Tracker.singleton.reset();
 		Tracker.singleton.enable();
-		int time = isBig ? BIGTIME : 5000;
-		if (isBatch) {
-			initialization(null,40000,1,time);
-		} else {
-			initialization(null,300,1,time);
-		}
+		cb.run(rate);
+		Tracker.singleton.print(String.format("%05d",rate));
 	}
-	*/
 
 	static final int BIGTIME = 120000;
 	static final int NORMALTIME = 5000;
@@ -173,47 +177,15 @@ public class BenchSigner {
 			}
 		}
 		do {
-			System.err.format("**** RUNNING  rate=%d ****\n",rate);
-			System.err.flush();
-			Tracker.singleton.reset();
-			Tracker.singleton.enable();
-			cb.run(rate);
-			Tracker.singleton.print(String.format("%05d",rate));
+			doBenchOne(cb, rate);
 			rate += incr;
 		} while(Tracker.singleton.isAborting() != true);
 	}
 
+
 	interface CallBack {
 		void run(int rate);
-	}
-	/*
-	public void doBenchMany(FileInputStream input) throws InterruptedException {
-		int time = isBig ? BIGTIME : NORMALTIME;
-		int rate,incr;
-		if (isBatch) {
-			rate = 10000;
-			incr = 1000;
-		} else {
-			if (commands.hasOption("rsa")) {
-				rate = 2000;
-				incr = 100;
-			} else {
-				rate = 300;
-				incr = 5;
-			}
-		}
-		do {
-			System.err.format("**** RUNNING  rate=%d ****\n",rate);
-			System.err.flush();
-			Tracker.singleton.reset();
-			Tracker.singleton.enable();
-			doVerifyingRun(input,rate,1,time);
-			Tracker.singleton.print(String.format("%05d",rate));
-			rate += incr;
-		} while(Tracker.singleton.isAborting() != true);
-	}
-	*/
-	
+	}	
 	
 	@SuppressWarnings("static-access")
 	static public Options initOptions() {
@@ -232,6 +204,9 @@ public class BenchSigner {
 		.addOption(OptionBuilder.withDescription("Do longer duration experiments").create("big"))
 		.addOption(OptionBuilder.withDescription("Output file (used when signing)").hasArg().create("output"))
 		.addOption(OptionBuilder.withDescription("Input file (used when signing)").hasArg().create("input"))
+		.addOption(OptionBuilder.withDescription("Automatically scale the signing rate").create("autorate"))
+		.addOption(OptionBuilder.withDescription("Run at the given signing rate").hasArg().create("rate"))
+		.addOption(OptionBuilder.withDescription("Return help").hasArg().create('h'))
 		;
 		
 		OptionGroup tmp1 = 
@@ -257,8 +232,9 @@ public class BenchSigner {
 	
 	
 	public void parsecmd(String args[]) throws ParseException, InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException {
-		(new HelpFormatter()).printHelp( "bench", initOptions() );
 		commands = new BasicParser().parse(initOptions(),args);
+		if (commands.hasOption('h'))
+			(new HelpFormatter()).printHelp( "bench", initOptions() );
 
 		setupCipher();
 
@@ -302,9 +278,15 @@ public class BenchSigner {
 		final CodedOutputStream output2 = output;
 		// Pre-load the hotspot.
 		hotspotSigning(tmpoutput);
-		doBenchMany(new CallBack(){public void run(int rate) {doSigningRun(output2,rate,1,time);}});
-		output.flush();
-		
+		CallBack cb = new CallBack(){public void run(int rate) {doSigningRun(output2,rate,1,time);}};
+		if (commands.hasOption("autorate"))
+			doBenchMany(cb);
+		else {
+			doBenchOne(cb,Integer.parseInt(commands.getOptionValue("rate")));
+		}
+
+		if (output != null)
+			output.flush();
 	}
 
 	void setupCipher() throws InvalidKeyException, NoSuchAlgorithmException {

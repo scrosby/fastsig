@@ -19,27 +19,18 @@
 
 package edu.rice.batchsig.bench;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.rice.batchsig.QueueBase;
 
-public class SignQueueProcessor implements Runnable {
+public class SignQueueProcessor extends ShutdownableThread implements Runnable {
 	final private int epochlength;
 	private QueueBase signqueue;
-	private AtomicBoolean finished = new AtomicBoolean(false);
-	
-	
 	SignQueueProcessor(QueueBase signqueue, int epochtime) {
 		this.signqueue = signqueue;
 		this.epochlength = epochtime;
 	}
 	
 
-	public void shutdown() {
-		finished.set(true);
-	}
-	
-	
 	@Override
 	public void run() {
 		while (!finished.get()) {

@@ -38,33 +38,20 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class ReplayMessagesThread extends Thread implements ShutdownableThread {
-	final private int rate;
-	final private QueueBase verifyqueue;
-	final private AtomicBoolean finished = new AtomicBoolean(false);
+public class ReplayMessagesThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStream input;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
 	ReplayMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();
-		if (verifyqueue == null)
-			throw new Error();
-		this.verifyqueue = verifyqueue;
-		this.rate = rate;
 		this.input = new IncomingMessageStream(fileinput);
 	}
 
-	/* (non-Javadoc)
-	 * @see edu.rice.batchsig.bench.ShutdownableThread#shutdown()
-	 */
-	public void shutdown() {
-		finished.set(true);
-	}
-	
-	
+
 	@Override
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
@@ -76,7 +63,7 @@ public class ReplayMessagesThread extends Thread implements ShutdownableThread {
 			if (insertedNum < targetNum) {
 				while (insertedNum < targetNum) {
 					insertedNum++;
-					verifyqueue.add(input.next());
+					queue.add(input.next());
 					checkQueueOverflow();
 				}
 			} else { 
@@ -89,21 +76,6 @@ public class ReplayMessagesThread extends Thread implements ShutdownableThread {
 				}
 			}
 		}
-		verifyqueue.finish();
-	}
-
-	static long lastErr = 0;
-	static long skip = 0;
-	
-	void checkQueueOverflow() {
-		if (verifyqueue.peekSize() > rate) {
-			skip++;
-			if (System.currentTimeMillis() > lastErr + 1000) {
-				System.err.format("Queue overfull(%d)\n",skip);
-				if (skip > 1)
-					Tracker.singleton.markAbort();
-				skip=0; lastErr = System.currentTimeMillis();
-			}
-		}
+		queue.finish();
 	}
 }

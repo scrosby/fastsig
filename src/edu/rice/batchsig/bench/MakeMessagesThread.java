@@ -33,25 +33,18 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class MakeMessagesThread extends Thread implements ShutdownableThread {
-	final private int rate;
-	final private QueueBase signqueue;
-	final private AtomicBoolean finished = new AtomicBoolean(false);
+public class MakeMessagesThread extends MessageGeneratorThreadBase {
 	final private CodedOutputStream output;
+	long seqno = 0;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
 	MakeMessagesThread(QueueBase signqueue, CodedOutputStream output, int rate) {
-		this.signqueue = signqueue;
-		this.rate = rate;
+		super(signqueue,rate);
 		this.output = output;
 	}
-	
-	public void shutdown() {
-		finished.set(true);
-	}
-	
+
 	
 	@Override
 	public void run() {
@@ -64,7 +57,7 @@ public class MakeMessagesThread extends Thread implements ShutdownableThread {
 			if (insertedNum < targetNum) {
 				while (insertedNum < targetNum) {
 					insertedNum++;
-					signqueue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
+					queue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
 					checkQueueOverflow();
 				}
 			} else { 
@@ -77,28 +70,10 @@ public class MakeMessagesThread extends Thread implements ShutdownableThread {
 				}
 			}
 		}
-		signqueue.finish();
+		queue.finish();
 	}
 
-	static long lastErr = 0;
-	static long skip = 0;
-	
-	long seqno = 0;
-	void checkQueueOverflow() {
-		seqno++;
-		if (signqueue.peekSize() > rate) {
-			skip++;
-			if (System.currentTimeMillis() > lastErr + 1000) {
-				System.err.format("Queue overfull(%d)\n",skip);
-				if (skip > 1)
-					Tracker.singleton.markAbort();
-				skip=0; lastErr = System.currentTimeMillis();
-			}
-		}
-	}
 
-	void replayQueue() {
-	}
 	
 	
 	/* Future code for an unimplemented message generator subclass.

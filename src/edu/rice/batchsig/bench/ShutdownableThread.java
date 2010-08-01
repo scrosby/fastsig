@@ -1,11 +1,17 @@
 package edu.rice.batchsig.bench;
 
-public interface ShutdownableThread {
+import java.util.concurrent.atomic.AtomicBoolean;
 
-	public abstract void shutdown();
+public class ShutdownableThread extends Thread {
+	protected AtomicBoolean finished = new AtomicBoolean(false);
 
-	public abstract void start();
+	public ShutdownableThread() {
+		super();
+	}
 
-	public abstract void join() throws InterruptedException;
+	public void shutdown() {
+		finished.set(true);
+		this.interrupt();
+	}
 
 }

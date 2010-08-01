@@ -36,16 +36,14 @@ import com.google.protobuf.CodedOutputStream;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.IncomingMessageStream;
+import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
 import edu.rice.batchsig.bench.ShutdownableThread;
 import edu.rice.batchsig.bench.Tracker;
 import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class ReplayLogThread extends Thread implements ShutdownableThread {
-	final private int rate;
-	final private QueueBase verifyqueue;
-	final private AtomicBoolean finished = new AtomicBoolean(false);
+public class ReplayLogThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStream input;
 	long bias = -1; // Difference betweeen 'real' clock and virtual clock.
 
@@ -54,12 +52,9 @@ public class ReplayLogThread extends Thread implements ShutdownableThread {
 	 * @param rate Messages per second.
 	 * */
 	ReplayLogThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();
-		if (verifyqueue == null)
-			throw new Error();
-		this.verifyqueue = verifyqueue;
-		this.rate = rate;
 		this.input = new IncomingMessageStream(fileinput);
 	}
 
@@ -76,15 +71,6 @@ public class ReplayLogThread extends Thread implements ShutdownableThread {
 		}
 		input.resetStream();
 	}
-	
-	
-	/* (non-Javadoc)
-	 * @see edu.rice.batchsig.bench.ShutdownableThread#shutdown()
-	 */
-	public void shutdown() {
-		finished.set(true);
-	}
-	
 	
 	@Override
 	public void run() {
@@ -106,25 +92,10 @@ public class ReplayLogThread extends Thread implements ShutdownableThread {
 				} catch (InterruptedException e) {
 				}
 			} else {
-				verifyqueue.add(input.nextOnePass());
+				queue.add(input.nextOnePass());
 				checkQueueOverflow();
 			}
 		}
-		verifyqueue.finish();
-	}
-
-	static long lastErr = 0;
-	static long skip = 0;
-	
-	void checkQueueOverflow() {
-		if (verifyqueue.peekSize() > rate) {
-			skip++;
-			if (System.currentTimeMillis() > lastErr + 1000) {
-				System.err.format("Queue overfull(%d)\n",skip);
-				if (skip > 1)
-					Tracker.singleton.markAbort();
-				skip=0; lastErr = System.currentTimeMillis();
-			}
-		}
+		queue.finish();
 	}
 }
