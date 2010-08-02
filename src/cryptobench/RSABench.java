@@ -92,7 +92,7 @@ public class RSABench {
 				kpg.initialize(ECNamedCurveTable.getParameterSpec("secp224r1"),new SecureRandom());
 				break;
 			default:
-				throw new Error("XXX");
+				//throw new Error("XXX");
 			}
 		KeyPair kp = kpg.genKeyPair();
 		publicKey = kp.getPublic();
@@ -107,9 +107,11 @@ public class RSABench {
 				algoname = "SHA256withECDSA";
 		}		
 		if (provider != null) {
+			System.err.println("Building with: " + algoname + "  " + provider);
 			signer = Signature.getInstance(algoname,provider);
 			verifier = Signature.getInstance(algoname,provider);
 		} else {
+			System.err.println("Building with: " + algoname + "  <UNKNOWN>");
 			signer = Signature.getInstance(algoname);
 			verifier = Signature.getInstance(algoname);
 		}
