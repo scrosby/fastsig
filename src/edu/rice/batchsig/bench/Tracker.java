@@ -51,7 +51,8 @@ public class Tracker {
 
 	
 	protected void print(String prefix) {
-		System.out.format("%s:lat: N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
+		System.out.format("lat: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
+		System.out.format("siz: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
 		for (int i=0 ; i < 50 ; i++)
 			latencyhistline(latencyhist,i,i+1);
 		latencyhistline(latencyhist,50,60);
@@ -68,6 +69,5 @@ public class Tracker {
 		latencyhistline(latencyhist,2000,3000);
 		latencyhistline(latencyhist,3000,4000);
 		latencyhistline(latencyhist,4000,4001);
-		System.out.format("%s:siz: N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
 	}
 }

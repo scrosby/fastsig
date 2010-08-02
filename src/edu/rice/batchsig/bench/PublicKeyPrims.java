@@ -30,6 +30,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -56,22 +57,29 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	private PublicKeyPrims() {
 	}
 	
-	public static PublicKeyPrims make(String signer_id_string, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException  {
+	public static PublicKeyPrims make(String signer_id_string, String algo, int size, String provider) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException  {
 		PublicKeyPrims out = new PublicKeyPrims();
+		//System.out.println("ALGO1 " + algo);
+		//System.out.println("ALGO2 " + algo.substring(algo.length()-3));
 		
 		out.signer_id_bytes = signer_id_string.getBytes();
 		out.signer_id = ByteString.copyFrom(out.signer_id_bytes);
 
 		// If we already have it....
-		if (out.load(signer_id_string,algo,size))
+		if (out.load(signer_id_string,algo,size,provider))
 			return out;
 
 		System.err.println("Making new keypair");
 		
 		// Otherwise, generate it.
-		KeyPairGenerator kpg = KeyPairGenerator.getInstance(algo.substring(algo.length()-3));
+		KeyPairGenerator kpg;
+		if (provider != null) 
+			kpg = KeyPairGenerator.getInstance(algo,provider);
+		else
+			kpg = KeyPairGenerator.getInstance(algo);
+
 		kpg.initialize(size);
-		out.initialize(kpg.genKeyPair(),algo, size);
+		out.initialize(kpg.genKeyPair(),algo, size,provider);
 		out.save(makeFilename(signer_id_string,algo,size));
 		return out;
 	}
@@ -80,14 +88,19 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		return String.format("KEY.%s-%s-%d.key",signer_id_string,algo,size);
 	}
 	
-	void initialize(KeyPair kp, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException {
+	void initialize(KeyPair kp, String algo, int size, String provider) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException {
 		this.kp = kp;
 		PublicKey publicKey = kp.getPublic();
 		PrivateKey privateKey = kp.getPrivate();
-		
-		signer = Signature.getInstance(algo);
+
+		if (provider != null) {
+			signer = Signature.getInstance(algo,provider);
+			verifier = Signature.getInstance(algo,provider);
+		} else {
+			signer = Signature.getInstance(algo);
+			verifier = Signature.getInstance(algo);
+		}
 		signer.initSign(privateKey);
-		verifier = Signature.getInstance(algo);
 		verifier.initVerify(publicKey);
 
 		if (algo.toLowerCase().equals("sha1withrsa")) {
@@ -117,29 +130,29 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		}
 	}
 
-	public boolean load(String signer_id_string, String algo, int size) {
+	public boolean load(String signer_id_string, String algo, int size, String provider) {
 		try {
 			ObjectInputStream input = new ObjectInputStream(new FileInputStream(makeFilename(signer_id_string,algo,size)));
-			initialize((KeyPair)input.readObject(),algo,size);
+			initialize((KeyPair)input.readObject(),algo,size,provider);
 			input.close();
 			return true;
 		} catch (IOException e) {
 			// If it fails, just generate it.
 			e.printStackTrace();
-			return false;
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return false;
 		} catch (InvalidKeyException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return false;
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return false;
+		} catch (NoSuchProviderException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		return false;
 	}
 	
 	@Override

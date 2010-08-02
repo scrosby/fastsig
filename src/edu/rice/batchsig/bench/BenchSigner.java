@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.util.Random;
 
@@ -54,9 +55,45 @@ import edu.rice.batchsig.VerifyQueue;
   
 PROG="java -cp lib/bb.jar:lib/bcprov.jar:lib/jsci-core.jar:lib/mt-13.jar:bin/:/usr/share/java/protobuf.jar:/usr/share/java/commons-cli.jar  edu.rice.batchsig.bench.BenchSigner"
 
-$PROG
- 
- */
+## DONE: USED TO MAKE THE LOG FILES for verification.
+$PROG -provider BC -autorate -sha1 -rsa -simple   -output msglog/autorate.simple.rsa > results/sign.autorate.simple.rsa
+$PROG -provider BC -autorate -sha1 -rsa -history  -output msglog/autorate.history.rsa > results/sign.autorate.history.rsa
+$PROG -provider BC -autorate -sha1 -rsa -merkle   -output msglog/autorate.merkle.rsa > results/sign.autorate.merkle.rsa
+
+$PROG -provider BC -autorate -sha1 -dsa -simple   -output msglog/autorate.simple.dsa > results/sign.autorate.simple.dsa
+$PROG -provider BC -autorate -sha1 -dsa -history  -output msglog/autorate.history.dsa > results/sign.autorate.history.dsa
+$PROG -provider BC -autorate -sha1 -dsa -merkle   -output msglog/autorate.merkle.dsa > results/sign.autorate.merkle.dsa
+
+# Used to test verification.
+$PROG -provider BC -autorate -sha1 -rsa -verify   -input msglog/autorate.simple.rsa > results/verify.autorate.simple.rsa
+$PROG -provider BC -autorate -sha1 -rsa -verify   -input msglog/autorate.history.rsa > results/verify.autorate.history.rsa
+$PROG -provider BC -autorate -sha1 -rsa -verify   -input msglog/autorate.merkle.rsa > results/verify.autorate.merkle.rsa
+
+$PROG -provider BC -autorate -sha1 -dsa -verify   -input msglog/autorate.simple.dsa > results/verify.autorate.simple.dsa
+$PROG -provider BC -autorate -sha1 -dsa -verify   -input msglog/autorate.history.dsa > results/verify.autorate.history.dsa
+$PROG -provider BC -autorate -sha1 -dsa -verify   -input msglog/autorate.merkle.dsa > results/verify.autorate.merkle.dsa
+
+
+
+## COLLECT SIGN PERFORMANCE
+$PROG -provider BC -big -autorate -sha1 -rsa -simple  > results/sign.autorate.simple.rsa
+$PROG -provider BC -big -autorate -sha1 -rsa -history > results/sign.autorate.history.rsa
+$PROG -provider BC -big -autorate -sha1 -rsa -merkle  > results/sign.autorate.merkle.rsa
+
+$PROG -provider BC -big -autorate -sha1 -dsa -simple  > results/sign.autorate.simple.dsa
+$PROG -provider BC -big -autorate -sha1 -dsa -history > results/sign.autorate.history.dsa
+$PROG -provider BC -big -autorate -sha1 -dsa -merkle  > results/sign.autorate.merkle.dsa
+
+# COLLECT VERIFY PERFORMANCE
+$PROG -provider BC -big -autorate -sha1 -rsa -verify   -input msglog/autorate.simple.rsa > results/verify.autorate.simple.rsa
+#$PROG -provider BC -big -autorate -sha1 -rsa -verify   -input msglog/autorate.history.rsa > results/verify.autorate.history.rsa
+$PROG -provider BC -big -autorate -sha1 -rsa -verify   -input msglog/autorate.merkle.rsa > results/verify.autorate.merkle.rsa
+
+$PROG -provider BC -big -autorate -sha1 -dsa -verify   -input msglog/autorate.simple.dsa > results/verify.autorate.simple.dsa
+#$PROG -provider BC -big -autorate -sha1 -dsa -verify   -input msglog/autorate.history.dsa > results/verify.autorate.history.dsa
+$PROG -provider BC -big -autorate -sha1 -dsa -verify   -input msglog/autorate.merkle.dsa > results/verify.autorate.merkle.dsa
+
+*/
 
 
 public class BenchSigner {
@@ -159,21 +196,29 @@ public class BenchSigner {
 
 	public void doBenchMany(CallBack cb) throws InterruptedException {
 		int rate,incr;
-		if (isBatch) {
-			rate = 10000;
-			incr = 1000;
+		if (isBatch && !isVerifying) {
+			if (commands.hasOption("merkle"))
+				rate = 25000; // Merkle tree dies around 35k-45k
+			else
+				rate = 20000; // History tree dies around 25k
+			incr = 500;
 		} else {
 			if (commands.hasOption("rsa")) {
 				if (isVerifying) {
-					rate = 1000;
+					rate = 2000; // Dies at 3000
 					incr = 100;
 				} else {
-					rate = 12;
+					rate = 40; // RSA dies at ~120
 					incr = 4;
 				}
-			} else {
-				rate = 300;
-				incr = 5;
+			} else { // DSA.
+				if (isVerifying) {
+					rate = 500; // In java, verifies half as fast as signs.
+					incr = 20;
+				} else {
+					rate = 800;
+					incr = 20;
+				}
 			}
 		}
 		do {
@@ -206,7 +251,8 @@ public class BenchSigner {
 		.addOption(OptionBuilder.withDescription("Input file (used when signing)").hasArg().create("input"))
 		.addOption(OptionBuilder.withDescription("Automatically scale the signing rate").create("autorate"))
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate").hasArg().create("rate"))
-		.addOption(OptionBuilder.withDescription("Return help").hasArg().create('h'))
+		.addOption(OptionBuilder.withDescription("Return help").create('h'))
+		.addOption(OptionBuilder.withDescription("Which crypto provider to use").hasArg().create("provider"))
 		;
 		
 		OptionGroup tmp1 = 
@@ -231,11 +277,12 @@ public class BenchSigner {
 	
 	
 	
-	public void parsecmd(String args[]) throws ParseException, InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException {
+	public void parsecmd(String args[]) throws ParseException, InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException, NoSuchProviderException {
 		commands = new BasicParser().parse(initOptions(),args);
-		if (commands.hasOption('h'))
+		if (commands.hasOption('h')) {
 			(new HelpFormatter()).printHelp( "bench", initOptions() );
-
+			System.exit(0);
+		}
 		setupCipher();
 
 		if (commands.hasOption("big"))
@@ -289,7 +336,7 @@ public class BenchSigner {
 			output.flush();
 	}
 
-	void setupCipher() throws InvalidKeyException, NoSuchAlgorithmException {
+	void setupCipher() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
 		int bits;
 		String type = "";
 		if (commands.hasOption("sha1")) {
@@ -313,7 +360,7 @@ public class BenchSigner {
 		}
 		
 		// Must set the prims first, used with the other.
-		prims = PublicKeyPrims.make("Bench",type,bits);
+		prims = PublicKeyPrims.make("Bench",type,bits,commands.getOptionValue("provider"));
 	}		
 	
 	public static void main(String args[]) throws FileNotFoundException, ParseException {
@@ -336,6 +383,9 @@ public class BenchSigner {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchProviderException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
