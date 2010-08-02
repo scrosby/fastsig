@@ -129,7 +129,7 @@ public class VerifyQueue extends QueueBase {
 		HashMap<Message,HistoryTree<byte[],byte[]>> trees = new HashMap<Message,HistoryTree<byte[],byte[]>>();
 		
 		for (Message m : l) {
-			System.out.format("*Checking message at leaf %d\n",m.getSignatureBlob().getLeaf());
+			//System.out.format("*Checking message at leaf %d\n",m.getSignatureBlob().getLeaf());
 			
 			boolean validated = false;
 			HistoryTree<byte[],byte[]> tree = Verifier.parseHistoryTree(m);
@@ -144,7 +144,7 @@ public class VerifyQueue extends QueueBase {
 					// Splice is good! Is the message validated?
 					if (Verifier.checkLeaf(m,tree)) {
 						// And so is the message in it!
-						System.out.format("Using verified splice %d in tree version %d\n",version, latertree.version());
+						//System.out.format("Using verified splice %d in tree version %d\n",version, latertree.version());
 						validated = true;
 					} else {
 						System.out.println("Broken proof that doesn't validate message in proof.");
@@ -157,7 +157,7 @@ public class VerifyQueue extends QueueBase {
 			} 
 			// No splice or invalid splice.
 			if (validated == false) {
-				System.out.format("Splices do not have tree %d\n",version);
+				//System.out.format("Splices do not have tree %d\n",version);
 				if (verifier.verifyHistory(m,tree)) {
 					validated = true; // GOOD signature.
 				} else {
@@ -167,7 +167,7 @@ public class VerifyQueue extends QueueBase {
 
 			// Put in a 'splice' for the tree's version
 			if (validated && !splices.containsKey(version)) {
-				System.out.format("Store self-splice at %d with tree-version %d\n",tree.version(),version);
+				//System.out.format("Store self-splice at %d with tree-version %d\n",tree.version(),version);
 				splices.put(tree.version(), m);
 				trees.put(m, tree);
 			}
