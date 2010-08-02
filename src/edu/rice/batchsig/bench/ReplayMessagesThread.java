@@ -70,10 +70,12 @@ public class ReplayMessagesThread extends MessageGeneratorThreadBase {
 				// (insertNum+1)/rate*1000  (but we rearrange for better roundoff
 				long wakeupTime = initTime + (insertedNum+1)*1000/rate;
 				// Running ahead. Lets sleep for a little bit. 
-				try {
-					Thread.sleep(wakeupTime-now);
-				} catch (InterruptedException e) {
-				}
+				long sleepTime = wakeupTime - now;
+				if (sleepTime > 0)
+					try {
+						Thread.sleep(sleepTime);
+					} catch (InterruptedException e) {
+					}
 			}
 		}
 		queue.finish();
