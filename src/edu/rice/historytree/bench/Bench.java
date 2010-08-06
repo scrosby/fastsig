@@ -183,7 +183,7 @@ public class Bench {
     			bytes += maker.call().blob.length;
     		}
     	}	
-    	System.out.format("%s-Prooflen: %d\n",prefix,bytes/count);
+    	System.out.format("%s-Prooflen: = %d\n",prefix,bytes/count);
     	} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

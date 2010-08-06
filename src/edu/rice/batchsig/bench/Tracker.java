@@ -51,6 +51,7 @@ public class Tracker {
 
 	
 	protected void print(String prefix) {
+		System.out.format("cry: Rate=%s  N=%d  Sign=%d  Verify=%d\n",prefix,latencyhist.n,signcount,verifycount);
 		System.out.format("lat: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
 		System.out.format("siz: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
 		for (int i=0 ; i < 50 ; i++)
