@@ -221,6 +221,12 @@ public class BenchSigner {
 				}
 			}
 		}
+		if (commands.hasOption("rate")) {
+			rate = Integer.parseInt(commands.getOptionValue("rate"));
+		}
+		if (commands.hasOption("incr")) {
+			incr = Integer.parseInt(commands.getOptionValue("incr"));
+		}
 		do {
 			doBenchOne(cb, rate);
 			rate += incr;
@@ -251,6 +257,7 @@ public class BenchSigner {
 		.addOption(OptionBuilder.withDescription("Input file (used when signing)").hasArg().create("input"))
 		.addOption(OptionBuilder.withDescription("Automatically scale the signing rate").create("autorate"))
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate").hasArg().create("rate"))
+		.addOption(OptionBuilder.withDescription("Run at the given signing rate increment").hasArg().create("incr"))
 		.addOption(OptionBuilder.withDescription("Return help").create('h'))
 		.addOption(OptionBuilder.withDescription("Which crypto provider to use").hasArg().create("provider"))
 		;
