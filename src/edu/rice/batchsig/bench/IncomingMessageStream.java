@@ -40,6 +40,8 @@ public class IncomingMessageStream {
 			resetStream();
 		} while (true);		
 	}
+	
+	/** Read the next message unconditionally, without resetting the stream to the beginning on end. */
 	public IncomingMessage nextOnePass() {
 		return IncomingMessage.readFrom(input);
 	}

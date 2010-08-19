@@ -20,6 +20,7 @@
 package edu.rice.batchsig.bench;
 
 import java.io.IOException;
+import java.util.List;
 
 
 import com.google.protobuf.CodedInputStream;
@@ -31,12 +32,20 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 public class IncomingMessage extends MessageBase {
 	/** The time that this message was created. Used to get processing latency */
 	private long creation_time;
+	public List<Integer> start_buffering;
+	public List<Integer> end_buffering;
 
-	private IncomingMessage(TreeSigBlob sig, MessageData data, long virtual_clock) {
+	// Sig = null occurs if there is no message data (aka, this is a non-signed messgae
+	private IncomingMessage(TreeSigBlob sig, MessageData data) {
 		this.sigblob = sig;
 		this.data = data.getMessage().toByteArray();
 		this.creation_time = System.currentTimeMillis();
-		this.virtual_clock = virtual_clock;
+		this.virtual_clock = data.getTimestamp();
+		if (data.getStartBufferingCount() > 0)
+			this.start_buffering = data.getStartBufferingList();
+		if (data.getEndBufferingCount() > 0)
+			this.end_buffering = data.getEndBufferingList();
+		//this.recipientuser = data.
 	}
 
 	@Override
@@ -47,8 +56,12 @@ public class IncomingMessage extends MessageBase {
 
 	@Override
 	public Object getRecipient() {
-		// TODO: Used when creating a message to be logged. Leave unspecified for now.
-		throw new Error("Unimplemented");
+		// TODO: Used when creating a message to be logged. Illegal on incomming messages.
+		throw new Error("Illegal Operation");
+	}
+
+	public Object getRecipientUser() {
+		throw new Error("TODO"); // TODO 
 	}
 
 	@Override
@@ -77,17 +90,21 @@ public class IncomingMessage extends MessageBase {
 		try {
 			MessageData.Builder databuilder = MessageData.newBuilder();
 			TreeSigBlob.Builder sigbuilder= TreeSigBlob.newBuilder();
-			long virtual_clock = input.readUInt64();
 			
 			input.readMessage(databuilder, ExtensionRegistryLite.getEmptyRegistry());
 			MessageData data = databuilder.build();
 			// No data means we're done.
 			if (data.getMessage().isEmpty())
 				return null;
-			input.readMessage(sigbuilder, ExtensionRegistryLite.getEmptyRegistry());
-			TreeSigBlob sig = sigbuilder.build();
-			return new IncomingMessage(sig,data,virtual_clock);
-	} catch (IOException e) {
+
+			if (data.hasMessage()) {
+				input.readMessage(sigbuilder, ExtensionRegistryLite.getEmptyRegistry());
+				TreeSigBlob sig = sigbuilder.build();
+				return new IncomingMessage(sig,data);
+			} else {
+				return new IncomingMessage(null,data);
+			}
+		} catch (IOException e) {
 		return null;
 	}	
 	}

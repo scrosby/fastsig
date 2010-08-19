@@ -40,7 +40,7 @@ public class EventLog implements Iterable<Event> {
 
 	/** Add a timestamp offset to all messages in the log. */
 	public void offset(long offset) {
-		for (Event i : log) {
+		for (EventBase i : log) {
 			i.setTimestamp(i.getTimestamp()+offset);
 		}		
 	}
@@ -157,12 +157,12 @@ public class EventLog implements Iterable<Event> {
 	}
 
 	final double EPOCHLENGTH = .100;
-
-	/** Replay signers from a single source to many recipients */
+	
+	/** Replay signers from a single source to many recipients -- USED TO BENCHMARK SIGNING. */
 	void replaySign(QueueBase senderqueue, HashMap<Object,CodedOutputStream> streammap) {
 		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
 		for (Event e : log) {
-			OutgoingMessage msg = new OutgoingMessage(streammap.get(e.getRecipient()),new byte[e.size], e.getRecipient());
+			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
 			if (e.getTimestamp() > epochend) {
 				epochend = e.getTimestamp() + EPOCHLENGTH;
 				senderqueue.process();
@@ -173,12 +173,12 @@ public class EventLog implements Iterable<Event> {
 	
 	/** Replay signers from from many sources to many recipients. 
 	 * 
-	 * Can be used to generate a replay file for verification.  */
+	 * UNUSED: DOES NOT SUPPORT LOGON/LOGOFF INFO. Can be used to generate a replay file for verification.  */
 	void replaySign(HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
 		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
 		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();
 		for (Event e : log) {
-			OutgoingMessage msg = new OutgoingMessage(streammap.get(e.getRecipient()),new byte[e.size], e.getRecipient());
+			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
 			QueueBase senderqueue = queuemap.get(e.getSender());
 			if (e.getTimestamp() > epochend) {
 				epochend = e.getTimestamp() + EPOCHLENGTH;

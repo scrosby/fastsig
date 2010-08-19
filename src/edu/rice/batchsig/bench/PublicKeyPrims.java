@@ -57,6 +57,26 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	private PublicKeyPrims() {
 	}
 	
+	
+	/** Make a given key with the default provider
+	 *
+	 * @param signer_id_string ID used to denote the signer principal.
+	 * @param algo Algorithm to use (e.g. "sha1withdsa")
+	 * @param size Number of bits in the key
+	 * @return A primitive object.
+	 */
+	public static PublicKeyPrims make(String signer_id_string, String algo, int size) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException {
+		return make(signer_id_string, algo, size, null);
+	}
+
+	/** Make a given key
+	 * 
+	 * @param signer_id_string ID used to denote the signer principal.
+	 * @param algo Algorithm to use (e.g. "sha1withdsa")
+	 * @param size Number of bits in the key
+	 * @param provider Which provider (May be null)
+	 * @return A primitive object.
+	 */
 	public static PublicKeyPrims make(String signer_id_string, String algo, int size, String provider) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException  {
 		PublicKeyPrims out = new PublicKeyPrims();
 		//System.out.println("ALGO1 " + algo);

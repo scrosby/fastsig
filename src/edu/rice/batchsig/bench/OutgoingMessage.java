@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 
 
 import com.google.protobuf.ByteString;
@@ -37,6 +39,8 @@ public class OutgoingMessage extends MessageBase {
 	CodedOutputStream output;
 	Object recipient;
 	long creation_time;
+	List<Integer> logins, logouts;
+	
 	
 	public OutgoingMessage(CodedOutputStream output, byte data[], Object recipient) {
 		this.output = output;
@@ -44,6 +48,12 @@ public class OutgoingMessage extends MessageBase {
 		this.recipient = recipient;
 		this.creation_time = System.currentTimeMillis();
 	}
+
+	public void setLoginsLogouts(List<Integer> logins, List<Integer> logouts) {
+		this.logins = logins;
+		this.logouts = logouts;
+	}
+	
 	
 	@Override
 	public Object getAuthor() {
@@ -87,16 +97,51 @@ public class OutgoingMessage extends MessageBase {
 			tracker.trackSize(this.sigblob.getSerializedSize());
 		}
 	}
-	void writeTo(CodedOutputStream output) throws IOException {
-		//System.out.println("Writing");
-		MessageData messagedata = MessageData.newBuilder().setMessage(ByteString.copyFrom(data)).build();
 
-		output.writeUInt64NoTag(virtual_clock);
+	public void writeTo(CodedOutputStream output) throws IOException {
+		if (output != this.output) {
+			throw new Error("Inconsistent output?");
+		}
+		List<Integer> startBuffering = this.logouts;
+		List<Integer> endBuffering = this.logins;
 		
+		MessageData.Builder builder = MessageData.newBuilder();
+		
+		builder.setTimestamp(virtual_clock);
+		if (data != null)
+			builder.setMessage(ByteString.copyFrom(data));
+		
+		if (startBuffering != null || endBuffering != null) {
+			builder.addAllStartBuffering(startBuffering);
+			builder.addAllEndBuffering(endBuffering);
+		}
+		
+		MessageData messagedata = builder.build();
+		output.writeRawVarint32(messagedata.getSerializedSize());
+		messagedata.writeTo(output);
+
+		if (data != null) {
+			output.writeRawVarint32(sigblob.getSerializedSize());
+			sigblob.writeTo(output);
+		}
+		
+	}
+
+	/*
+	public void writeTo(CodedOutputStream output) throws IOException {
+		if (data == null)
+			throw new Error("Simple writer does not support empty message bodies");
+		//System.out.println("Writing");
+		MessageData messagedata = MessageData.newBuilder()
+			.setTimestamp(virtual_clock)
+			.setMessage(ByteString.copyFrom(data))
+			.build();
+
 		output.writeRawVarint32(messagedata.getSerializedSize());
 		messagedata.writeTo(output);
 		
 		output.writeRawVarint32(sigblob.getSerializedSize());
 		sigblob.writeTo(output);
 	}
+	*/
 }

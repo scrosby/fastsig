@@ -26,7 +26,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.protobuf.ByteString;
@@ -46,16 +52,18 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 public class ReplayLogThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStream input;
 	long bias = -1; // Difference betweeen 'real' clock and virtual clock.
-
+	final String provider;
+	
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplayLogThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+	ReplayLogThread(QueueBase verifyqueue, FileInputStream fileinput, int rate, String provider) {
 		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();
 		this.input = new IncomingMessageStream(fileinput);
+		this.provider = provider;
 	}
 
 	/** Setup the replay log, preloading the bias and the keys. */
@@ -67,7 +75,7 @@ public class ReplayLogThread extends MessageGeneratorThreadBase {
 		while ((im = input.nextOnePass()) != null) {
 			if (bias == -1)
 				bias = im.getVirtualClock();
-			prims.load(im.getSignatureBlob()); // Fetch the signature blob.
+			prims.load(im.getSignatureBlob(),provider); // Fetch the signature blob.
 		}
 		input.resetStream();
 	}
@@ -75,9 +83,15 @@ public class ReplayLogThread extends MessageGeneratorThreadBase {
 	@Override
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
-		long insertedNum = 0;
+		Map<Integer,List<IncomingMessage>> heldMessages = new HashMap<Integer,List<IncomingMessage>>();
+		
 		while (!finished.get()) {
-			IncomingMessage msg = input.next();
+			IncomingMessage msg = input.nextOnePass();
+			// We're at the end.
+			if (msg == null)
+				break;
+			
+			// STEP 1: Delay until the inject time equals this time.
 			
 			// Offset in ms from the first message in the log.
 			long msgOffsetTime = msg.getVirtualClock()-bias;
@@ -91,11 +105,34 @@ public class ReplayLogThread extends MessageGeneratorThreadBase {
 					Thread.sleep(injectTime-now);
 				} catch (InterruptedException e) {
 				}
-			} else {
-				queue.add(input.nextOnePass());
-				checkQueueOverflow();
+			}
+
+			// STEP 2: Add all the hosts whom we need to start buffering.
+			if (msg.start_buffering != null)
+				for (Integer i: msg.start_buffering)
+					heldMessages.put(i, new ArrayList<IncomingMessage>());
+
+			// STEP 3: Play the held-back messages.
+			if (msg.end_buffering != null)
+				for (Integer i: msg.end_buffering) {
+					for (IncomingMessage j : heldMessages.get(i))
+						queue.add(j);
+					heldMessages.remove(i);
+
+			// STEP 4: Play this message or hold it?
+			if (heldMessages.containsKey(msg.getRecipientUser()))
+				heldMessages.get(msg.getRecipientUser()).add(msg);
+			else
+				queue.add(msg);
+
+			checkQueueOverflow();
 			}
 		}
+		// We're closing the thread. Time to verify everything held up, right now.
+		for (List<IncomingMessage> l : heldMessages.values())
+			for (IncomingMessage j : l)
+				queue.add(j);
+			
 		queue.finish();
 	}
 }

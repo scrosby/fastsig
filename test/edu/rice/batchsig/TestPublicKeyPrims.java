@@ -2,6 +2,7 @@ package edu.rice.batchsig;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -22,11 +23,14 @@ public class TestPublicKeyPrims extends TestCase {
 	
 	public TestPublicKeyPrims()  {
 		try {
-			prims = PublicKeyPrims.make("NULL", "sha1withdsa", 512);
+			prims = PublicKeyPrims.make("NULL", "sha1withdsa", 512, null);
 		} catch (InvalidKeyException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchProviderException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

@@ -21,6 +21,7 @@ package edu.rice.batchsig.bench.log;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.HashMap;
 
 import edu.rice.batchsig.SignaturePrimitives;
@@ -38,10 +39,10 @@ class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 		this.size = size;
 	}
 	
-	public SignaturePrimitives load(String signer) {
+	public SignaturePrimitives load(String signer, String provider) {
 		try {
 			if (!map.containsKey(signer))
-				map.put(signer,PublicKeyPrims.make(signer, algo, size));
+				map.put(signer,PublicKeyPrims.make(signer, algo, size, provider));
 			return map.get(signer);
 		} catch (InvalidKeyException e) {
 			// TODO Auto-generated catch block
@@ -49,26 +50,29 @@ class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (NoSuchProviderException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return null;
 	}
 	
-	public SignaturePrimitives load(TreeSigBlob.Builder msg) {
-		return load(msg.getSignerId().toStringUtf8());
+	public SignaturePrimitives load(TreeSigBlob.Builder msg, String provider) {
+		return load(msg.getSignerId().toStringUtf8(), provider);
 	}
 
-	public SignaturePrimitives load(TreeSigBlob msg) {
-		return load(msg.getSignerId().toStringUtf8());
+	public SignaturePrimitives load(TreeSigBlob msg, String provider) {
+		return load(msg.getSignerId().toStringUtf8(), provider);
 	}
 	
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
-		load(out).sign(data, out);
+		load(out,null).sign(data, out);
 	}
 
 	@Override
 	public boolean verify(byte[] data, TreeSigBlob sig) {
-		return load(sig).verify(data, sig);
+		return load(sig, null).verify(data, sig);
 	}
 
 
