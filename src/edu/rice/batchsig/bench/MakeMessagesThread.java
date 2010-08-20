@@ -36,6 +36,7 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 public class MakeMessagesThread extends MessageGeneratorThreadBase {
 	final private CodedOutputStream output;
 	long seqno = 0;
+	long rate = 0;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
@@ -43,6 +44,7 @@ public class MakeMessagesThread extends MessageGeneratorThreadBase {
 	MakeMessagesThread(QueueBase signqueue, CodedOutputStream output, int rate) {
 		super(signqueue,rate);
 		this.output = output;
+		this.rate = rate;
 	}
 
 	

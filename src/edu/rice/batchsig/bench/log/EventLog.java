@@ -45,6 +45,10 @@ public class EventLog implements Iterable<Event> {
 		}		
 	}
 	
+	public Event get(int index) {
+		return log[index];
+	}
+	
 	/* TODO:Filter everything in the log to only messages in a particular time range */
 	
 	

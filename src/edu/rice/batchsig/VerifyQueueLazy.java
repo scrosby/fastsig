@@ -29,11 +29,12 @@ import edu.rice.historytree.HistoryTree;
 import edu.rice.historytree.generated.Serialization.SignatureType;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-public class VerifyQueue extends QueueBase {
+/** Copy of verifyqueuelazy, which takes loginlogout hints and tries to delay signature verification for spliced signatures. */
+public class VerifyQueueLazy extends QueueBase {
 	private Verifier verifier;
 	private SignaturePrimitives signer;
 	
-	public VerifyQueue(SignaturePrimitives signer) {
+	public VerifyQueueLazy(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
 			throw new NullPointerException();
@@ -77,7 +78,7 @@ public class VerifyQueue extends QueueBase {
 		}
 	}
 	
-	//Handle the history queue.
+	// Handle the history queue cases.
 	void processMessagesFromSigner(ArrayList<Message> l) {
 		// Handle the easy case first when there's only one thing. Premature optimization??
 		if (false && l.size() == 1) {

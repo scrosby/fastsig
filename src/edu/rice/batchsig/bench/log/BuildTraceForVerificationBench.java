@@ -33,68 +33,82 @@ import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.MessageBase;
 import edu.rice.batchsig.bench.OutgoingMessage;
 
-/** Build the log that gets targetted to a given destination */
-public class LogBuilder {
-	List<LogonLogoffEvent> logintimes;
-	EventLog events;
+/** Build the log that gets targetted to a given destination. Used in the signature verification benchmark. */
+public class BuildTraceForVerificationBench {
 	Object destinationTarget;
+	int epochlength;
 	
+	public BuildTraceForVerificationBench(int epochlength, Object target) {
+		this.destinationTarget=target; // Doublecheck that all events are targetted to the SAME destination.
+		this.epochlength = epochlength;
+	}
 	
-	public void doBench(QueueBase queue) throws IOException {
-		ArrayList<Integer> logins = new ArrayList<Integer>();
-		ArrayList<Integer> logouts = new ArrayList<Integer>();
-
-		
+	/* Build a file for the verification benchmark. IE, include real-time signatures indicating when stuff is signed. */
+	public void makeTrace(EventLog events, List<LogonLogoffEvent> logintimes, QueueBase queue) throws IOException {
 		Iterator<LogonLogoffEvent> ii = logintimes.iterator();
 		Iterator<Event> jj = events.iterator();
 		LogonLogoffEvent i = ii.hasNext() ? ii.next() :null;
 		Event e = jj.hasNext() ? jj.next() :null;
 
-		double epochend = e.getTimestamp() + EPOCHLENGTH ;
+		double epochend = e.getTimestamp() + epochlength ;
 		
 		while (i != null || e != null) {
+			ArrayList<Integer> logins = new ArrayList<Integer>();
+			ArrayList<Integer> logouts = new ArrayList<Integer>();
+
+			long eTime = e!= null ? e.getTimestamp() : Long.MAX_VALUE;
+			long iTime = i!= null ? i.getTimestamp() : Long.MAX_VALUE;
+
 			// Catch misuse.
 			if (e != null && !e.getRecipient().equals(this.destinationTarget))
-				throw new Error("Code only designed for one destination "+i + " != "+ destinationTarget);
+				throw new Error("Code only designed for one destination "+e.getRecipient() + " != "+ destinationTarget);
 
 			// Time to run the queue?
-			if (e.getTimestamp() > epochend) {
-				epochend = e.getTimestamp() + EPOCHLENGTH;
+			if (eTime > epochend && iTime > epochend) {
+				epochend = e.getTimestamp() + epochlength;
 				queue.process();
 			}
 
+			boolean addingMessage = false;
+			if (e != null && i != null && i.getTimestamp() == e.getTimestamp()) {
+				// We're putting both one signature and at least one stop/nonstop  into the queue 
+				addingMessage = true;
+			}
 			
-			double oldTimestamp = i.getTimestamp();
+			
+			double oldTimestamp = iTime;
+			// If there's no event, then i!= null (otherwise we would have bailed earlier)
 			if (e == null || i.getTimestamp() <= e.getTimestamp()) {
-				if (i.getState() == LogonLogoffEvent.State.LOGON)
-					logins.add(i.getUser());
-				else
-					logouts.add(i.getUser());
-				i = ii.hasNext() ? ii.next() :null;
-				
-				// Three casees:
-				if (i != null && i.getTimestamp() == oldTimestamp)
-					continue; // Accumulate, lots of logons/logoffs at the same time.
-				// Two cases. Either the event has the same timestamp and merges, or...
-				if (e != null && i.getTimestamp() > e.getTimestamp()) {
+				// Add on all logons/logoffs that have the same timestamp.
+				while (i != null && i.getTimestamp() == oldTimestamp) {
+					if (i.getState() == LogonLogoffEvent.State.LOGON)
+						logins.add(i.getUser());
+					else
+						logouts.add(i.getUser());
+					i = ii.hasNext() ? ii.next() :null;
+				}
+				// Two cases:
+				// If we're merging with a message, fall through. 
+				if (addingMessage) {
+					// If we're merging with a message, fall through. 
+				} else {
+					// If we're NOT merging with a message, write it out now and continue the loop.
 					writeLoginLogoutMsg(logins, logouts);
-					logins = new ArrayList<Integer>();
-					logouts = new ArrayList<Integer>();
+					continue;
 				}
 			}
 
-			// Store the next message.
-			if (i == null || oldTimestamp >= e.getTimestamp()) {
-				OutgoingMessage out = e.asOutgoingMessage(outstream);
-				if (logins.size() > 0 || logouts.size() > 0) {
-					out.setLoginsLogouts(logins,logouts);
-				}
-				queue.add(out);
-				e = jj.hasNext() ? jj.next() :null;
+			// Take the first message off of the queue.
+			OutgoingMessage out = e.asOutgoingMessage(outstream);
+			if (logins.size() > 0 || logouts.size() > 0) {
+				out.setLoginsLogouts(logins,logouts);
 			}
+			queue.add(out);
+			e = jj.hasNext() ? jj.next() :null;
+			// Write out the last login/logout messages, if any.
+			if (e == null && i == null)
+				writeLoginLogoutMsg(logins, logouts);
 		}
-		writeLoginLogoutMsg(logins, logouts);
-		
 	}
 
 	private void writeLoginLogoutMsg(ArrayList<Integer> logins,
@@ -109,7 +123,6 @@ public class LogBuilder {
 
 	
 	
-	final int EPOCHLENGTH = 1000;
 
 	CodedOutputStream outstream;
 	OutgoingMessage outmsg;
@@ -117,13 +130,13 @@ public class LogBuilder {
 	void replaySign(EventLog l, HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
 		Iterator<Event> i = l.iterator();
 		Event e = i.next();
-		double epochend = e.getTimestamp() + EPOCHLENGTH ;
+		double epochend = e.getTimestamp() + epochlength ;
 		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();
 		while (e != null) {
 			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
 			QueueBase senderqueue = queuemap.get(e.getSender());
 			if (e.getTimestamp() > epochend) {
-				epochend = e.getTimestamp() + EPOCHLENGTH;
+				epochend = e.getTimestamp() + epochlength;
 				for (QueueBase queue : needsProcessing)
 					queue.process();
 				needsProcessing.clear();

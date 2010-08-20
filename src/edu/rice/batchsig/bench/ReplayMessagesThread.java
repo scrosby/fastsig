@@ -40,6 +40,7 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 
 public class ReplayMessagesThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStream input;
+	int rate;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
@@ -49,6 +50,7 @@ public class ReplayMessagesThread extends MessageGeneratorThreadBase {
 		if (fileinput == null)
 			throw new Error();
 		this.input = new IncomingMessageStream(fileinput);
+		this.rate = rate;
 	}
 
 

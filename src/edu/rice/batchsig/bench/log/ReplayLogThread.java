@@ -19,39 +19,21 @@
 
 package edu.rice.batchsig.bench.log;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.CodedOutputStream;
-
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.IncomingMessageStream;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
-import edu.rice.batchsig.bench.ShutdownableThread;
-import edu.rice.batchsig.bench.Tracker;
-import edu.rice.historytree.generated.Serialization.MessageData;
 
-/** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
+/** Given a logfile of 'messages' that were signed, verify them 'in real time', using the included timestamp. Used to benchmark verification. */
 
 public class ReplayLogThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStream input;
-	long bias = -1; // Difference betweeen 'real' clock and virtual clock.
+	long bias = -1; // WHat is the timestamp ('virtual clock') of the first message in the log?
 	final String provider;
 	
 	/** Add new messages to the queue at the requested. 
@@ -68,8 +50,6 @@ public class ReplayLogThread extends MessageGeneratorThreadBase {
 
 	/** Setup the replay log, preloading the bias and the keys. */
 	void setup(MultiplexedPublicKeyPrims prims) {
-		long bias = -1; // Difference betweeen 'real' clock and virtual clock.
-
 		// First pass: Preload all of the verification keys and get the timestamp bias.
 		IncomingMessage im;
 		while ((im = input.nextOnePass()) != null) {
