@@ -20,20 +20,58 @@
 package edu.rice.batchsig;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map.Entry;
 
-import edu.rice.historytree.HistoryTree;
-import edu.rice.historytree.generated.Serialization.SignatureType;
-import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-/** Copy of verifyqueuelazy, which takes loginlogout hints and tries to delay signature verification for spliced signatures. */
+
+/**
+ * Copy of verifyqueuelazy, which takes loginlogout hints and tries to delay
+ * signature verification for spliced signatures.
+ * 
+ * Messages are only lazily verified, when explicitly forced.
+ * 
+ * When a public key signature is verified, that verification can validate both
+ * that one message, and earlier messages through the transitive closure of
+ * verified splices.
+ * 
+ * Lets say that message M is forced, we could check the signature on M, which
+ * will validate M. M might have valid splices to prior messages, spliced to yet other messages.
+ * With one public key verification on M, we can validate those prior messages through very cheap hash operations on spliced signatures.
+ * 
+ * This is not ideal. What would be more efficient would be to look for a later message P whose
+ * transitive closure of splices includes M, then by validating P, we validate many more messages through cheap hash operations.
+ * 
+ * How to find P? 
+ * 
+ * Algorithm 1: Use Union-Find. 
+ * 
+ * Each group is a set of messages which can be validated by verifying the exlempar element's single public key signature. 
+ * (This means that validate the signature splices BEFORE merging into a group).
+ *
+ * Given a new message M, the cases are:
+ * 
+ * If an existing message in a group includes a splice to M, validate the splice and add M to the group.
+ * If M includes a splice the exlempar element of a group G, validate the splice and M becomes the exlempar of that group.
+ * If M includes a splice to the exlempar elements of several groups, validate the splices and M becomes the exlempar of the union of the groups.
+ *
+ * PROBLEM: Not robust to signature validation failures.
+ *
+ * Algorithm 2: Store the entire graph
+ *
+ * Store a dag. Nodes in this dag correspond to messages, and edges correspond to splice points. Some nodes in this graph can be 'incomplete', meaning that we've not seen.
+ * 
+ * either actual message, or 'stub' messages. 
+ * 
+ * */
+
+
+
 public class VerifyQueueLazy extends QueueBase {
 	private Verifier verifier;
 	private SignaturePrimitives signer;
-	
+
 	public VerifyQueueLazy(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
@@ -41,154 +79,82 @@ public class VerifyQueueLazy extends QueueBase {
 		this.signer = signer;
 		this.verifier = new Verifier(signer);
 	}
-	
+
+	private HashMap<Object,HashMap<Long,OneTree>> map1 = new HashMap<Object,HashMap<Long,OneTree>>();
+	/** When was this tree last used? */
+	private HashMap<OneTree,Long> last = new HashMap<OneTree,Long>();
+	private HashSet<OneTree> lastused = new HashSet<OneTree>();
+
+	// First, process everything.
 	public void process() {
+		processQueue();
+		processOneTrees();
+	}
+	
+	public void force(Message m) {
+		Object author = m.getAuthor();
+		Long treeid = m.getSignatureBlob().getTreeId();
+		HashMap<Long,OneTree> map2 = map1 != null ? map1.get(author) : null;
+		OneTree tree = map2 != null ? map2.get(treeid) : null;
+		if (tree == null) {
+			System.out.println("Forcing message thats not in the tree??? Don't do anything.");
+			return;
+		}
+		tree.force(m);
+	}
+	
+	/** Tree last used longer than this ago gets everything forced. */
+	final static long FORCE_DELAY1 = 20*60*1000;
+	/** Anything older than this and not the most recently updated tree gets everything forced */
+	final static long FORCE_DELAY2 = 2*60*1000;
+	/** After doing all of the processing, decide if it is time to eagerly process all of the data */
+
+	public void processOneTrees() {
+		// For each host.
+		for (Entry<Object, HashMap<Long, OneTree>> host : map1.entrySet()) {
+			for (Entry<Long, OneTree> entry : host.getValue().entrySet()) {
+				OneTree tree = entry.getValue();
+				long now = System.currentTimeMillis();
+				long limit;
+				if (lastused.contains(tree))
+					limit = FORCE_DELAY1;
+				else
+					limit = FORCE_DELAY2;
+				
+				if (now-last.get(tree) <  limit)
+					// If this is the 'last' tree for this host, then do nothing;
+					continue;
+				//Eagerly process this tree .
+				System.out.println("Forcing tree due to time limit");
+				tree.forceAll();
+				last.remove(tree);
+				lastused.remove(tree);
+			}
+		}
+	}
+
+	/** Place all of the requested messages from the incoming queue into the for-lazy-processing OneTree objects. */
+	public void processQueue() {
 		ArrayList<Message> oldqueue = atomicGetQueue();
+		long now = System.currentTimeMillis();
 
-		HashMap<Object,ArrayList<Message>> messages = new HashMap<Object,ArrayList<Message>>();
-
-		// Go over each message
+		// Go over each message, place it in the appropriate oneTree.
 		for (Message m : oldqueue) {
 			if (m == null) {
 				System.err.println("Null message in queue?");
 				continue;
 			}
-			TreeSigBlob sigblob = m.getSignatureBlob();
-			if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE) {
-				// If it is a singlely signed message, check.
-				// TODO: Do concurrently; dispatch into thread pool.
-				m.signatureValidity(verifier.verifyMessage(m));
-			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE) {
-				// If its is a merkle tree message, check.
-				// TODO: Do concurrently; dispatch into thread pool.
-				m.signatureValidity(verifier.verifyMerkle(m));
-			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE) {
-				// If a history tree, put into a set of queues, one for each signer.
-				if (!messages.containsKey(m.getAuthor()))
-					messages.put(m.getAuthor(),new ArrayList<Message>());
-				messages.get(m.getAuthor()).add(m);
-			} else {
-				System.out.println("Unrecognized SignatureType");
-			}
-		}
-		
-		// Process each signer's list of messages in turn.
-		for (ArrayList<Message> l : messages.values()) {
-			processMessagesFromSigner(l);
-		}
-	}
-	
-	// Handle the history queue cases.
-	void processMessagesFromSigner(ArrayList<Message> l) {
-		// Handle the easy case first when there's only one thing. Premature optimization??
-		if (false && l.size() == 1) {
-			Message m = l.get(0);
-			m.signatureValidity(verifier.verifyHistory(m,Verifier.parseHistoryTree(m)));
-			return;
-		}
-		
-		// Sort based on treeID first, then message index.
-		Collections.sort(l,new Comparator<Message>(){
-			public int compare(Message a, Message b) {
-				long diff1 = a.getSignatureBlob().getTreeId()-b.getSignatureBlob().getTreeId();
-				if (diff1 > 0) return 1; 
-				if (diff1 < 0) return -1;
-				return a.getSignatureBlob().getTree().getVersion()-b.getSignatureBlob().getTree().getVersion();
-			}});
-
-		// Now break it down into one-arraylist per tree.
-		int i=0,j=1;
-		ArrayList<Message> out;
-		
-		// Has to have at least one message.
-		do {
-			if (j == l.size() || l.get(i).getSignatureBlob().getTreeId() != l.get(j).getSignatureBlob().getTreeId()) {
-				out = new ArrayList<Message>();
-				out.addAll(l.subList(i,j));
-				processMessagesFromTree(out);
-				i=j;
-			}
-			j++;
-		} while (i < l.size());
-	}
-	
-	/** Handle all messages with the same treeID */
-	void processMessagesFromTree(ArrayList<Message> l) {
-		// Traverse in reverse order from most recent to earliest.
-		Collections.reverse(l);
-
-		/* Algorithm: Traverse from the latest message to the earliest. 
-		 * 
-		 * For each message, we see if we have a splice from a previously verified message (a reverse-index of splicepoints to the corresponding messages is stored in splices)
-	     * If so, then verify the splice. If not, or a bad splice check the signature. 
-	     * If a message validates via one of these mechanisms, then this message is valid and add its splicepoints to splices.
-		 */
-		
-		/** For each version number a confirmed valid message that claims to splice the requested message */
-		HashMap<Integer,Message> splices = new HashMap<Integer,Message>();
-
-		/** Cache of the parsed trees */
-		HashMap<Message,HistoryTree<byte[],byte[]>> trees = new HashMap<Message,HistoryTree<byte[],byte[]>>();
-		
-		for (Message m : l) {
-			//System.out.format("*Checking message at leaf %d\n",m.getSignatureBlob().getLeaf());
-			
-			boolean validated = false;
-			HistoryTree<byte[],byte[]> tree = Verifier.parseHistoryTree(m);
-			
-			int version = tree.version();
-			// See if this message can be spliced on to something we already know about.
-			if (splices.containsKey(version)) {
-				Message latermsg = splices.get(version);
-				HistoryTree<byte[],byte[]> latertree = trees.get(latermsg);
-				// Confirm the splice.
-				if (Arrays.equals(latertree.aggV(version),tree.agg())) {
-					// Splice is good! Is the message validated?
-					if (Verifier.checkLeaf(m,tree)) {
-						// And so is the message in it!
-						//System.out.format("Using verified splice %d in tree version %d\n",version, latertree.version());
-						validated = true;
-					} else {
-						System.out.println("Broken proof that doesn't validate message in proof.");
-					}
-				} else {
-					// BAD SPLICE. 
-					System.out.println("Bad Splice: Did history replay? Skipped messagae");
-					// But see if we can check the signature.
-				}
-			} 
-			// No splice or invalid splice.
-			if (validated == false) {
-				//System.out.format("Splices do not have tree %d\n",version);
-				if (verifier.verifyHistory(m,tree)) {
-					validated = true; // GOOD signature.
-				} else {
-					System.out.println("Signature necessary, but doesn't validate. Skip message");
-				}
-			}
-
-			// Put in a 'splice' for the tree's version
-			if (validated && !splices.containsKey(version)) {
-				//System.out.format("Store self-splice at %d with tree-version %d\n",tree.version(),version);
-				splices.put(tree.version(), m);
-				trees.put(m, tree);
-			}
-			
-			// Save the splices, if any, of this message, if validated.
-			if (validated && m.getSignatureBlob().getSpliceHintCount() > 0) {
-					trees.put(m, tree);
-					for (int splice: m.getSignatureBlob().getSpliceHintList()) {
-						if (tree.leaf(splice) == null) {
-							// Claims it has splice, but doesn't have the leaf.
-							System.out.println("Claims splice, but no splice included.");
-						} else {
-							System.out.format("Store splice at %d with tree-version %d\n",splice,version);
-							splices.put(splice,m);
-						}
-					}
-			}
-			// Now invoke the callback with the validity.
-			m.signatureValidity(validated);
+			Object author = m.getAuthor();
+			Long treeid = m.getSignatureBlob().getTreeId();
+			if (!map1.containsKey(author))
+				map1.put(author,new HashMap<Long,OneTree>());
+			HashMap<Long,OneTree> map2 = map1.get(author);
+			if (!map2.containsKey(treeid))
+				map2.put(treeid,new OneTree());
+			OneTree tree = map2.get(treeid);
+			tree.addMessage(m);
+			last.put(tree,now);
+			lastused.add(tree);
 		}
 	}
 }
