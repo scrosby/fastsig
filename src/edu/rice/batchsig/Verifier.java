@@ -95,7 +95,7 @@ public class Verifier {
 		return verifyHistory(message,parseHistoryTree(message));
 	}
 		
-	boolean verifyHistory(Message message, HistoryTree<byte[],byte[]> parsed) {
+	public boolean verifyHistory(Message message, HistoryTree<byte[],byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
 		// See if the message is in the tree.
@@ -111,7 +111,7 @@ public class Verifier {
 		return checkSig(sigblob, msgbuilder);
 	}
 		
-	static boolean checkLeaf(Message message, TreeBase<byte[], byte[]> parsed) {
+	static public boolean checkLeaf(Message message, TreeBase<byte[], byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
 		// See if the message is in the tree.
@@ -120,6 +120,7 @@ public class Verifier {
 			return false;
 		byte [] leafagg = leaf.getAgg();
 		byte [] msgagg = parsed.getAggObj().aggVal(message.getData());
+
 		
 		if (! Arrays.equals(msgagg,leafagg))
 			// Nope, we fail.
