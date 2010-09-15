@@ -17,12 +17,17 @@
  *
  */
 
-package edu.rice.batchsig;
+package edu.rice.batchsig.splice;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
+
+import edu.rice.batchsig.Message;
+import edu.rice.batchsig.QueueBase;
+import edu.rice.batchsig.SignaturePrimitives;
+import edu.rice.batchsig.Verifier;
 
 
 

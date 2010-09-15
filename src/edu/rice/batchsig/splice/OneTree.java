@@ -1,10 +1,13 @@
-package edu.rice.batchsig;
+package edu.rice.batchsig.splice;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 
-import edu.rice.batchsig.Dag.DagNode;
+import edu.rice.batchsig.Message;
+import edu.rice.batchsig.SignaturePrimitives;
+import edu.rice.batchsig.Verifier;
+import edu.rice.batchsig.splice.Dag.DagNode;
 import edu.rice.historytree.HistoryTree;
 
 /** Represent all of the message from one history tree instance */

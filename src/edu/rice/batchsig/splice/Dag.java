@@ -1,4 +1,4 @@
-package edu.rice.batchsig;
+package edu.rice.batchsig.splice;
 
 import java.util.ArrayList;
 import java.util.Collection;
