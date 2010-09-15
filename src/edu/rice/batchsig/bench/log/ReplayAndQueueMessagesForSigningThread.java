@@ -8,16 +8,19 @@ import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
 import edu.rice.batchsig.bench.OutgoingMessage;
 
-public class LogReplaySigningBenchmarkThread extends MessageGeneratorThreadBase {
+public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase {
 	Object sourceTarget;
-	int epochlength;
 	EventLog log;
 	QueueBase senderqueue;
 	HashMap<Object,CodedOutputStream> streammap;
-	public LogReplaySigningBenchmarkThread(QueueBase queue, int maxsize, int epochlength, Object source) {
+	public ReplayAndQueueMessagesForSigningThread(QueueBase queue, int maxsize) {
 		super(queue,maxsize);
-		this.sourceTarget=source; // Doublecheck that all events are sourced from the same source.
-		this.epochlength = epochlength;
+	}
+	
+	public ReplayAndQueueMessagesForSigningThread configure(Object source, EventLog log) {
+		sourceTarget=source;
+		this.log = log;
+		return this;
 	}
 	
 	
@@ -25,13 +28,12 @@ public class LogReplaySigningBenchmarkThread extends MessageGeneratorThreadBase 
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
 
-		long bias = log.get(0).getTimestamp(); // Difference betweeen 'real' clock and virtual clock.
-		for (Event e : log) {
-			if (e != null && !e.getRecipient().equals(this.sourceTarget))
-				throw new Error("Code only designed for one destination "+e.getSender() + " != "+ sourceTarget);
-
+		long bias = log.get(0).getTimestamp(); // Difference between 'real' clock and virtual clock.
+		for (MessageEvent e : log) {
+			if (e != null && !e.getRecipientHost().equals(this.sourceTarget))
+				throw new Error("Code only designed for one destination "+e.getSenderHost() + " != "+ sourceTarget);
 			
-			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
+			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipientHost()));
 			
 			// Offset in ms from the first message in the log.
 			long msgOffsetTime = e.getTimestamp()-bias;

@@ -34,8 +34,8 @@ import edu.rice.batchsig.bench.OutgoingMessage;
 import edu.rice.batchsig.bench.PublicKeyPrims;
 
 /** Contain a queue of timestamped messages queued by arrival time. */
-public class EventLog implements Iterable<Event> {
-	Event log[];
+public class EventLog implements Iterable<MessageEvent> {
+	MessageEvent log[];
 
 
 	/** Add a timestamp offset to all messages in the log. */
@@ -45,7 +45,7 @@ public class EventLog implements Iterable<Event> {
 		}		
 	}
 	
-	public Event get(int index) {
+	public MessageEvent get(int index) {
 		return log[index];
 	}
 	
@@ -65,14 +65,14 @@ public class EventLog implements Iterable<Event> {
 			return;
 		}
 				
-		Iterator<Event> j = this.iterator();
-		Iterator<Event> k = peer.iterator();
+		Iterator<MessageEvent> j = this.iterator();
+		Iterator<MessageEvent> k = peer.iterator();
 
-		Event jm = j.next();
-		Event km = k.next();
+		MessageEvent jm = j.next();
+		MessageEvent km = k.next();
 
 		int i=0;
-		Event out[] = new Event[this.log.length+peer.log.length];
+		MessageEvent out[] = new MessageEvent[this.log.length+peer.log.length];
 		
 		// Assumes that the iterator returns null if we iterate past the end.
 		while (jm != null || km != null) {
@@ -102,11 +102,11 @@ public class EventLog implements Iterable<Event> {
 	}
 
 	/* Iterator returns null if we iterate past the end */
-	public Iterator<Event> iterator() {
+	public Iterator<MessageEvent> iterator() {
 		return new Iter();
 	}
 
-	class Iter implements Iterator<Event> {
+	class Iter implements Iterator<MessageEvent> {
 		int index = 0;
 		@Override
 		public boolean hasNext() {
@@ -114,7 +114,7 @@ public class EventLog implements Iterable<Event> {
 		}
 
 		@Override
-		public Event next() {
+		public MessageEvent next() {
 			if (index < log.length)
 				return log[index++];
 			return null;
@@ -126,47 +126,47 @@ public class EventLog implements Iterable<Event> {
 		}
 	}
 
-	/** Build a set of all of the recipient objects */
+	/** Build a set of all of the recipient_host objects */
 	public Set<Object> buildRecipientSet() {
 		Set<Object> out = new HashSet<Object>();
-		for (Event e : this) {
-			out.add(e.getRecipient());
+		for (MessageEvent e : this) {
+			out.add(e.getRecipientHost());
 		}
 		return out;
 	}
 
-	/** Build a set of all of the recipient senders */
+	/** Build a set of all of the recipient_host senders */
 	public Set<Object> buildSenderSet() {
 		Set<Object> out = new HashSet<Object>();
-		for (Event e : this) {
-			out.add(e.getSender());
+		for (MessageEvent e : this) {
+			out.add(e.getSenderHost());
 		}
 		return out;
 	}
 
 	public void keepOnlySender(Object sender) {
-		ArrayList<Event> tmp = new ArrayList<Event>();
-		for (Event e : this)
-			if (sender.equals(e.getSender()))
+		ArrayList<MessageEvent> tmp = new ArrayList<MessageEvent>();
+		for (MessageEvent e : this)
+			if (sender.equals(e.getSenderHost()))
 				tmp.add(e);
-		log = tmp.toArray(new Event[0]);
+		log = tmp.toArray(new MessageEvent[0]);
 	}
 	
 	public void keepOnlyRecipient(Object recipient) {
-		ArrayList<Event> tmp = new ArrayList<Event>();
-		for (Event e : this)
-			if (recipient.equals(e.getRecipient()))
+		ArrayList<MessageEvent> tmp = new ArrayList<MessageEvent>();
+		for (MessageEvent e : this)
+			if (recipient.equals(e.getRecipientHost()))
 				tmp.add(e);
-		log = tmp.toArray(new Event[0]);
+		log = tmp.toArray(new MessageEvent[0]);
 	}
 
 	final double EPOCHLENGTH = .100;
 	
-	/** Replay signers from a single source to many recipients -- USED TO BENCHMARK SIGNING. */
+	/** Replay signers from a single source to many recipients, create a file of signed messages for each destination host -- USED TO BENCHMARK SIGNING. */
 	void replaySign(QueueBase senderqueue, HashMap<Object,CodedOutputStream> streammap) {
 		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
-		for (Event e : log) {
-			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
+		for (MessageEvent e : log) {
+			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipientHost()));
 			if (e.getTimestamp() > epochend) {
 				epochend = e.getTimestamp() + EPOCHLENGTH;
 				senderqueue.process();
@@ -181,9 +181,9 @@ public class EventLog implements Iterable<Event> {
 	void replaySign(HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
 		double epochend = log[0].getTimestamp() + EPOCHLENGTH ;
 		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();
-		for (Event e : log) {
-			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
-			QueueBase senderqueue = queuemap.get(e.getSender());
+		for (MessageEvent e : log) {
+			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipientHost()));
+			QueueBase senderqueue = queuemap.get(e.getSenderHost());
 			if (e.getTimestamp() > epochend) {
 				epochend = e.getTimestamp() + EPOCHLENGTH;
 				for (QueueBase queue : needsProcessing)
@@ -195,12 +195,12 @@ public class EventLog implements Iterable<Event> {
 		}
 	}
 
-	MultiplexedPublicKeyPrims prims;
+	private MultiplexedPublicKeyPrims prims;
 		
 	/* Simulation infrastructure:
 	 * 
 	 *  When signing: 
-	 *     We have one queue for each sender object; we model each sender independently and use a virtual clock, triggering process()'s when appropriate. 
+	 *     We have one queue for each sender_host object; we model each sender_host independently and use a virtual clock, triggering process()'s when appropriate. 
 	 *     Each destination is placed into a different output file. 
      *         This is done by instantiating OutgoingMessage with the correct outgoing stream.
 	 *
@@ -208,7 +208,7 @@ public class EventLog implements Iterable<Event> {
 	 *
 	 *  When verifying:
 	 *
-	 *     Given a message log (containing messages to only one recipient). play it, verifying all signatures.
+	 *     Given a message log (containing messages to only one recipient_host). play it, verifying all signatures.
 	 *     Process the queue per the virtual clock.
 	 *     
 	 *     Create 'PublicKeyPrims' objects containing the signer's public keys on-the-fly, using the information in the sender_id's in the message bodies. 

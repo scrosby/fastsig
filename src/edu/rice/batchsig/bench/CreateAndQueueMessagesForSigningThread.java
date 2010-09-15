@@ -19,18 +19,13 @@
 
 package edu.rice.batchsig.bench;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 
 import edu.rice.batchsig.QueueBase;
@@ -38,22 +33,21 @@ import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class ReplayMessagesThread extends MessageGeneratorThreadBase {
-	final private IncomingMessageStream input;
-	int rate;
+public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase {
+	final private CodedOutputStream output;
+	long seqno = 0;
+	long rate = 0;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplayMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
-		super(verifyqueue,rate);
-		if (fileinput == null)
-			throw new Error();
-		this.input = new IncomingMessageStream(fileinput);
+	CreateAndQueueMessagesForSigningThread(QueueBase signqueue, CodedOutputStream output, int rate) {
+		super(signqueue,rate);
+		this.output = output;
 		this.rate = rate;
 	}
 
-
+	
 	@Override
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
@@ -65,7 +59,7 @@ public class ReplayMessagesThread extends MessageGeneratorThreadBase {
 			if (insertedNum < targetNum) {
 				while (insertedNum < targetNum) {
 					insertedNum++;
-					queue.add(input.next());
+					queue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
 					checkQueueOverflow();
 				}
 			} else { 
@@ -82,4 +76,21 @@ public class ReplayMessagesThread extends MessageGeneratorThreadBase {
 		}
 		queue.finish();
 	}
+
+
+	
+	
+	/* Future code for an unimplemented message generator subclass.
+	static Random rand = new Random();
+	static Object objs[] = new Object[20];
+	static {
+		for (int i = 0 ; i < objs.length ; i++)
+			objs[i] = new Object();
+	}
+
+	Object pickSource() {
+		return new Object();
+		// TODO: return objs[rand.nextInt(objs.length)];
+	}
+    */
 }

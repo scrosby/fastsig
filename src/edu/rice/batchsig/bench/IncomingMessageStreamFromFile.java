@@ -6,12 +6,12 @@ import java.io.IOException;
 import com.google.protobuf.CodedInputStream;
 
 /** Generate an infinite stream of messages */
-public class IncomingMessageStream {
+public class IncomingMessageStreamFromFile {
 	private CodedInputStream input;
 	final private FileInputStream fileinput;
 
 	
-	public IncomingMessageStream(FileInputStream fileinput) {
+	public IncomingMessageStreamFromFile(FileInputStream fileinput) {
 		if (fileinput == null)
 			throw new Error();
 		this.fileinput = fileinput;

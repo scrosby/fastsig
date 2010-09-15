@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Map;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.IncomingMessage;
-import edu.rice.batchsig.bench.IncomingMessageStream;
+import edu.rice.batchsig.bench.IncomingMessageStreamFromFile;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
 
 /** Given a logfile of 'messages' that were signed, verify them 'in real time', using the included timestamp. Used to benchmark verification. */
 
 public class ReplayLogThread extends MessageGeneratorThreadBase {
-	final private IncomingMessageStream input;
+	final private IncomingMessageStreamFromFile input;
 	long bias = -1; // WHat is the timestamp ('virtual clock') of the first message in the log?
 	final String provider;
 	
@@ -44,7 +44,7 @@ public class ReplayLogThread extends MessageGeneratorThreadBase {
 		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();
-		this.input = new IncomingMessageStream(fileinput);
+		this.input = new IncomingMessageStreamFromFile(fileinput);
 		this.provider = provider;
 	}
 

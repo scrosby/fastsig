@@ -46,9 +46,9 @@ public class BuildTraceForVerificationBench {
 	/* Build a file for the verification benchmark. IE, include real-time signatures indicating when stuff is signed. */
 	public void makeTrace(EventLog events, List<LogonLogoffEvent> logintimes, QueueBase queue) throws IOException {
 		Iterator<LogonLogoffEvent> ii = logintimes.iterator();
-		Iterator<Event> jj = events.iterator();
+		Iterator<MessageEvent> jj = events.iterator();
 		LogonLogoffEvent i = ii.hasNext() ? ii.next() :null;
-		Event e = jj.hasNext() ? jj.next() :null;
+		MessageEvent e = jj.hasNext() ? jj.next() :null;
 
 		double epochend = e.getTimestamp() + epochlength ;
 		
@@ -60,8 +60,8 @@ public class BuildTraceForVerificationBench {
 			long iTime = i!= null ? i.getTimestamp() : Long.MAX_VALUE;
 
 			// Catch misuse.
-			if (e != null && !e.getRecipient().equals(this.destinationTarget))
-				throw new Error("Code only designed for one destination "+e.getRecipient() + " != "+ destinationTarget);
+			if (e != null && !e.getRecipientHost().equals(this.destinationTarget))
+				throw new Error("Code only designed for one destination "+e.getRecipientHost() + " != "+ destinationTarget);
 
 			// Time to run the queue?
 			if (eTime > epochend && iTime > epochend) {
@@ -88,7 +88,6 @@ public class BuildTraceForVerificationBench {
 					i = ii.hasNext() ? ii.next() :null;
 				}
 				// Two cases:
-				// If we're merging with a message, fall through. 
 				if (addingMessage) {
 					// If we're merging with a message, fall through. 
 				} else {
@@ -128,13 +127,13 @@ public class BuildTraceForVerificationBench {
 	OutgoingMessage outmsg;
 
 	void replaySign(EventLog l, HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
-		Iterator<Event> i = l.iterator();
-		Event e = i.next();
+		Iterator<MessageEvent> i = l.iterator();
+		MessageEvent e = i.next();
 		double epochend = e.getTimestamp() + epochlength ;
 		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();
 		while (e != null) {
-			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipient()));
-			QueueBase senderqueue = queuemap.get(e.getSender());
+			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipientHost()));
+			QueueBase senderqueue = queuemap.get(e.getSenderHost());
 			if (e.getTimestamp() > epochend) {
 				epochend = e.getTimestamp() + epochlength;
 				for (QueueBase queue : needsProcessing)

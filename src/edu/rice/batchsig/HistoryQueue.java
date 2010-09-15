@@ -44,7 +44,7 @@ public class HistoryQueue extends QueueBase {
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
 	private SignaturePrimitives signer;
 	
-	/** Track when we last contacted a given recipient */
+	/** Track when we last contacted a given recipient_host */
 	public HashMap<Object,Integer> lastcontacts;
 	/** As a history tree may be used among multiple messages, indicate which message this is dealing with. */
 	public long treeid;
@@ -133,7 +133,7 @@ public class HistoryQueue extends QueueBase {
 			Object recipient = message.getRecipient();
 			if (lastcontacts.containsKey(recipient)) {
 				//System.out.println(lastcontacts.toString());
-				//System.out.println("Found a lastcontact of "+leaf_offset+"  "+lastcontacts.get(recipient));
+				//System.out.println("Found a lastcontact of "+leaf_offset+"  "+lastcontacts.get(recipient_host));
 				int lastcontact = lastcontacts.get(recipient);
 				if (lastcontact != histtree.version()) {
 					pruned.copyV(histtree, lastcontacts.get(recipient),false);

@@ -130,7 +130,7 @@ public class TestHistoryQueue extends TestCase {
 		// Now try to verify them, in more than one batch.
 		System.out.println("***** Verify Pass 2 *****");
 		prims.reset();
-		assertEquals(0,prims.verifycount); // One for msg8, to a new recipient.
+		assertEquals(0,prims.verifycount); // One for msg8, to a new recipient_host.
 		verifyqueue=new VerifyQueue(prims);
 		
 		msg0.wantValid(); verifyqueue.add(msg0);
@@ -139,7 +139,7 @@ public class TestHistoryQueue extends TestCase {
 		msg3.wantValid(); verifyqueue.add(msg3);
 		msg4.wantValid(); verifyqueue.add(msg4);
 		verifyqueue.process();
-		assertEquals(1,prims.verifycount); // One for msg8, to a new recipient.
+		assertEquals(1,prims.verifycount); // One for msg8, to a new recipient_host.
 		
 		// Corrupt message 5.
 		msg5.data[1]=0;

@@ -106,13 +106,13 @@ public class BenchSigner {
 
 	/** Setup to do a single run of signing, creating and waiting for the threads to die. */
 	protected void doSigningRun(CodedOutputStream output, int makeRate, int signRate, int sleepTime) {
-		MakeMessagesThread makeThread = new MakeMessagesThread(queue, output, makeRate);
+		CreateAndQueueMessagesForSigningThread makeThread = new CreateAndQueueMessagesForSigningThread(queue, output, makeRate);
 		doCommon(sleepTime, makeThread);
 		}
 
 	/** Setup to do a single run of verifying, creating and waiting for the threads to die. */
 	protected void doVerifyingRun(FileInputStream input, int makeRate, int signRate, int sleepTime) {
-		ReplayMessagesThread makeThread = new ReplayMessagesThread(queue,input, makeRate);
+		ReplaySavedMessagesThread makeThread = new ReplaySavedMessagesThread(queue,input, makeRate);
 		doCommon(sleepTime, makeThread);
 		}
 
