@@ -37,15 +37,17 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class OutgoingMessage extends MessageBase {
 	CodedOutputStream output;
+	Object recipient_user;
 	Object recipient;
 	long creation_time;
 	List<Integer> logins, logouts;
 	
 	
-	public OutgoingMessage(CodedOutputStream output, byte data[], Object recipient) {
+	public OutgoingMessage(CodedOutputStream output, byte data[], Object recipient, Object recipient_user) {
 		this.output = output;
 		this.data = data;
 		this.recipient = recipient;
+		this.recipient_user = recipient_user;
 		this.creation_time = System.currentTimeMillis();
 	}
 
@@ -112,9 +114,11 @@ public class OutgoingMessage extends MessageBase {
 			builder.setMessage(ByteString.copyFrom(data));
 		
 		if (startBuffering != null || endBuffering != null) {
-			builder.addAllStartBuffering(startBuffering);
-			builder.addAllEndBuffering(endBuffering);
+			builder.addAllStartBufferingUsers(startBuffering);
+			builder.addAllEndBufferingUsers(endBuffering);
 		}
+		
+		builder.setRecipientUser((Integer)recipient_user);
 		
 		MessageData messagedata = builder.build();
 		output.writeRawVarint32(messagedata.getSerializedSize());

@@ -92,12 +92,13 @@ message TreeSigBlob {
 message MessageData {
    // What is the timestamp on this message?
    required int64 timestamp = 1;
-   // WHich hosts just started buffering (IE, don't authenticate?)
-   repeated int32 start_buffering = 2;
-   // WHich hosts just ended buffering (IE, authenticate em all NOW!!)
-   repeated int32 end_buffering = 3;
+   // WHich users just started buffering (IE, don't authenticate?)
+   repeated int32 start_buffering_users = 2;
+   // WHich users just ended buffering (IE, authenticate em all NOW!!)
+   repeated int32 end_buffering_users = 3;
    // Actual contents of the message. (The signature comes next *IF* this field exists
    optional bytes message =4;
+   optional int32 recipient_user = 5;
 }
 
 

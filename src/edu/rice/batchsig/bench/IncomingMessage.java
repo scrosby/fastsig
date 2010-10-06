@@ -34,18 +34,19 @@ public class IncomingMessage extends MessageBase {
 	private long creation_time;
 	public List<Integer> start_buffering;
 	public List<Integer> end_buffering;
-
+	int recipientuser;
+	
 	// Sig = null occurs if there is no message data (aka, this is a non-signed messgae
 	private IncomingMessage(TreeSigBlob sig, MessageData data) {
 		this.sigblob = sig;
 		this.data = data.getMessage().toByteArray();
 		this.creation_time = System.currentTimeMillis();
 		this.virtual_clock = data.getTimestamp();
-		if (data.getStartBufferingCount() > 0)
-			this.start_buffering = data.getStartBufferingList();
-		if (data.getEndBufferingCount() > 0)
-			this.end_buffering = data.getEndBufferingList();
-		//this.recipientuser = data.
+		if (data.getStartBufferingUsersCount() > 0)
+			this.start_buffering = data.getStartBufferingUsersList();
+		if (data.getEndBufferingUsersCount() > 0)
+			this.end_buffering = data.getEndBufferingUsersList();
+		this.recipientuser = data.getRecipientUser();
 	}
 
 	@Override
@@ -61,7 +62,7 @@ public class IncomingMessage extends MessageBase {
 	}
 
 	public Object getRecipientUser() {
-		throw new Error("TODO"); // TODO 
+		return recipientuser;
 	}
 
 	@Override

@@ -47,6 +47,7 @@ public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThre
 		this.rate = rate;
 	}
 
+	static final Integer DEFAULT_USER = new Integer(31415926);
 	
 	@Override
 	public void run() {
@@ -59,7 +60,7 @@ public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThre
 			if (insertedNum < targetNum) {
 				while (insertedNum < targetNum) {
 					insertedNum++;
-					queue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object()));
+					queue.add(new OutgoingMessage(output,String.format("Msg:%d",seqno++).getBytes(),new Object(),DEFAULT_USER));
 					checkQueueOverflow();
 				}
 			} else { 
