@@ -36,13 +36,18 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
-public class Verifier {
+abstract public class Verifier {
 	private SignaturePrimitives signer;
 
 	public Verifier(SignaturePrimitives signer) {
 		this.signer=signer;
 	}
-	
+
+	/** Within each batch, add this message to be processed */
+	public abstract void add(Message message);
+	/** At the end of each batch, mark the end of the batch */
+	public abstract void finishBatch();
+
 	/*
 	boolean verify(Message message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
@@ -60,57 +65,6 @@ public class Verifier {
 	}
 	*/
 
-	boolean verifyMessage(Message message) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-
-		// Parse the tree.
-		final byte[] rootHash = message.getData();
-		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
-			.setTreetype(SigTreeType.MESSAGE)
-			.setRoothash(ByteString.copyFrom(SimpleQueue.hash(rootHash)));
-
-		return checkSig(sigblob, msgbuilder);
-	}
-
-	boolean verifyMerkle(Message message) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-
-		// Parse the tree.
-		MerkleTree<byte[],byte[]> parsed=parseMerkleTree(message);
-
-		// See if the message is in the tree.
-		if (!checkLeaf(message, parsed))
-			return false;
-		
-		final byte[] rootHash = parsed.agg();
-		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
-			.setTreetype(SigTreeType.MERKLE_TREE)
-			.setVersion(parsed.version())
-			.setRoothash(ByteString.copyFrom(rootHash));
-
-		return checkSig(sigblob, msgbuilder);
-	}
-
-	boolean verifyHistory(Message message) {
-		return verifyHistory(message,parseHistoryTree(message));
-	}
-		
-	public boolean verifyHistory(Message message, HistoryTree<byte[],byte[]> parsed) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-
-		// See if the message is in the tree.
-		if (!checkLeaf(message, parsed))
-			return false;
-		
-		final byte[] rootHash = parsed.agg();
-		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
-			.setTreetype(SigTreeType.HISTORY_TREE)
-			.setVersion(parsed.version())
-			.setRoothash(ByteString.copyFrom(rootHash));
-
-		return checkSig(sigblob, msgbuilder);
-	}
-		
 	static public boolean checkLeaf(Message message, TreeBase<byte[], byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
@@ -128,25 +82,9 @@ public class Verifier {
 		return true;
 	}
 
+
 	boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
 		byte[] signeddata = msgbuilder.build().toByteArray();
 		return signer.verify(signeddata, sigblob);
 	}
-
-	static public MerkleTree<byte[],byte[]> parseMerkleTree(Message message) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-		PrunedTree pb=sigblob.getTree();
-		MerkleTree<byte[],byte[]> tree= new MerkleTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
-		tree.updateTime(pb.getVersion());
-		tree.parseTree(pb);
-		return tree;
-	}	
-	static public HistoryTree<byte[],byte[]> parseHistoryTree(Message message) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-		PrunedTree pb=sigblob.getTree();
-		HistoryTree<byte[],byte[]> tree= new HistoryTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
-		tree.updateTime(pb.getVersion());
-		tree.parseTree(pb);
-		return tree;
-	}	
 }
