@@ -19,10 +19,20 @@
 
 package edu.rice.batchsig.bench.log;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import com.google.protobuf.CodedOutputStream;
@@ -34,11 +44,27 @@ import edu.rice.batchsig.bench.OutgoingMessage;
 import edu.rice.batchsig.bench.PublicKeyPrims;
 
 /** Contain a queue of timestamped messages queued by arrival time. */
-public class EventLog implements Iterable<MessageEvent> {
+public class EventTrace implements Iterable<MessageEvent> {
 	MessageEvent log[];
 
+	EventTrace(List<MessageEvent> list) {
+		log = list.toArray(new MessageEvent[0]);
+		System.err.println("Sorting trace");
+		EventBase.sort(log);
+	}
 
-	/** Add a timestamp offset to all messages in the log. */
+	public EventTrace(Iterator<MessageEvent> it) {
+		ArrayList<MessageEvent> tmp = new ArrayList<MessageEvent>();
+		while (it.hasNext()) {
+			tmp.add(it.next());
+			if (tmp.size() % 100000 == 0)
+				System.err.println("Loading event: "+tmp.size());
+		}
+		log = tmp.toArray(new MessageEvent[0]);
+		EventBase.sort(log);
+	}
+
+	/** Add a timestamp offset to all messages in the trace. */
 	public void offset(long offset) {
 		for (EventBase i : log) {
 			i.setTimestamp(i.getTimestamp()+offset);
@@ -49,16 +75,16 @@ public class EventLog implements Iterable<MessageEvent> {
 		return log[index];
 	}
 	
-	/* TODO:Filter everything in the log to only messages in a particular time range */
+	/* TODO:Filter everything in the trace to only messages in a particular time range */
 	
 	
 	/** Merges two logs together, permanently mutating BOTH logs */
-	public void merge(EventLog peer) {
+	public void merge(EventTrace peer) {
 		// We're merging in something empty.
 		if (peer.log.length == 0)
 			return;
 		
-		// We're empty, just copy the log array.
+		// We're empty, just copy the trace array.
 		if (this.log.length == 0) {
 			this.log = peer.log;
 			peer.log = null; // Catch bugs.
@@ -147,7 +173,7 @@ public class EventLog implements Iterable<MessageEvent> {
 	public void keepOnlySender(Object sender) {
 		ArrayList<MessageEvent> tmp = new ArrayList<MessageEvent>();
 		for (MessageEvent e : this)
-			if (sender.equals(e.getSenderHost()))
+			if (sender.equals(e.getSenderHost()) && !e.getRecipientHost().equals(e.getSenderHost()))
 				tmp.add(e);
 		log = tmp.toArray(new MessageEvent[0]);
 	}
@@ -155,7 +181,7 @@ public class EventLog implements Iterable<MessageEvent> {
 	public void keepOnlyRecipient(Object recipient) {
 		ArrayList<MessageEvent> tmp = new ArrayList<MessageEvent>();
 		for (MessageEvent e : this)
-			if (recipient.equals(e.getRecipientHost()))
+			if (recipient.equals(e.getRecipientHost()) && !e.getRecipientHost().equals(e.getSenderHost()))
 				tmp.add(e);
 		log = tmp.toArray(new MessageEvent[0]);
 	}
@@ -194,9 +220,15 @@ public class EventLog implements Iterable<MessageEvent> {
 			needsProcessing.add(senderqueue);
 		}
 	}
-
-	private MultiplexedPublicKeyPrims prims;
-		
+	
+	
+	public void write(OutputStream output) throws IOException {
+		Writer out=new BufferedWriter(new OutputStreamWriter(output));
+		for (MessageEvent e : this)
+			e.writeTo(out);
+		out.flush();
+	}
+	
 	/* Simulation infrastructure:
 	 * 
 	 *  When signing: 
@@ -208,7 +240,7 @@ public class EventLog implements Iterable<MessageEvent> {
 	 *
 	 *  When verifying:
 	 *
-	 *     Given a message log (containing messages to only one recipient_host). play it, verifying all signatures.
+	 *     Given a message trace (containing messages to only one recipient_host). play it, verifying all signatures.
 	 *     Process the queue per the virtual clock.
 	 *     
 	 *     Create 'PublicKeyPrims' objects containing the signer's public keys on-the-fly, using the information in the sender_id's in the message bodies. 

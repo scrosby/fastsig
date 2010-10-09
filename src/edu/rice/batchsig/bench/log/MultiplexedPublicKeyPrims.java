@@ -29,17 +29,19 @@ import edu.rice.batchsig.bench.PublicKeyPrims;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob.Builder;
 
-class MultiplexedPublicKeyPrims implements SignaturePrimitives {
+public class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 	final String algo;
 	final int size;
 	final HashMap<Object,SignaturePrimitives> map = new HashMap<Object,SignaturePrimitives>();
-
-	MultiplexedPublicKeyPrims(String algo, int size) {
+	final String provider;
+	
+	MultiplexedPublicKeyPrims(String algo, int size, String provider) {
 		this.algo = algo;
 		this.size = size;
+		this.provider = provider;
 	}
 	
-	public SignaturePrimitives load(String signer, String provider) {
+	public SignaturePrimitives load(String signer) {
 		try {
 			if (!map.containsKey(signer))
 				map.put(signer,PublicKeyPrims.make(signer, algo, size, provider));
@@ -57,23 +59,33 @@ class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 		return null;
 	}
 	
-	public SignaturePrimitives load(TreeSigBlob.Builder msg, String provider) {
-		return load(msg.getSignerId().toStringUtf8(), provider);
+	public SignaturePrimitives load(TreeSigBlob.Builder msg) {
+		return load(msg.getSignerId().toStringUtf8());
 	}
 
-	public SignaturePrimitives load(TreeSigBlob msg, String provider) {
-		return load(msg.getSignerId().toStringUtf8(), provider);
+	public SignaturePrimitives load(TreeSigBlob msg) {
+		return load(msg.getSignerId().toStringUtf8());
 	}
 	
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
-		load(out,null).sign(data, out);
+		load(out).sign(data, out);
 	}
 
 	@Override
 	public boolean verify(byte[] data, TreeSigBlob sig) {
-		return load(sig, null).verify(data, sig);
+		return load(sig).verify(data, sig);
 	}
 
-
+	/** Make a given key
+	 * 
+	 * @param algo Algorithm to use (e.g. "sha1withdsa")
+	 * @param size Number of bits in the key
+	 * @param provider Which provider (May be null)
+	 * @return A primitive object.
+	 */
+	public static MultiplexedPublicKeyPrims make(String algo, int size, String provider) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException  {
+		return new MultiplexedPublicKeyPrims(algo,size,provider);
+	}		
+		
 }

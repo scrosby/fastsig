@@ -37,6 +37,8 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Queue;
 
 
 import com.google.protobuf.ByteString;
@@ -89,14 +91,17 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		if (out.load(signer_id_string,algo,size,provider))
 			return out;
 
-		System.err.println("Making new keypair");
+		System.err.println("Making new keypair with algo: '"+algo+"' and provider '"+provider+"'");
+		
+		// For key generation, only 'RSA' or 'DSA'
+		String kpg_algo = algo.substring(algo.length()-3);
 		
 		// Otherwise, generate it.
 		KeyPairGenerator kpg;
 		if (provider != null) 
-			kpg = KeyPairGenerator.getInstance(algo,provider);
+			kpg = KeyPairGenerator.getInstance(kpg_algo,provider);
 		else
-			kpg = KeyPairGenerator.getInstance(algo);
+			kpg = KeyPairGenerator.getInstance(kpg_algo);
 
 		kpg.initialize(size);
 		out.initialize(kpg.genKeyPair(),algo, size,provider);
@@ -105,7 +110,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	}
 		
 	static String makeFilename(String signer_id_string, String algo, int size) {
-		return String.format("KEY.%s-%s-%d.key",signer_id_string,algo,size);
+		return String.format("keys/KEY.%s-%s-%d.key",signer_id_string,algo,size);
 	}
 	
 	void initialize(KeyPair kp, String algo, int size, String provider) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException {
@@ -178,10 +183,8 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	@Override
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
 		try {
-		Tracker.singleton.signcount++;
-		signer.update(data);
 		out.setSignatureAlgorithm(sigalgo);
-		out.setSignatureBytes(ByteString.copyFrom(signer.sign()));
+		out.setSignatureBytes(ByteString.copyFrom(signBytes(data)));
 		out.setSignerId(signer_id);
 		} catch (SignatureException e) {
 			e.printStackTrace();
@@ -199,12 +202,48 @@ public class PublicKeyPrims implements SignaturePrimitives {
 			return false;
 		}
 		try {
-			Tracker.singleton.verifycount++;
-			verifier.update(data);
-			return verifier.verify(sig.getSignatureBytes().toByteArray());
+			return verifyBytes(data,sig.getSignatureBytes().toByteArray());
 		} catch (SignatureException e) {
 			e.printStackTrace();
 			return false;
 		}
+	}
+
+
+	/** Queue of verified signatures */
+	Queue<ByteString> expirationQueue;
+	/** Map from data bytes to signature bytes */
+	HashMap<ByteString,ByteString> cache;
+	
+	private boolean caching = false;
+	static final private int CACHE_SIZE = 100;
+	
+	protected boolean verifyBytes(byte [] databytes, byte [] sigbytes) throws SignatureException {
+		if (caching && ByteString.copyFrom(sigbytes).equals(cache.get(ByteString.copyFrom(databytes)))) {
+			if (++Tracker.singleton.verifycount_cached % 100 == 0)
+				System.err.println("Verifycount_cached: "+Tracker.singleton.verifycount_cached);			
+			return true;
+		}
+		if (++Tracker.singleton.verifycount % 100 == 0)
+			System.err.println("Verifycount: "+Tracker.singleton.verifycount);
+		verifier.update(databytes);
+		boolean isValid = verifier.verify(sigbytes);
+		
+		if (caching && isValid) {
+			ByteString datastring = ByteString.copyFrom(databytes);
+			cache.put(ByteString.copyFrom(databytes), ByteString.copyFrom(sigbytes));
+			expirationQueue.add(datastring);
+			if (expirationQueue.size() > CACHE_SIZE) {
+				cache.remove(expirationQueue.remove());
+			}
+		}
+		return isValid;
+	}
+
+	protected byte[] signBytes(byte [] databytes) throws SignatureException {
+		if (++Tracker.singleton.signcount % 100 == 0)
+			System.err.println("SIgncount: "+Tracker.singleton.signcount);
+		signer.update(databytes);
+		return signer.sign();
 	}
 }

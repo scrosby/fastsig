@@ -25,7 +25,10 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob.Builder;
 /** Wraps a signer with one that caches signature verifications so that the same signature and data need only be verified once */
 public class CachingSigner implements SignaturePrimitives {
 	final private SignaturePrimitives orig;
-
+	//Queue<byte[]> expirationQueue;
+	//HashMap<ByteArray,TreeSigBlob>
+	
+	
 	CachingSigner(SignaturePrimitives orig) {
 		this.orig = orig;
 	}
@@ -41,5 +44,4 @@ public class CachingSigner implements SignaturePrimitives {
 		// TODO Implement the cache.
 		return orig.verify(data,sig);
 	}
-
 }

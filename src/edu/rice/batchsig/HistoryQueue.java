@@ -77,6 +77,7 @@ public class HistoryQueue extends QueueBase {
 		ArrayList<Message> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
+		Tracker.singleton.trackBatchSize(oldqueue.size());
 
 		/**
 		 * For now, only a single history tree process can be outstanding. The

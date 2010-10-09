@@ -33,20 +33,20 @@ import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.MessageBase;
 import edu.rice.batchsig.bench.OutgoingMessage;
 
-/** Build the log that gets targetted to a given destination. Used in the signature verification benchmark. */
-public class BuildTraceForVerificationBench {
+/** Build the log based on a trace for events targetting a given destination. Used in the signature verification benchmark. */
+public class BuildLogForVerificationBench {
 	Object destinationTarget;
 	int epochlength;
 	
-	public BuildTraceForVerificationBench(int epochlength, Object target) {
+	public BuildLogForVerificationBench(int epochlength, Object target) {
 		this.destinationTarget=target; // Doublecheck that all events are targetted to the SAME destination.
 		this.epochlength = epochlength;
 	}
 	
 	/* Build a file for the verification benchmark. IE, include real-time signatures indicating when stuff is signed. */
-	public void makeTrace(EventLog events, List<LogonLogoffEvent> logintimes, QueueBase queue) throws IOException {
-		Iterator<LogonLogoffEvent> ii = logintimes.iterator();
-		Iterator<MessageEvent> jj = events.iterator();
+	public void makeTrace(Iterator<MessageEvent> events, Iterator<LogonLogoffEvent> logintimes, QueueBase queue) throws IOException {
+		Iterator<LogonLogoffEvent> ii = logintimes;
+		Iterator<MessageEvent> jj = events;
 		LogonLogoffEvent i = ii.hasNext() ? ii.next() :null;
 		MessageEvent e = jj.hasNext() ? jj.next() :null;
 
@@ -82,9 +82,9 @@ public class BuildTraceForVerificationBench {
 				// Add on all logons/logoffs that have the same timestamp.
 				while (i != null && i.getTimestamp() == oldTimestamp) {
 					if (i.getState() == LogonLogoffEvent.State.LOGON)
-						logins.add(i.getUser());
+						logins.add(i.getRecipientUser());
 					else
-						logouts.add(i.getUser());
+						logouts.add(i.getRecipientUser());
 					i = ii.hasNext() ? ii.next() :null;
 				}
 				// Two cases:
@@ -113,7 +113,7 @@ public class BuildTraceForVerificationBench {
 	private void writeLoginLogoutMsg(ArrayList<Integer> logins,
 			ArrayList<Integer> logouts) throws IOException {
 		if (logins.size() > 0 || logouts.size() > 0) {
-			OutgoingMessage out = new OutgoingMessage(outstream, null, destinationTarget);
+			OutgoingMessage out = new OutgoingMessage(outstream, null, destinationTarget,null);
 			out.setLoginsLogouts(logins,logouts);
 			out.writeTo(outstream);
 		}
@@ -126,7 +126,7 @@ public class BuildTraceForVerificationBench {
 	CodedOutputStream outstream;
 	OutgoingMessage outmsg;
 
-	void replaySign(EventLog l, HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
+	void replaySign(EventTrace l, HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
 		Iterator<MessageEvent> i = l.iterator();
 		MessageEvent e = i.next();
 		double epochend = e.getTimestamp() + epochlength ;

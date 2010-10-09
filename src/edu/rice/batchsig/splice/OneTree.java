@@ -2,26 +2,41 @@ package edu.rice.batchsig.splice;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.Verifier;
+import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.splice.Dag.DagNode;
 import edu.rice.historytree.HistoryTree;
 
 /** Represent all of the message from one history tree instance */
 public class OneTree {
-	private Verifier verifier;
-	private SignaturePrimitives signer;
+	static class CompareBySize implements Comparator<OneTree> {
+	@Override
+	public int compare(OneTree arg0, OneTree arg1) {
+		return arg1.size()-arg0.size();
+		}
+	}
+
+	int size = 0;
+
+	
+	public int size() {
+		return size;
+	}
+	
+	final private VerifHisttreeLazily verifier;
 	/** For each version number the message at that number. */
-	HashMap<Integer,Message> messages = new HashMap<Integer,Message>();
+	HashMap<Integer,IncomingMessage> messages = new HashMap<Integer,IncomingMessage>();
 
 	/** Cache of unvalidated root hashes of the history trees for messages in messages. msg.getTree().agg()
 	 *    When we verify a splice, we need to take the child message's agg() and compare it to aggV(child.version).
 	 *    Rather than rebuild the child's pruned tree, or cache the whole thing, just cache the parts we need, the agg().
 	 *  */
-	HashMap<Message,byte[]> roothashes;
+	HashMap<IncomingMessage,byte[]> roothashes;
 
 
 	/** For various message indices, cache of the validated root hashes of history trees; if a new message arrives with a hash in this list, then the message is validated without a public key op. */
@@ -48,9 +63,13 @@ public class OneTree {
 		return dag.makeOrGet(key);
 	}
 
-	void addMessage(Message m) {
+	public OneTree(VerifHisttreeLazily verifier) {
+		this.verifier = verifier;
+	}
+	
+	void addMessage(IncomingMessage m) {
 		Integer key = m.getSignatureBlob().getLeaf();
-		HistoryTree<byte[],byte[]> tree = Verifier.parseHistoryTree(m);
+		HistoryTree<byte[],byte[]> tree = VerifHisttreeLazily.parseHistoryTree(m);
 
 		// First, see if this message is well-formed.
 		if (!Verifier.checkLeaf(m,tree)) {
@@ -85,7 +104,7 @@ public class OneTree {
 			if (succm == null)
 				throw new Error("Algorithm bug.");
 			// Time to verify the splice is OK. 
-			HistoryTree<byte[],byte[]> succtree = Verifier.parseHistoryTree(succm);
+			HistoryTree<byte[],byte[]> succtree = VerifHisttreeLazily.parseHistoryTree(succm);
 			if (Arrays.equals(succtree.aggV(key.intValue()),tree.agg())) {
 				; // Splice verifies. Nothing to be done.
 			} else {
@@ -119,14 +138,15 @@ public class OneTree {
 		messages.put(key, m);
 	}
 
-	private void remove(Message m) {
+	private void remove(IncomingMessage m) {
+		verifier.removeMessage(m);
 		messages.remove(m.getSignatureBlob().getLeaf());
 		roothashes.remove(m);
 		getNode(m).remove();
 	}
 	
 	
-	void force(Message m) {
+	void forceMessage(IncomingMessage m) {
 		Dag<Integer>.DagNode node = getNode(m);
 
 		// Step one: Find a root.
@@ -135,17 +155,17 @@ public class OneTree {
 		while (true) {
 			Dag<Integer>.DagNode root = rootPath.root();
 			Integer rooti = root.get();
-			Message rootm = messages.get(rooti);
-			HistoryTree<byte[],byte[]> roottree = Verifier.parseHistoryTree(rootm);
+			IncomingMessage rootm = messages.get(rooti);
+			HistoryTree<byte[],byte[]> roottree = verifier.parseHistoryTree(rootm);
 
 			// Verify the root's public key signature.
-			if (verifier.verifyHistory(rootm,roottree)) {
+			if (verifier.verifyHistoryRoot(rootm,roottree)) {
 				// Success!
 				// Now traverse *all* descendents. 
 				Collection<Dag<Integer>.DagNode> descendents = dag.getAllChildren(root);
 				for (Dag<Integer>.DagNode i : descendents) {
 					//Integer desci = i.get();
-					Message descm = messages.get(i);
+					IncomingMessage descm = messages.get(i);
 					if (descm != null) {
 						// This message is not provisional. It is valid.
 						descm.signatureValidity(true);
@@ -165,9 +185,13 @@ public class OneTree {
 		
 		
 	}
-	void forceAll() {
+	
+	public void forceAll() {
 		while (!messages.isEmpty())
-			force(messages.entrySet().iterator().next().getValue());
+			forceMessage(messages.entrySet().iterator().next().getValue());
 	}
 	
+	public boolean isEmpty() {
+		return messages.isEmpty();
+	}
 }

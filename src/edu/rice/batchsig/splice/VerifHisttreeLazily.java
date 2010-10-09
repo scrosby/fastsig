@@ -19,15 +19,21 @@
 
 package edu.rice.batchsig.splice;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
+
 import edu.rice.batchsig.Message;
-import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.SignaturePrimitives;
-import edu.rice.batchsig.Verifier;
+import edu.rice.batchsig.VerifyHisttreeCommon;
+import edu.rice.batchsig.bench.IncomingMessage;
+import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 
 
@@ -73,39 +79,71 @@ import edu.rice.batchsig.Verifier;
 
 
 
-public class VerifyQueueLazy extends QueueBase {
-	private Verifier verifier;
-	private SignaturePrimitives signer;
-
-	public VerifyQueueLazy(SignaturePrimitives signer) {
-		super();
-		if (signer == null)
-			throw new NullPointerException();
-		this.signer = signer;
-		this.verifier = new Verifier(signer);
-	}
-
-	private HashMap<Object,HashMap<Long,OneTree>> map1 = new HashMap<Object,HashMap<Long,OneTree>>();
-	/** When was this tree last used? */
-	private HashMap<OneTree,Long> last = new HashMap<OneTree,Long>();
-	private HashSet<OneTree> lastused = new HashSet<OneTree>();
-
-	// First, process everything.
-	public void process() {
-		processQueue();
-		processOneTrees();
+public class VerifHisttreeLazily extends VerifyHisttreeCommon {
+	public VerifHisttreeLazily(SignaturePrimitives signer) {
+		super(signer);
 	}
 	
-	public void force(Message m) {
-		Object author = m.getAuthor();
-		Long treeid = m.getSignatureBlob().getTreeId();
-		HashMap<Long,OneTree> map2 = map1 != null ? map1.get(author) : null;
-		OneTree tree = map2 != null ? map2.get(treeid) : null;
+	/** Handle all of the cases of removing a message from... everywhere. */
+	public void removeMessage(IncomingMessage m) {
+		userToMessages.remove(m.getRecipientUser(),m);
+	}
+		
+	/** Map from (author_server, treeid) -> OneTree */
+	private Table<Object,Long,OneTree> map1 = HashBasedTable.create();
+
+	/** Track info for expiration */
+	//private HashMap<OneTree,Long> last = new HashMap<OneTree,Long>();
+	//private HashSet<OneTree> lastused = new HashSet<OneTree>();
+
+	/** Map from recipient recipient_user to the messages queued to that recipient_user */
+	Multimap<Object,Message> userToMessages = HashMultimap.create();
+	
+	
+	OneTree getOneTreeForMessage(IncomingMessage m) {
+		return map1.get(m.getAuthor(),m.getSignatureBlob().getTreeId());
+	}
+	OneTree forceGetOneTreeForMessage(IncomingMessage m) {
+		OneTree out = getOneTreeForMessage(m);
+		if (out == null) {
+			out = new OneTree(this);
+			map1.put(m.getAuthor(),m.getSignatureBlob().getTreeId(),out);
+		}
+		return out;
+	}
+	
+	/** At the end of a batch of inserts, handle expiration forcing */
+	public void finishBatch() {
+		// Handle timeouts.
+		/*
+		for (Cell<Object, Long, OneTree> cell : map1.cellSet()) {
+			Object host = cell.getRowKey();
+			OneTree tree = cell.getValue();
+			long now = System.currentTimeMillis();
+			long limit;
+			if (lastused.contains(tree))
+				limit = FORCE_DELAY1;
+			else
+				limit = FORCE_DELAY2;
+
+			if (now-last.get(tree) <  limit)
+				// If this is the 'last' tree for this host, then do nothing;
+				continue;
+			//Eagerly process this tree .
+			System.out.println("Forcing tree due to time limit");
+			tree.forceAll();
+			last.remove(tree);
+			lastused.remove(tree);
+		 */
+	}
+	
+	public void force(IncomingMessage m) {
+		OneTree tree = getOneTreeForMessage(m);
 		if (tree == null) {
 			System.out.println("Forcing message thats not in the tree??? Don't do anything.");
 			return;
 		}
-		tree.force(m);
+		tree.forceMessage(m);
 	}
 	
 	/** Tree last used longer than this ago gets everything forced. */
@@ -114,53 +152,19 @@ public class VerifyQueueLazy extends QueueBase {
 	final static long FORCE_DELAY2 = 2*60*1000;
 	/** After doing all of the processing, decide if it is time to eagerly process all of the data */
 
-	public void processOneTrees() {
-		// For each host.
-		for (Entry<Object, HashMap<Long, OneTree>> host : map1.entrySet()) {
-			for (Entry<Long, OneTree> entry : host.getValue().entrySet()) {
-				OneTree tree = entry.getValue();
-				long now = System.currentTimeMillis();
-				long limit;
-				if (lastused.contains(tree))
-					limit = FORCE_DELAY1;
-				else
-					limit = FORCE_DELAY2;
-				
-				if (now-last.get(tree) <  limit)
-					// If this is the 'last' tree for this host, then do nothing;
-					continue;
-				//Eagerly process this tree .
-				System.out.println("Forcing tree due to time limit");
-				tree.forceAll();
-				last.remove(tree);
-				lastused.remove(tree);
-			}
-		}
+	public void add(Message m) {
+		add((IncomingMessage)m);
 	}
 
-	/** Place all of the requested messages from the incoming queue into the for-lazy-processing OneTree objects. */
-	public void processQueue() {
-		ArrayList<Message> oldqueue = atomicGetQueue();
-		long now = System.currentTimeMillis();
-
-		// Go over each message, place it in the appropriate oneTree.
-		for (Message m : oldqueue) {
-			if (m == null) {
-				System.err.println("Null message in queue?");
-				continue;
-			}
-			Object author = m.getAuthor();
-			Long treeid = m.getSignatureBlob().getTreeId();
-			if (!map1.containsKey(author))
-				map1.put(author,new HashMap<Long,OneTree>());
-			HashMap<Long,OneTree> map2 = map1.get(author);
-			if (!map2.containsKey(treeid))
-				map2.put(treeid,new OneTree());
-			OneTree tree = map2.get(treeid);
-			tree.addMessage(m);
-			last.put(tree,now);
-			lastused.add(tree);
+	public void add(IncomingMessage m) {
+		if (m == null) {
+			System.err.println("Null message in queue?");
+			return;
 		}
+		OneTree tree = this.getOneTreeForMessage(m);
+		tree.addMessage(m);
+		//last.put(tree,now);
+		//lastused.add(tree);
 	}
 }
 

@@ -33,29 +33,27 @@ import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
 
 public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStreamFromFile input;
-	long bias = -1; // WHat is the timestamp ('virtual clock') of the first message in the log?
-	final String provider;
+	long bias = -1; // WHat is the timestamp ('virtual clock') of the first message in the trace?
 	
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplaySavedMessagesRealtimeThread(QueueBase verifyqueue, FileInputStream fileinput, int rate, String provider) {
+	ReplaySavedMessagesRealtimeThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
 		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();
 		this.input = new IncomingMessageStreamFromFile(fileinput);
-		this.provider = provider;
 	}
 
-	/** Setup the replay log, preloading the bias and the keys. */
-	void setup(MultiplexedPublicKeyPrims prims) {
+	/** Setup the replay trace, preloading the bias and the keys. */
+	public void setup(MultiplexedPublicKeyPrims prims) {
 		// First pass: Preload all of the verification keys and get the timestamp bias.
 		IncomingMessage im;
 		while ((im = input.nextOnePass()) != null) {
 			if (bias == -1)
 				bias = im.getVirtualClock();
-			prims.load(im.getSignatureBlob(),provider); // Fetch the signature blob.
+			prims.load(im.getSignatureBlob()); // Fetch the signature blob.
 		}
 		input.resetStream();
 	}
@@ -73,7 +71,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 			
 			// STEP 1: Delay until the inject time equals this time.
 			
-			// Offset in ms from the first message in the log.
+			// Offset in ms from the first message in the trace.
 			long msgOffsetTime = msg.getVirtualClock()-bias;
 			// What time should we insert.
 			long injectTime = msgOffsetTime + initTime;

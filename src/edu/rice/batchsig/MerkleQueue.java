@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import com.google.protobuf.ByteString;
 
+import edu.rice.batchsig.bench.Tracker;
 import edu.rice.historytree.AggregationInterface;
 import edu.rice.historytree.MerkleTree;
 import edu.rice.historytree.ProofError;
@@ -53,11 +54,15 @@ public class MerkleQueue extends QueueBase {
 		ArrayList<Message> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
+
+		Tracker.singleton.trackBatchSize(oldqueue.size());
 		
 		AggregationInterface<byte[], byte[]> aggobj = new SHA256Agg();
 		ArrayStore<byte[], byte[]> datastore = new ArrayStore<byte[], byte[]>();
 		MerkleTree<byte[], byte[]> histtree = new MerkleTree<byte[], byte[]>(
 				aggobj, datastore);
+		
+		//System.out.println("Processing merklequeue "+oldqueue.size());
 
 		for (Message m : oldqueue) {
 			histtree.append(m.getData());

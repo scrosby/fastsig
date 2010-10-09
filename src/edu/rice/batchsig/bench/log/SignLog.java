@@ -39,6 +39,8 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
  * Take a bunch of messages and their signatures and replay them, running them through a queue.
  *  
  *  Message, sigblob. Message, sigblob. 
+ *     UM.... ??? BROKEN/UNUSED?
+ *   
  *   */
 public class SignLog implements Runnable {
 	CodedInputStream input;
