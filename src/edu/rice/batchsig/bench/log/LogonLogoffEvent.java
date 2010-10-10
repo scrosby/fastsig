@@ -3,6 +3,7 @@ package edu.rice.batchsig.bench.log;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
@@ -38,7 +39,7 @@ public class LogonLogoffEvent extends EventBase {
 		out.write('\n');
 	}
 	static class Iter extends IterBase<LogonLogoffEvent> {
-		Iter(BufferedReader input) {
+		Iter(FileInputStream input) {
 			super(input);
 		}
 		

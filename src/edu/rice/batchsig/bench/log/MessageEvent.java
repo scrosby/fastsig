@@ -19,6 +19,8 @@ import edu.rice.batchsig.bench.OutgoingMessage;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class MessageEvent extends EventBase {
+	static int DEFAULT_BYTESIZE = 5;
+	
 	int sender_host, recipient_host; // Hosts or servers.
 	int sender_user, recipient_user; // Usernames on those hosts.
 	int size;
@@ -77,7 +79,7 @@ public class MessageEvent extends EventBase {
 			recipient_host = Integer.parseInt(it.next());
 			sender_user = Integer.parseInt(it.next());
 			recipient_user = Integer.parseInt(it.next());
-			return new MessageEvent(sender_host,recipient_host,sender_user,recipient_user,timestamp,0);
+			return new MessageEvent(sender_host,recipient_host,sender_user,recipient_user,timestamp,DEFAULT_BYTESIZE);
 		}
 	}
 }
