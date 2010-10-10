@@ -106,8 +106,10 @@ public class IncomingMessage extends MessageBase {
 				return new IncomingMessage(null,data);
 			}
 		} catch (IOException e) {
-		return null;
-	}	
+			System.out.println("readFrom stacktrace");
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 }
