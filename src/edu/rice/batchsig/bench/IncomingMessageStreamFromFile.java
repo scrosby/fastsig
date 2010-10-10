@@ -2,6 +2,7 @@ package edu.rice.batchsig.bench;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 
 import com.google.protobuf.CodedInputStream;
 
@@ -22,8 +23,8 @@ public class IncomingMessageStreamFromFile {
 		try {
 			fileinput.getChannel().position(0);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			throw new Error("Cannot reset",e);
 		}
 		this.input = CodedInputStream.newInstance(fileinput);
 	}
@@ -34,10 +35,12 @@ public class IncomingMessageStreamFromFile {
 		do {
 			IncomingMessage msg = IncomingMessage.readFrom(input);
 			// Bad message. Reset the stream and try again.
+			//System.out.println("Reading message");
 			if (msg != null ) {
 				return msg;
 			}
 			resetStream();
+			System.out.println("Resetting stream");
 		} while (true);		
 	}
 	
