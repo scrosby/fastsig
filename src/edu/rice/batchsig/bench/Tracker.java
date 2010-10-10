@@ -1,11 +1,13 @@
 package edu.rice.batchsig.bench;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class Tracker {
 	public static Tracker singleton = new Tracker();
 	Histogram batchsizehist = new Histogram();
 	Histogram latencyhist = new Histogram();
 	Histogram sizehist = new Histogram();
-	boolean aborting;
+	AtomicBoolean aborting = new AtomicBoolean();
 	int signcount,verifycount, verifycount_cached;
 	
 	private Tracker() {
@@ -21,16 +23,16 @@ public class Tracker {
 		sizehist.reset();
 		latencyhist.reset();
 		batchsizehist.reset();
-		aborting = false;
+		aborting.set(false);
 		signcount = verifycount = verifycount_cached = 0;
 	}
 	
 	public void markAbort() {
-		aborting = true;
+		aborting.set(true);
 	}
 
 	public boolean isAborting() {
-		return aborting;
+		return aborting.get();
 	}
 	
 	void trackSize(int i) {
