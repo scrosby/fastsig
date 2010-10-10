@@ -26,6 +26,7 @@ import java.util.Random;
 
 import com.google.protobuf.ByteString;
 
+import edu.rice.batchsig.bench.Tracker;
 import edu.rice.historytree.HistoryTree;
 import edu.rice.historytree.ProofError;
 import edu.rice.historytree.TreeBase;
@@ -120,12 +121,20 @@ public class HistoryQueue extends QueueBase {
 			for (int i = 0; i < oldqueue.size(); i++) {
 				processMessage(oldqueue.get(i), leaf_offset + i, TreeSigBlob.newBuilder(template));
 			}
+			// Update the last contacts for each message.
+			for (int i = 0; i < oldqueue.size(); i++) {
+				Message message = oldqueue.get(i);
+				Object recipient = message.getRecipient();
+				// Indicate that we want a splicepoint to the end of the bundle.
+				lastcontacts.put(recipient,histtree.version());
+				
+			}
 		}
 	}
 
 	private void processMessage(Message message, int leaf_offset, TreeSigBlob.Builder template) {
 		try {
-			//System.out.println("Processing leaf " + leaf_offset);
+			//System.out.format("Processing leaf %d for recipient host %s\n",leaf_offset, message.getRecipient().toString());
 			// Make the pruned tree.
 			TreeBase<byte[], byte[]> pruned = histtree
 					.makePruned(new HashStore<byte[], byte[]>());
@@ -134,15 +143,13 @@ public class HistoryQueue extends QueueBase {
 			Object recipient = message.getRecipient();
 			if (lastcontacts.containsKey(recipient)) {
 				//System.out.println(lastcontacts.toString());
-				//System.out.println("Found a lastcontact of "+leaf_offset+"  "+lastcontacts.get(recipient_host));
+				//System.out.println("Found a lastcontact at"+lastcontacts.get(recipient));
 				int lastcontact = lastcontacts.get(recipient);
 				if (lastcontact != histtree.version()) {
 					pruned.copyV(histtree, lastcontacts.get(recipient),false);
 					template.addSpliceHint(lastcontacts.get(recipient));
 				}
 			}
-			// Indicate that we want a splicepoint to the end of the bundle.
-			lastcontacts.put(recipient,histtree.version());
 			
 			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
 			pruned.serializeTree(treebuilder);
