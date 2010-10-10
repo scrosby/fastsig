@@ -126,8 +126,7 @@ public class BuildLogForVerificationBench {
 	CodedOutputStream outstream;
 	OutgoingMessage outmsg;
 
-	void replaySign(EventTrace l, HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
-		Iterator<MessageEvent> i = l.iterator();
+	void replaySign(Iterator<MessageEvent> i, HashMap<Object,QueueBase> queuemap, HashMap<Object,CodedOutputStream> streammap) {
 		MessageEvent e = i.next();
 		double epochend = e.getTimestamp() + epochlength ;
 		Set<QueueBase> needsProcessing = new HashSet<QueueBase>();

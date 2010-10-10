@@ -1,7 +1,9 @@
 package edu.rice.batchsig.bench.log;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -35,11 +37,13 @@ public class EventBase {
 	}
 	
 	static abstract class IterBase<T> implements Iterator<T> {
+		FileInputStream fileinput;
 		final protected BufferedReader input;
 		private T cached;
 
-		IterBase(BufferedReader input) {
-			this.input = input;
+		IterBase(FileInputStream fileinput) {
+			this.fileinput = fileinput;
+			this.input = new BufferedReader(new InputStreamReader(fileinput));
 		}
 		
 		@Override

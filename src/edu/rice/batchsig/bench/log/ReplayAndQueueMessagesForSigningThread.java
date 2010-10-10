@@ -12,15 +12,15 @@ import edu.rice.batchsig.bench.OutgoingMessage;
 /** Build a trace of messages from a signer to several recipients from a trace. Model 'real world' timing. */
 public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase {
 	Object sourceTarget;
-	EventTrace trace;
+	Iterator<MessageEvent> trace;
 	HashMap<Object,CodedOutputStream> streammap;
 	public ReplayAndQueueMessagesForSigningThread(QueueBase queue, int maxsize) {
 		super(queue,maxsize);
 	}
 	
-	public ReplayAndQueueMessagesForSigningThread configure(Object source, EventTrace log) {
+	public ReplayAndQueueMessagesForSigningThread configure(Object source, Iterator<MessageEvent> events) {
 		sourceTarget=source;
-		this.trace = log;
+		this.trace = events;
 		return this;
 	}
 
@@ -34,10 +34,20 @@ public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThre
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
 
-		long bias = trace.get(0).getTimestamp(); // Difference between 'real' clock and virtual clock.
-		for (MessageEvent e : trace) {
+		long bias = 0, lastEventTime =0;
+		int i = 0;
+		while (queue.peekSize() < 6000 && trace.hasNext()) {
+			i++;
+			MessageEvent e = trace.next();
+			if (bias == 0)
+				lastEventTime = bias = e.getTimestamp(); // Difference between 'real' clock and virtual clock.
+	        
 			if (e != null && !e.getSenderHost().equals(this.sourceTarget))
 				throw new Error("Code only designed for one destination "+e.getSenderHost() + " != "+ this.sourceTarget);
+
+			if (e.getTimestamp() < lastEventTime)
+				throw new Error("Log file should be sorted");
+			lastEventTime = e.getTimestamp();
 			
 			OutgoingMessage msg = e.asOutgoingMessage(streammap.get(e.getRecipientHost()));
 			
