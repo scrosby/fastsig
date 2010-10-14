@@ -1,6 +1,7 @@
 package edu.rice.batchsig.bench.log;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 import com.google.protobuf.CodedOutputStream;
 
@@ -64,11 +65,13 @@ public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThre
 				} catch (InterruptedException exn) {
 				}
 			}
-			System.out.println("Injecting msg "+ e.getTimestamp()+ " at " + injectTime);
+			if (i%1000 == 0 || injectTime-now > 2000)
+				System.out.println("Injecting msg #"+ i + " late by "+(injectTime-now));
 
 			queue.add(msg);
 			checkQueueOverflow();
 		}
+		System.err.println("#######Stopping message injection");
 	}
 	
 }

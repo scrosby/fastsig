@@ -42,6 +42,8 @@ public class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 	}
 	
 	public SignaturePrimitives load(String signer) {
+		if (signer.equals(""))
+			throw new Error("Illegal empty signer_id");
 		try {
 			if (!map.containsKey(signer))
 				map.put(signer,PublicKeyPrims.make(signer, algo, size, provider));
@@ -68,6 +70,7 @@ public class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 	}
 	
 	@Override
+	/** Assume that the builder has already been marked with the signer's ID */
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
 		load(out).sign(data, out);
 	}

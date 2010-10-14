@@ -34,17 +34,21 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 /** Simple queue that signs every message */
 public class SimpleQueue extends QueueBase {
 	private SignaturePrimitives signer;
+	private long initTime;
 
 	public SimpleQueue(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
 			throw new NullPointerException();
 		this.signer = signer;
+		this.initTime = System.currentTimeMillis();
 	}
 
 
 	public void process() {
+		long now = System.currentTimeMillis();
 		ArrayList<Message> oldqueue = atomicGetQueue();
+		System.out.println(String.format("Processing batch of %d messages at time %d",oldqueue.size(),now-initTime));
 		if (oldqueue.size() == 0)
 			return;
 		for (Message m : oldqueue) {

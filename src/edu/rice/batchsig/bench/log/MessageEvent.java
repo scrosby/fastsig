@@ -42,6 +42,10 @@ public class MessageEvent extends EventBase {
 	public Object getSenderHost() {
 		return sender_host;
 	}
+	
+	public Object getSenderUser() {
+		return sender_user;
+	}
 
 	public OutgoingMessage asOutgoingMessage(CodedOutputStream target) {
 		OutgoingMessage msg = new OutgoingMessage(target,new byte[size], getRecipientHost(), recipient_user);

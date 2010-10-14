@@ -31,6 +31,8 @@ import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
 
 /** Given a logfile of 'messages' that were signed, verify them 'in real time', using the included timestamp. Used to benchmark verification. */
 
+
+// BAD CODE: BROKEN: Can't hold back here. Must have a forced queue.
 public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStreamFromFile input;
 	long bias = -1; // WHat is the timestamp ('virtual clock') of the first message in the trace?

@@ -94,6 +94,7 @@ public class IncomingMessage extends MessageBase {
 			
 			input.readMessage(databuilder, ExtensionRegistryLite.getEmptyRegistry());
 			MessageData data = databuilder.build();
+			//System.out.println(data.toString());
 			// No data means we're done.
 			if (data.getMessage().isEmpty())
 				return null;

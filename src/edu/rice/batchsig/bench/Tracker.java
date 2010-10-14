@@ -78,12 +78,12 @@ public class Tracker {
 	
 	protected void print(String prefix) {
 		System.out.format("bsize: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,batchsizehist.n,(double)batchsizehist.sum/batchsizehist.n,batchsizehist.max);
-		printlineset(latencyhist);
+		printlineset(batchsizehist);
 
-		System.out.format("crypt: Rate=%s  N=%d  Sign=%d  Verify=%d\n",prefix,latencyhist.n,signcount,verifycount);
+		System.out.format("crypt: Rate=%s  N=%d  Sign=%d  VTotal=%d VCached=%d\n",prefix,latencyhist.n,signcount,verifycount,verifycount_cached);
 		System.out.format("laten: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
-		System.out.format("proof: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
 		printlineset(latencyhist);
+		System.out.format("proof: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
 		
 		
 	}

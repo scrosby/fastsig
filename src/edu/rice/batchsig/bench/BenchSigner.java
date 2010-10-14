@@ -46,6 +46,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 
 
+import com.google.common.base.Function;
+import com.google.common.base.Supplier;
 import com.google.protobuf.CodedOutputStream;
 
 import edu.rice.batchsig.HistoryQueue;
@@ -54,7 +56,8 @@ import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.SimpleQueue;
 import edu.rice.batchsig.VerifyQueue;
-import edu.rice.batchsig.bench.log.EventTrace;
+import edu.rice.batchsig.bench.log.BuildLogForVerificationBench;
+import edu.rice.batchsig.bench.log.LogonLogoffEvent;
 import edu.rice.batchsig.bench.log.MessageEvent;
 import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
 import edu.rice.batchsig.bench.log.ReplayAndQueueMessagesForSigningThread;
@@ -124,27 +127,31 @@ Step one: Do a signing benchmark:
 public class BenchSigner {
 	boolean isBatch, isBig, isVerifying, isTrace;
 	QueueBase queue; // One of the three signing queues or a verifying queue 
-	SignaturePrimitives prims;
+	//SignaturePrimitives prims;
 	//String ciphertype;
 	CommandLine commands;
+	Function<String,QueueBase> queuefn;
 	
 
 	/** Setup to do a single run of signing, creating and waiting for the threads to die. */
 	protected void doSigningRun(CodedOutputStream output, int makeRate, int signRate, int sleepTime) {
+		System.out.format("Signing run: %d makeRate, %d signRate, %d experimentTime\n",makeRate,signRate, sleepTime);
 		CreateAndQueueMessagesForSigningThread makeThread = new CreateAndQueueMessagesForSigningThread(queue, output, makeRate);
 		doCommon(sleepTime, makeThread);
 		}
 
 	/** Setup to do a single run of verifying, creating and waiting for the threads to die. */
 	protected void doVerifyingRun(FileInputStream input, int makeRate, int signRate, int sleepTime) {
+		System.out.format("Verifyign run: %d makeRate, %d signRate, %d experimentTime\n",makeRate,signRate, sleepTime);
 		ReplaySavedMessagesThread makeThread = new ReplaySavedMessagesThread(queue,input, makeRate);
 		doCommon(sleepTime, makeThread);
 		}
 
 	/** Setup to do a single run of verifying, creating and waiting for the threads to die. */
 	protected void doVerifyingRunFromTraced(FileInputStream input, int makeRate, int signRate, int sleepTime) {
+		// TODO: Code is copy&paste and wrong.
 		ReplaySavedMessagesRealtimeThread makeThread = null; // TODO: new ReplaySavedMessagesRealtimeThread(queue,input,makeRate);
-		makeThread.setup((MultiplexedPublicKeyPrims) prims);
+		//makeThread.setup((MultiplexedPublicKeyPrims) prims);
 		doCommon(sleepTime, makeThread);
 		}
 
@@ -156,9 +163,9 @@ public class BenchSigner {
 		try {
 			Thread.sleep(sleepTime);
 			makeThread.shutdown(); makeThread.join();
+			processThread.interrupt(); // In case it is idle and not doing anything.
 			processThread.shutdown(); processThread.join();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -191,6 +198,7 @@ public class BenchSigner {
 
 	/** Do some processing to warm up the hotspot compiler */
 	public void hotSpotVerifying(FileInputStream input) throws InterruptedException {
+		System.err.println("Starting hotspot verifying");
 		if (isBatch) {
 			this.doVerifyingRun(input,100,1,500);
 			this.doVerifyingRun(input,1000,1,1000);
@@ -198,7 +206,7 @@ public class BenchSigner {
 			if (isBig) 
 				this.doVerifyingRun(input,10000, 1, BIGTIME);
 		} else {
-			this.doVerifyingRun(input,10,1,100);
+			this.doVerifyingRun(input,10,1,5000);
 			if (commands.hasOption("rsa")) {
 				this.doVerifyingRun(input,50,1,1000);
 				this.doVerifyingRun(input,50,1,5000);
@@ -211,6 +219,7 @@ public class BenchSigner {
 					this.doVerifyingRun(input,300, 1, BIGTIME);
 			}
 		}
+		System.err.println("Ending hotspot verifying");
 	}
 
 	
@@ -297,7 +306,8 @@ public class BenchSigner {
 				.addOption(OptionBuilder.withDescription("Sign each message with history tree").create("history")))
 		.addOption(OptionBuilder.withDescription("Do longer duration experiments").create("big"))
 		.addOption(OptionBuilder.withDescription("Trace to use").hasArg().create("trace"))
-		.addOption(OptionBuilder.withDescription("Prefix to use for input when traceplaying").hasArg().create("traceprefix"))
+		.addOption(OptionBuilder.withDescription("name of event trace").hasArg().create("eventtrace"))
+		.addOption(OptionBuilder.withDescription("name of user logonlogoff trace").hasArg().create("usertrace"))
 		.addOption(OptionBuilder.withDescription("Output file (used when signing)").hasArg().create("output"))
 		.addOption(OptionBuilder.withDescription("Input file (used when verifying)").hasArg().create("input"))
 		.addOption(OptionBuilder.withDescription("Automatically scale the signing rate").create("autorate"))
@@ -305,6 +315,7 @@ public class BenchSigner {
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate increment").hasArg().create("incr"))
 		.addOption(OptionBuilder.withDescription("Return help").create('h'))
 		.addOption(OptionBuilder.withDescription("Which crypto provider to use").hasArg().create("provider"))
+		//.addOption(OptionBuilder.withDescription("When verifying, which signer ID to use").hasArg().create("signerid"))
 		;
 		
 		OptionGroup tmp1 = 
@@ -330,6 +341,7 @@ public class BenchSigner {
 	
 	
 	public void parsecmd(String args[]) throws ParseException, InvalidKeyException, NoSuchAlgorithmException, InterruptedException, IOException, NoSuchProviderException {
+		isVerifying = true;
 		commands = new BasicParser().parse(initOptions(),args);
 		if (commands.hasOption('h')) {
 			(new HelpFormatter()).printHelp( "bench", initOptions() );
@@ -345,13 +357,11 @@ public class BenchSigner {
 				
 		if (commands.hasOption("verify")) {
 			isTrace = false;
-			setupCipher();
 			handleVerifying(time);
 			return;
 		} 
 		if (commands.hasOption("verifytrace")) {
 			isTrace = true;
-			setupCipher();
 			//handleTraceVerifying(time);
 			return;
 		}
@@ -364,25 +374,30 @@ public class BenchSigner {
 			isTrace = true;
 
 		// Setup the cipher before we create the queues.
-		setupCipher();
+		String signer_id = commands.getOptionValue("signerid","Host0");
 
 		// Create queues.
 		if (commands.hasOption("history")) {
 			isBatch = true;
-			queue=new HistoryQueue(prims);
+			queuefn=new Function<String,QueueBase>(){public QueueBase apply(String signer_id) {return new HistoryQueue(setupCipher(signer_id));}};
 		} else if (commands.hasOption("merkle")) {
 			isBatch = true;
-			queue=new MerkleQueue(prims);
+			queuefn=new Function<String,QueueBase>(){public QueueBase apply(String signer_id) {return new MerkleQueue(setupCipher(signer_id));}};
 		} else if (commands.hasOption("simple")) {
 			isBatch = false;
-			queue=new SimpleQueue(prims);
+			queuefn=new Function<String,QueueBase>(){public QueueBase apply(String signer_id) {return new SimpleQueue(setupCipher(signer_id));}};
 		} else {
 			throw new IllegalArgumentException("Unknown signqueue type. Please choose one of -history -merkle or -simple");
 		}
 
-		CodedOutputStream tmpoutput = CodedOutputStream.newInstance(new FileOutputStream("/dev/null"));
-		hotspotSigning(tmpoutput);
 
+		// Activate the hotspot over the data in question. 
+		// Store a scratch copy of the queue, then reset to null.
+		CodedOutputStream tmpoutput = CodedOutputStream.newInstance(new FileOutputStream("/dev/null"));
+		queue = queuefn.apply(signer_id);
+		hotspotSigning(tmpoutput);
+		queue = null;
+		
 		if (commands.hasOption("signtrace")) {
 			handleTraceSigning();
 		} else if (commands.hasOption("sign")) {
@@ -397,7 +412,9 @@ public class BenchSigner {
 	}
 
 	private void handleSigning(final int time) throws FileNotFoundException,
-			InterruptedException, IOException {
+			InterruptedException, IOException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
+		String signer_id = commands.getOptionValue("signerid","Host0");
+		queue = queuefn.apply(signer_id);
 		CodedOutputStream tmpoutput;
 		CodedOutputStream output = null;
 		if (commands.hasOption("output")) {
@@ -417,40 +434,71 @@ public class BenchSigner {
 			output.flush();
 	}
 
-	static int MAX_TRACE_BACKLOG = 2000;
-	static int SENDER_TO_KEEP = 0;
-	static int MAX_SENDERS = 20;
-	
-	private void handleMakeVerifyTrace(int epochtime) throws FileNotFoundException {
-		// TODO TODO TODO
+	final static int MAX_TRACE_BACKLOG = 2519;
+	final static int MAX_SENDERS = 31; // Prime number, not 43 or 37
+	final static int RSA_EPOCH_LENGTH = 60;
+	final static int DSA_EPOCH_LENGTH = 5;
+	final static int RSA_BATCHSIZE = 300;
+	final static int DSA_BATCHSIZE = 20;
+	private void handleMakeVerifyTrace(int epochtime) throws IOException {
+		int epochlength = 0;
+		Supplier<Integer> batchsize;
+		if (commands.hasOption("rsa")) {
+			epochlength = RSA_EPOCH_LENGTH; 
+			batchsize = new Supplier<Integer>() { public Integer get() { return RSA_BATCHSIZE; };};
+		} else if(commands.hasOption("dsa")) {
+			epochlength = RSA_EPOCH_LENGTH;
+			batchsize = new Supplier<Integer>() { public Integer get() { return DSA_BATCHSIZE; };};
+		} else
+			throw new Error("Must pick dsa or rsa");
+		
+		String outputname=commands.getOptionValue("output");
+
+		CodedOutputStream output = CodedOutputStream.newInstance(new FileOutputStream(outputname+".signed"));
+		
+		BuildLogForVerificationBench builder = new BuildLogForVerificationBench(
+				epochlength,queuefn,MAX_SENDERS,batchsize,output);
+		String eventtracename=commands.getOptionValue("eventtrace");
+		String usertracename=commands.getOptionValue("usertrace");
+		Iterator<MessageEvent> events = new MessageEvent.Iter(new FileInputStream(eventtracename));		
+		Iterator<LogonLogoffEvent> logonlogoffs = new LogonLogoffEvent.Iter(new FileInputStream(usertracename));		
+		builder.makeTrace(events,logonlogoffs);
+		output.flush();
 	
 	}
 	
 	private void handleTraceSigning() throws FileNotFoundException {
-		String prefix=commands.getOptionValue("traceprefix");
-		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(prefix+".events")));
-		System.err.println("Loading up trace events");
-		Iterator<MessageEvent> events = new MessageEvent.Iter(reader);		
-		EventTrace trace = new EventTrace(events);
-		trace.keepOnlySender(SENDER_TO_KEEP);
+		String signer_id = commands.getOptionValue("signerid","Host0");
+		queue = queuefn.apply(signer_id);
+		Tracker.singleton.reset();
+		Tracker.singleton.enable();
+		String eventtracename=commands.getOptionValue("eventtrace");
+		String outputname=commands.getOptionValue("output");
+		if (outputname == null)
+			throw new Error("Must give an output name prefix with -output");
+		
+		
+		Iterator<MessageEvent> events = new MessageEvent.Iter(new FileInputStream(eventtracename));		
 		
 		System.err.println("Setting up replay queue");
 		ReplayAndQueueMessagesForSigningThread thr= new ReplayAndQueueMessagesForSigningThread(queue,MAX_TRACE_BACKLOG);
 
 		HashMap<Object, CodedOutputStream> streammap = new HashMap<Object, CodedOutputStream>();
 		for (int i=0 ; i < MAX_SENDERS ; i++) {
-			streammap.put(i,CodedOutputStream.newInstance(new FileOutputStream(prefix+".signed="+i)));
+			streammap.put(i,CodedOutputStream.newInstance(new FileOutputStream(outputname+".signed="+i)));
 		}
 		
 		thr.configure(streammap );
-		thr.configure(0,trace);
+		thr.configure(0,events);
 		doCommon(MAX_TRACE_BACKLOG, thr);
+		Tracker.singleton.print(String.format("Trace-%s",eventtracename));
 	}
 
+	/* *Simple method for verifying a stream of messages by a single author to a single recipient.*/
 	private void handleVerifying(final int time) throws FileNotFoundException,
-			Error, InterruptedException {
-		isVerifying = true;
-		queue = new VerifyQueue(prims);
+			Error, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
+		String signer_id = commands.getOptionValue("signerid","Host0");
+		queue = new VerifyQueue(setupCipher(signer_id));
 		if (commands.getOptionValue("input") == null)
 			throw new Error("Need to define an input file");
 		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
@@ -460,7 +508,8 @@ public class BenchSigner {
 		return; // Done with handling verification.
 	}
 
-	void setupCipher() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
+	SignaturePrimitives setupCipher(String signer_id) {
+		try {
 		int bits;
 		String type = "";
 		if (commands.hasOption("sha1")) {
@@ -482,13 +531,24 @@ public class BenchSigner {
 		} else {
 			throw new Error();
 		}
-		
+
 		// Must set the prims first, used with the other.
-		if (isTrace) {
-			prims = MultiplexedPublicKeyPrims.make(type,bits,commands.getOptionValue("provider"));
+		if (isTrace && isVerifying) {
+				return MultiplexedPublicKeyPrims.make(type,bits,commands.getOptionValue("provider"));
 		} else {
-			prims = PublicKeyPrims.make("Bench",type,bits,commands.getOptionValue("provider"));
+			return PublicKeyPrims.make(signer_id,type,bits,commands.getOptionValue("provider"));
 		}
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchProviderException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		throw new Error("Failed");
 	}
 	
 	public static void main(String args[]) throws FileNotFoundException, ParseException {

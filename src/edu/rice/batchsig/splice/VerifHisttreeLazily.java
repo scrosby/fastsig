@@ -21,6 +21,8 @@ package edu.rice.batchsig.splice;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.common.collect.HashBasedTable;
@@ -80,10 +82,12 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 
 public class VerifHisttreeLazily extends VerifyHisttreeCommon {
+	public static int MAX_TREES = 1000;
+	public static int MAX_TREE_SIZE = 100;
 	public VerifHisttreeLazily(SignaturePrimitives signer) {
 		super(signer);
 	}
-	
+
 	/** Handle all of the cases of removing a message from... everywhere. */
 	public void removeMessage(IncomingMessage m) {
 		userToMessages.remove(m.getRecipientUser(),m);
@@ -93,20 +97,36 @@ public class VerifHisttreeLazily extends VerifyHisttreeCommon {
 	private Table<Object,Long,OneTree> map1 = HashBasedTable.create();
 
 	/** Track info for expiration */
-	//private HashMap<OneTree,Long> last = new HashMap<OneTree,Long>();
-	//private HashSet<OneTree> lastused = new HashSet<OneTree>();
+	private ExpirationManager expirationqueue;
 
-	/** Map from recipient recipient_user to the messages queued to that recipient_user */
-	Multimap<Object,Message> userToMessages = HashMultimap.create();
+	/** Force everything in these trees */
+	private HashSet<OneTree> treesToForceAll = new HashSet<OneTree>();
+	/** Force the oldest message in these trees */
+	private HashSet<OneTree> treesToForceOne = new HashSet<OneTree>();
+
+	class ExpirationManager extends LinkedHashMap<OneTree,OneTree> {
+		private static final long serialVersionUID = 1L;
+
+		protected boolean removeEldestEntry(Map.Entry<OneTree,OneTree> eldest) {
+			if (this.size() > MAX_TREES) {
+				treesToForceAll.add(eldest.getValue());
+				return true;
+			}
+			return false;
+		}
+	}
+	
+	/** Map from recipient_user to the messages queued to that recipient_user */
+	Multimap<Object,IncomingMessage> userToMessages = HashMultimap.create();
 	
 	
 	OneTree getOneTreeForMessage(IncomingMessage m) {
 		return map1.get(m.getAuthor(),m.getSignatureBlob().getTreeId());
 	}
-	OneTree forceGetOneTreeForMessage(IncomingMessage m) {
+	OneTree makeOneTreeForMessage(IncomingMessage m) {
 		OneTree out = getOneTreeForMessage(m);
 		if (out == null) {
-			out = new OneTree(this);
+			out = new OneTree(this,m.getAuthor(),m.getSignatureBlob().getTreeId());
 			map1.put(m.getAuthor(),m.getSignatureBlob().getTreeId(),out);
 		}
 		return out;
@@ -114,27 +134,15 @@ public class VerifHisttreeLazily extends VerifyHisttreeCommon {
 	
 	/** At the end of a batch of inserts, handle expiration forcing */
 	public void finishBatch() {
-		// Handle timeouts.
-		/*
-		for (Cell<Object, Long, OneTree> cell : map1.cellSet()) {
-			Object host = cell.getRowKey();
-			OneTree tree = cell.getValue();
-			long now = System.currentTimeMillis();
-			long limit;
-			if (lastused.contains(tree))
-				limit = FORCE_DELAY1;
-			else
-				limit = FORCE_DELAY2;
-
-			if (now-last.get(tree) <  limit)
-				// If this is the 'last' tree for this host, then do nothing;
-				continue;
-			//Eagerly process this tree .
-			System.out.println("Forcing tree due to time limit");
-			tree.forceAll();
-			last.remove(tree);
-			lastused.remove(tree);
-		 */
+		for (OneTree i : treesToForceAll) {
+			i.forceAll();
+			map1.remove(i.getAuthor(),i.getTreeid());
+		}	
+		for (OneTree i : treesToForceOne)
+			if (!treesToForceAll.contains(i))
+				i.forceOldest();
+		treesToForceAll.clear();
+		treesToForceOne.clear();
 	}
 	
 	public void force(IncomingMessage m) {
@@ -146,12 +154,11 @@ public class VerifHisttreeLazily extends VerifyHisttreeCommon {
 		tree.forceMessage(m);
 	}
 	
-	/** Tree last used longer than this ago gets everything forced. */
-	final static long FORCE_DELAY1 = 20*60*1000;
-	/** Anything older than this and not the most recently updated tree gets everything forced */
-	final static long FORCE_DELAY2 = 2*60*1000;
-	/** After doing all of the processing, decide if it is time to eagerly process all of the data */
-
+	public void forceUser(Object user) {
+		for (IncomingMessage m : userToMessages.get(user))
+			force(m);
+	}
+	
 	public void add(Message m) {
 		add((IncomingMessage)m);
 	}
@@ -161,10 +168,12 @@ public class VerifHisttreeLazily extends VerifyHisttreeCommon {
 			System.err.println("Null message in queue?");
 			return;
 		}
-		OneTree tree = this.getOneTreeForMessage(m);
+		OneTree tree = this.makeOneTreeForMessage(m);
 		tree.addMessage(m);
-		//last.put(tree,now);
-		//lastused.add(tree);
+		if (tree.size() > MAX_TREE_SIZE)
+			treesToForceOne.add(tree);
+		expirationqueue.put(tree,tree);
+
 	}
 }
 

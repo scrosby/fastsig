@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.SignaturePrimitives;
@@ -30,7 +32,7 @@ public class OneTree {
 	
 	final private VerifHisttreeLazily verifier;
 	/** For each version number the message at that number. */
-	HashMap<Integer,IncomingMessage> messages = new HashMap<Integer,IncomingMessage>();
+	HashMap<Integer,IncomingMessage> messages = new LinkedHashMap<Integer,IncomingMessage>(1,.75f,false);
 
 	/** Cache of unvalidated root hashes of the history trees for messages in messages. msg.getTree().agg()
 	 *    When we verify a splice, we need to take the child message's agg() and compare it to aggV(child.version).
@@ -57,17 +59,30 @@ public class OneTree {
 	 * 
 	 * */
 	Dag<Integer> dag;
+	private Object author;
+	private long treeid;
+
+	public Object getAuthor() {
+		return author;
+	}
+
+	public long getTreeid() {
+		return treeid;
+	}
 
 	Dag<Integer>.DagNode getNode(Message m) {
 		Integer key = m.getSignatureBlob().getLeaf();
 		return dag.makeOrGet(key);
 	}
 
-	public OneTree(VerifHisttreeLazily verifier) {
+	public OneTree(VerifHisttreeLazily verifier, Object object, long l) {
+		this.author = object;
+		this.treeid = l;
 		this.verifier = verifier;
 	}
 	
 	void addMessage(IncomingMessage m) {
+		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
 		HistoryTree<byte[],byte[]> tree = VerifHisttreeLazily.parseHistoryTree(m);
 
@@ -139,12 +154,21 @@ public class OneTree {
 	}
 
 	private void remove(IncomingMessage m) {
+		size--;
 		verifier.removeMessage(m);
 		messages.remove(m.getSignatureBlob().getLeaf());
 		roothashes.remove(m);
 		getNode(m).remove();
 	}
+
 	
+	void forceOldest() {
+		Iterator<Integer> i = messages.keySet().iterator();
+		if (!i.hasNext()) {
+			throw new Error("Can ignore this error, but we shouldn't be forcing the oldest on an empty onetree");
+		}
+		forceMessage(messages.get(i.next()));
+	}
 	
 	void forceMessage(IncomingMessage m) {
 		Dag<Integer>.DagNode node = getNode(m);

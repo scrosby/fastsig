@@ -112,6 +112,8 @@ public class OutgoingMessage extends MessageBase {
 		builder.setTimestamp(virtual_clock);
 		if (data != null)
 			builder.setMessage(ByteString.copyFrom(data));
+		else 
+			throw new Error("No data?");
 		
 		if (startBuffering != null || endBuffering != null) {
 			builder.addAllStartBufferingUsers(startBuffering);
@@ -123,9 +125,10 @@ public class OutgoingMessage extends MessageBase {
 		MessageData messagedata = builder.build();
 		output.writeRawVarint32(messagedata.getSerializedSize());
 		messagedata.writeTo(output);
-
+		
 		if (data != null) {
 			output.writeRawVarint32(sigblob.getSerializedSize());
+			//System.out.println("SigBlob:"+sigblob);
 			sigblob.writeTo(output);
 		}
 		

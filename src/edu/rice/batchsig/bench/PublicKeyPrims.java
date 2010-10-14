@@ -81,7 +81,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	 */
 	public static PublicKeyPrims make(String signer_id_string, String algo, int size, String provider) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException  {
 		PublicKeyPrims out = new PublicKeyPrims();
-		//System.out.println("ALGO1 " + algo);
+		System.out.format("MakingPublicKeyPrims for signer=%s and algo=%s\n",signer_id_string,algo);
 		//System.out.println("ALGO2 " + algo.substring(algo.length()-3));
 		
 		out.signer_id_bytes = signer_id_string.getBytes();
@@ -198,7 +198,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 			return false;
 		}
 		if (!Arrays.equals(signer_id_bytes, sig.getSignerId().toByteArray())) {
-			System.out.println("Info: Mismatched signerids");
+			System.out.println("Info: Mismatched signerids "+signer_id.toStringUtf8()+"!="+sig.getSignerId().toStringUtf8());
 			return false;
 		}
 		try {
@@ -224,8 +224,8 @@ public class PublicKeyPrims implements SignaturePrimitives {
 				System.err.println("Verifycount_cached: "+Tracker.singleton.verifycount_cached);			
 			return true;
 		}
-		if (++Tracker.singleton.verifycount % 100 == 0)
-			System.err.println("Verifycount: "+Tracker.singleton.verifycount);
+		if (++Tracker.singleton.verifycount % 1000 == 0)
+			System.err.println("Verifycount: "+Tracker.singleton.verifycount + "/"+Tracker.singleton.verifycount_cached);
 		verifier.update(databytes);
 		boolean isValid = verifier.verify(sigbytes);
 		
@@ -241,7 +241,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 	}
 
 	protected byte[] signBytes(byte [] databytes) throws SignatureException {
-		if (++Tracker.singleton.signcount % 100 == 0)
+		if (++Tracker.singleton.signcount % 1000 == 0)
 			System.err.println("SIgncount: "+Tracker.singleton.signcount);
 		signer.update(databytes);
 		return signer.sign();

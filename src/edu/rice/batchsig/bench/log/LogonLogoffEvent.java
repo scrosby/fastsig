@@ -38,8 +38,8 @@ public class LogonLogoffEvent extends EventBase {
 		out.write(Integer.toString(recipient_user));
 		out.write('\n');
 	}
-	static class Iter extends IterBase<LogonLogoffEvent> {
-		Iter(FileInputStream input) {
+	public static class Iter extends IterBase<LogonLogoffEvent> {
+		public Iter(FileInputStream input) {
 			super(input);
 		}
 		
