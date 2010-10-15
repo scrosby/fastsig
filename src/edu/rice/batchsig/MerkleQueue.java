@@ -62,8 +62,6 @@ public class MerkleQueue extends QueueBase {
 		MerkleTree<byte[], byte[]> histtree = new MerkleTree<byte[], byte[]>(
 				aggobj, datastore);
 		
-		//System.out.println("Processing merklequeue "+oldqueue.size());
-
 		for (Message m : oldqueue) {
 			histtree.append(m.getData());
 		}

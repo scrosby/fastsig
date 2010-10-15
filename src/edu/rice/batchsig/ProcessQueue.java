@@ -35,4 +35,6 @@ public interface ProcessQueue {
 	 * Indicate that all processing is done.
 	 */
 	abstract public void finish();
+
+	public abstract int peekSize();
 }

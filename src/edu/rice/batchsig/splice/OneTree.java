@@ -30,7 +30,7 @@ public class OneTree {
 		return size;
 	}
 	
-	final private VerifHisttreeLazily verifier;
+	final private VerifyHisttreeLazily verifier;
 	/** For each version number the message at that number. */
 	HashMap<Integer,IncomingMessage> messages = new LinkedHashMap<Integer,IncomingMessage>(1,.75f,false);
 
@@ -75,7 +75,7 @@ public class OneTree {
 		return dag.makeOrGet(key);
 	}
 
-	public OneTree(VerifHisttreeLazily verifier, Object object, long l) {
+	public OneTree(VerifyHisttreeLazily verifier, Object object, long l) {
 		this.author = object;
 		this.treeid = l;
 		this.verifier = verifier;
@@ -84,7 +84,7 @@ public class OneTree {
 	void addMessage(IncomingMessage m) {
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
-		HistoryTree<byte[],byte[]> tree = VerifHisttreeLazily.parseHistoryTree(m);
+		HistoryTree<byte[],byte[]> tree = VerifyHisttreeLazily.parseHistoryTree(m);
 
 		// First, see if this message is well-formed.
 		if (!Verifier.checkLeaf(m,tree)) {
@@ -119,7 +119,7 @@ public class OneTree {
 			if (succm == null)
 				throw new Error("Algorithm bug.");
 			// Time to verify the splice is OK. 
-			HistoryTree<byte[],byte[]> succtree = VerifHisttreeLazily.parseHistoryTree(succm);
+			HistoryTree<byte[],byte[]> succtree = VerifyHisttreeLazily.parseHistoryTree(succm);
 			if (Arrays.equals(succtree.aggV(key.intValue()),tree.agg())) {
 				; // Splice verifies. Nothing to be done.
 			} else {

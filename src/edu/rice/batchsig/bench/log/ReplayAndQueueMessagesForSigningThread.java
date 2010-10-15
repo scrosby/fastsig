@@ -66,7 +66,7 @@ public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThre
 				}
 			}
 			if (i%1000 == 0 || injectTime-now > 2000)
-				System.out.println("Injecting msg #"+ i + " late by "+(injectTime-now));
+				System.err.println("Injecting msg #"+ i + " late by "+(injectTime-now));
 
 			queue.add(msg);
 			checkQueueOverflow();

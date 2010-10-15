@@ -72,7 +72,8 @@ public class MultiplexedPublicKeyPrims implements SignaturePrimitives {
 	@Override
 	/** Assume that the builder has already been marked with the signer's ID */
 	public void sign(byte[] data, TreeSigBlob.Builder out) {
-		load(out).sign(data, out);
+		throw new Error("Shouldn't be invoked?");
+		//load(out).sign(data, out);
 	}
 
 	@Override

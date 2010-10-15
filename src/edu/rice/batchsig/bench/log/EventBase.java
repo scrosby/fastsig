@@ -56,6 +56,7 @@ public class EventBase {
 			}
 		}
 
+		/** Returns null if empty */
 		@Override
 		public T next() {
 			try {

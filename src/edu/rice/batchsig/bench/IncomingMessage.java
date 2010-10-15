@@ -70,6 +70,10 @@ public class IncomingMessage extends MessageBase {
 		return sigblob;
 	}
 
+	public void resetCreationTimeToNow() {
+		creation_time = System.currentTimeMillis();
+	}
+	
 	@Override
 	public void signatureResult(TreeSigBlob message) {
 		// TODO: Used when creating a message to be logged. Leave unspecified for now.

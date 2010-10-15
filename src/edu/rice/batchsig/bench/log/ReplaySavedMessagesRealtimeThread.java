@@ -28,24 +28,27 @@ import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.IncomingMessageStreamFromFile;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
+import edu.rice.batchsig.splice.VerifyHisttreeLazily;
 
 /** Given a logfile of 'messages' that were signed, verify them 'in real time', using the included timestamp. Used to benchmark verification. */
 
 
-// BAD CODE: BROKEN: Can't hold back here. Must have a forced queue.
 public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBase {
 	final private IncomingMessageStreamFromFile input;
 	long bias = -1; // WHat is the timestamp ('virtual clock') of the first message in the trace?
+
+	private final VerifyHisttreeLazilyQueue lazyqueue;
 	
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplaySavedMessagesRealtimeThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+	ReplaySavedMessagesRealtimeThread(VerifyHisttreeLazilyQueue verifyqueue, FileInputStream fileinput, int rate) {
 		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();
 		this.input = new IncomingMessageStreamFromFile(fileinput);
+		lazyqueue = verifyqueue;
 	}
 
 	/** Setup the replay trace, preloading the bias and the keys. */
@@ -63,7 +66,6 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 	@Override
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
-		Map<Integer,List<IncomingMessage>> heldMessages = new HashMap<Integer,List<IncomingMessage>>();
 		
 		while (!finished.get()) {
 			IncomingMessage msg = input.nextOnePass();
@@ -82,37 +84,18 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 			if (injectTime > now) {
 				// Running ahead. Lets sleep for a little bit. 
 				try {
-					Thread.sleep(injectTime-now);
+					Thread.sleep((injectTime-now));
 				} catch (InterruptedException e) {
 				}
 			}
 
-			// STEP 2: Add all the hosts whom we need to start buffering.
-			if (msg.start_buffering != null)
-				for (Integer i: msg.start_buffering)
-					heldMessages.put(i, new ArrayList<IncomingMessage>());
-
-			// STEP 3: Play the held-back messages.
+			// STEP 3: Play the forced back.
 			if (msg.end_buffering != null)
 				for (Integer i: msg.end_buffering) {
-					for (IncomingMessage j : heldMessages.get(i))
-						queue.add(j);
-					heldMessages.remove(i);
-
-			// STEP 4: Play this message or hold it?
-			if (heldMessages.containsKey(msg.getRecipientUser()))
-				heldMessages.get(msg.getRecipientUser()).add(msg);
-			else
-				queue.add(msg);
-
+					lazyqueue.forceUser(i);
 			checkQueueOverflow();
 			}
 		}
-		// We're closing the thread. Time to verify everything held up, right now.
-		for (List<IncomingMessage> l : heldMessages.values())
-			for (IncomingMessage j : l)
-				queue.add(j);
-			
 		queue.finish();
 	}
 }

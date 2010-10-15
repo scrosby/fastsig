@@ -96,7 +96,7 @@ public class OutgoingMessage extends MessageBase {
 		if (tracker != null) {
 			tracker.trackLatency((int)(System.currentTimeMillis() - creation_time));
 			//System.out.println(this.sigblob.toString());
-			tracker.trackSize(this.sigblob.getSerializedSize());
+			tracker.trackMsgBytesize(this.sigblob.getSerializedSize());
 		}
 	}
 
@@ -110,9 +110,10 @@ public class OutgoingMessage extends MessageBase {
 		MessageData.Builder builder = MessageData.newBuilder();
 		
 		builder.setTimestamp(virtual_clock);
-		if (data != null)
+		if (data != null) {
 			builder.setMessage(ByteString.copyFrom(data));
-		else 
+			builder.setRecipientUser((Integer)recipient_user);
+		} else if (logins == null && logouts == null)
 			throw new Error("No data?");
 		
 		if (startBuffering != null || endBuffering != null) {
@@ -120,7 +121,6 @@ public class OutgoingMessage extends MessageBase {
 			builder.addAllEndBufferingUsers(endBuffering);
 		}
 		
-		builder.setRecipientUser((Integer)recipient_user);
 		
 		MessageData messagedata = builder.build();
 		output.writeRawVarint32(messagedata.getSerializedSize());

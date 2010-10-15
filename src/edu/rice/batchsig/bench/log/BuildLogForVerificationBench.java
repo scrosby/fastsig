@@ -80,11 +80,15 @@ public class BuildLogForVerificationBench {
 		LogonLogoffEvent i = ii.hasNext() ? ii.next() :null;
 		MessageEvent e = jj.hasNext() ? jj.next() :null;
 
+		int counter = 0;
 
 		Set<QueueBase> toRun = new HashSet<QueueBase>();
-
+		
 		for (int epochstart = 0 ; i != null && e != null ; epochstart += epochlength) {
-			double epochend = e.getTimestamp() + epochlength;
+			long epochend = e.getTimestamp() + epochlength;
+			
+			if (++counter % 100 == 0)
+				System.err.format("Epoch: %d-%d\n", epochstart,epochend);
 
 			// Add any messages in this epoch.
 			while (e != null && e.getTimestamp() < epochend) {
@@ -96,6 +100,7 @@ public class BuildLogForVerificationBench {
 				OutgoingMessage out = e.asOutgoingMessage(outstream);
 				queues[host].add(out);
 				toRun.add(queues[host]);
+				e = jj.hasNext() ? jj.next() :null;
 			}
 
 			/// Now run the queues.
@@ -123,6 +128,7 @@ public class BuildLogForVerificationBench {
 			}
 
 		}
+		System.err.format("Finished trace\n");
 	}
 
 	private void writeLoginLogoutMsg(ArrayList<Integer> logins,

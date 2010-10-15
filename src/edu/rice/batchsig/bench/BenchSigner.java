@@ -66,60 +66,6 @@ import edu.rice.batchsig.bench.log.ReplaySavedMessagesRealtimeThread;
 
 /* 
   
-PROG="java  -XX:+UseCompressedOops -cp /home/crosby/source/jars/guava-r06.jar:lib/bb.jar:lib/bcprov.jar:lib/jsci-core.jar:lib/mt-13.jar:bin/:/usr/share/java/protobuf.jar:/usr/share/java/commons-cli.jar -Xmx1200m edu.rice.batchsig.bench.BenchSigner"
-
-## DONE: USED TO MAKE THE LOG FILES for verification.
-$PROG -provider BC -autorate -sha1 -rsa -simple   -output msglog/autorate.simple.rsa > results/sign.autorate.simple.rsa
-$PROG -provider BC -autorate -sha1 -rsa -history  -output msglog/autorate.history.rsa > results/sign.autorate.history.rsa
-$PROG -provider BC -autorate -sha1 -rsa -merkle   -output msglog/autorate.merkle.rsa > results/sign.autorate.merkle.rsa
-
-$PROG -provider BC -autorate -sha1 -dsa -simple   -output msglog/autorate.simple.dsa > results/sign.autorate.simple.dsa
-$PROG -provider BC -autorate -sha1 -dsa -history  -output msglog/autorate.history.dsa > results/sign.autorate.history.dsa
-$PROG -provider BC -autorate -sha1 -dsa -merkle   -output msglog/autorate.merkle.dsa > results/sign.autorate.merkle.dsa
-
-# Used to test verification.
-$PROG -provider BC -autorate -sha1 -rsa -verify   -input msglog/autorate.simple.rsa > results/verify.autorate.simple.rsa
-$PROG -provider BC -autorate -sha1 -rsa -verify   -input msglog/autorate.history.rsa > results/verify.autorate.history.rsa
-$PROG -provider BC -autorate -sha1 -rsa -verify   -input msglog/autorate.merkle.rsa > results/verify.autorate.merkle.rsa
-
-$PROG -provider BC -autorate -sha1 -dsa -verify   -input msglog/autorate.simple.dsa > results/verify.autorate.simple.dsa
-$PROG -provider BC -autorate -sha1 -dsa -verify   -input msglog/autorate.history.dsa > results/verify.autorate.history.dsa
-$PROG -provider BC -autorate -sha1 -dsa -verify   -input msglog/autorate.merkle.dsa > results/verify.autorate.merkle.dsa
-
-
-
-## COLLECT SIGN PERFORMANCE
-$PROG -provider BC -big -autorate -sha1 -rsa -simple  > results/sign.autorate.simple.rsa
-$PROG -provider BC -big -autorate -sha1 -rsa -history > results/sign.autorate.history.rsa
-$PROG -provider BC -big -autorate -sha1 -rsa -merkle  > results/sign.autorate.merkle.rsa
-
-$PROG -provider BC -big -autorate -sha1 -dsa -simple  > results/sign.autorate.simple.dsa
-$PROG -provider BC -big -autorate -sha1 -dsa -history > results/sign.autorate.history.dsa
-$PROG -provider BC -big -autorate -sha1 -dsa -merkle  > results/sign.autorate.merkle.dsa
-
-# COLLECT VERIFY PERFORMANCE
-$PROG -provider BC -big -autorate -sha1 -rsa -verify   -input msglog/autorate.simple.rsa > results/verify.autorate.simple.rsa
-#$PROG -provider BC -big -autorate -sha1 -rsa -verify   -input msglog/autorate.history.rsa > results/verify.autorate.history.rsa
-$PROG -provider BC -big -autorate -sha1 -rsa -verify   -input msglog/autorate.merkle.rsa > results/verify.autorate.merkle.rsa
-
-$PROG -provider BC -big -autorate -sha1 -dsa -verify   -input msglog/autorate.simple.dsa > results/verify.autorate.simple.dsa
-#$PROG -provider BC -big -autorate -sha1 -dsa -verify   -input msglog/autorate.history.dsa > results/verify.autorate.history.dsa
-$PROG -provider BC -big -autorate -sha1 -dsa -verify   -input msglog/autorate.merkle.dsa > results/verify.autorate.merkle.dsa
-
-## CONVERT TRACES:
-   (Use the database)
-
-## Replay traces
-$PROG -sha1 -dsa -signtrace -traceprefix "/tmp/data.wave";
-
-
-#### TRACE REPLAY EXPERIMENT PLAN ####
-
-Step one: Do a signing benchmark:
-  All messages from one sender to multiple recipients.
-  
-
-
 
 */
 
@@ -170,8 +116,17 @@ public class BenchSigner {
 		}
 	}
 
-	/** Do some processing to warm up the hotspot compiler */
-	public void hotspotSigning(CodedOutputStream output) throws InterruptedException {
+	/** Do some processing to warm up the hotspot compiler 
+	 * @throws FileNotFoundException */
+	public void hotspotSigning() throws InterruptedException, FileNotFoundException {
+		// Activate the hotspot over the data in question. 
+		// Store a scratch copy of the queue, then reset to null.
+		if (queue != null) 
+			throw new Error("Queue should be null!");
+		String signer_id = commands.getOptionValue("signerid","Host0");
+		CodedOutputStream output = CodedOutputStream.newInstance(new FileOutputStream("/dev/null"));
+		queue = queuefn.apply(signer_id);
+
 		System.err.println("Starting hotspot signing");
 		if (isBatch) {
 			this.doSigningRun(output,100,1,500);
@@ -194,10 +149,12 @@ public class BenchSigner {
 			}
 		}
 		System.err.println("End hotspot signing");
+		queue = null;
 	}
 
-	/** Do some processing to warm up the hotspot compiler */
-	public void hotSpotVerifying(FileInputStream input) throws InterruptedException {
+	/** Do some processing to warm up the hotspot compiler 
+	 * @throws FileNotFoundException */
+	public void hotSpotVerifying(FileInputStream input) throws InterruptedException, FileNotFoundException {
 		System.err.println("Starting hotspot verifying");
 		if (isBatch) {
 			this.doVerifyingRun(input,100,1,500);
@@ -362,7 +319,7 @@ public class BenchSigner {
 		} 
 		if (commands.hasOption("verifytrace")) {
 			isTrace = true;
-			//handleTraceVerifying(time);
+			handleVerifyTrace(time);
 			return;
 		}
 
@@ -391,16 +348,12 @@ public class BenchSigner {
 		}
 
 
-		// Activate the hotspot over the data in question. 
-		// Store a scratch copy of the queue, then reset to null.
-		CodedOutputStream tmpoutput = CodedOutputStream.newInstance(new FileOutputStream("/dev/null"));
-		queue = queuefn.apply(signer_id);
-		hotspotSigning(tmpoutput);
-		queue = null;
 		
 		if (commands.hasOption("signtrace")) {
+			hotspotSigning();
 			handleTraceSigning();
 		} else if (commands.hasOption("sign")) {
+			hotspotSigning();
 			handleSigning(time);
 		} else if (commands.hasOption("makeverifytrace")){
 			handleMakeVerifyTrace(0);
@@ -409,6 +362,11 @@ public class BenchSigner {
 		}
 
 
+	}
+
+	private void handleVerifyTrace(int time) {
+		
+		
 	}
 
 	private void handleSigning(final int time) throws FileNotFoundException,
@@ -460,6 +418,13 @@ public class BenchSigner {
 				epochlength,queuefn,MAX_SENDERS,batchsize,output);
 		String eventtracename=commands.getOptionValue("eventtrace");
 		String usertracename=commands.getOptionValue("usertrace");
+		
+		if (usertracename == null) 
+			throw new Error("Need -usertrace for logonlogoff");
+		if (eventtracename == null) 
+			throw new Error("Need -eventtrace for events");
+
+		
 		Iterator<MessageEvent> events = new MessageEvent.Iter(new FileInputStream(eventtracename));		
 		Iterator<LogonLogoffEvent> logonlogoffs = new LogonLogoffEvent.Iter(new FileInputStream(usertracename));		
 		builder.makeTrace(events,logonlogoffs);

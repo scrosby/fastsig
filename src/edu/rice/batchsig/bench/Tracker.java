@@ -6,7 +6,7 @@ public class Tracker {
 	public static Tracker singleton = new Tracker();
 	Histogram batchsizehist = new Histogram();
 	Histogram latencyhist = new Histogram();
-	Histogram sizehist = new Histogram();
+	Histogram bytesizehist = new Histogram();
 	AtomicBoolean aborting = new AtomicBoolean();
 	int signcount,verifycount, verifycount_cached;
 	
@@ -16,11 +16,12 @@ public class Tracker {
 	
 	public void enable() {
 		latencyhist.enable();
-		sizehist.enable();
+		bytesizehist.enable();
+		batchsizehist.enable();
 	}
 	
 	public void reset() {
-		sizehist.reset();
+		bytesizehist.reset();
 		latencyhist.reset();
 		batchsizehist.reset();
 		aborting.set(false);
@@ -35,8 +36,8 @@ public class Tracker {
 		return aborting.get();
 	}
 	
-	void trackSize(int i) {
-		sizehist.add(i);
+	void trackMsgBytesize(int i) {
+		bytesizehist.add(i);
 	}
 	
 	public void trackBatchSize(int i) {
@@ -76,14 +77,14 @@ public class Tracker {
 	}
 	
 	
-	protected void print(String prefix) {
+	public void print(String prefix) {
 		System.out.format("bsize: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,batchsizehist.n,(double)batchsizehist.sum/batchsizehist.n,batchsizehist.max);
 		printlineset(batchsizehist);
 
 		System.out.format("crypt: Rate=%s  N=%d  Sign=%d  VTotal=%d VCached=%d\n",prefix,latencyhist.n,signcount,verifycount,verifycount_cached);
 		System.out.format("laten: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
 		printlineset(latencyhist);
-		System.out.format("proof: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,sizehist.n,(double)sizehist.sum/latencyhist.n,sizehist.max);
+		System.out.format("proof: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,bytesizehist.n,(double)bytesizehist.sum/latencyhist.n,bytesizehist.max);
 		
 		
 	}

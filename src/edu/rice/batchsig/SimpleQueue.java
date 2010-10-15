@@ -48,7 +48,7 @@ public class SimpleQueue extends QueueBase {
 	public void process() {
 		long now = System.currentTimeMillis();
 		ArrayList<Message> oldqueue = atomicGetQueue();
-		System.out.println(String.format("Processing batch of %d messages at time %d",oldqueue.size(),now-initTime));
+		//System.out.println(String.format("Processing batch of %d messages at time %d",oldqueue.size(),now-initTime));
 		if (oldqueue.size() == 0)
 			return;
 		for (Message m : oldqueue) {
