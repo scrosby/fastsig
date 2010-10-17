@@ -69,7 +69,7 @@ public class BuildLogForVerificationBench {
 		
 		queues = new QueueBase[sender_server_count];
 		for (int i= 0 ; i < sender_server_count ; i++) {
-			queues[i] = queuefactory.apply("Signer"+i);
+			queues[i] = queuefactory.apply("Signer"+i); // Must match that used in BenchSigner.handleVerifyTrace
 		}
 	}
 	
@@ -129,6 +129,7 @@ public class BuildLogForVerificationBench {
 
 		}
 		System.err.format("Finished trace\n");
+		outstream.flush();
 	}
 
 	private void writeLoginLogoutMsg(ArrayList<Integer> logins,

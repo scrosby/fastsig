@@ -57,6 +57,7 @@ public class OutgoingMessage extends MessageBase {
 	}
 	
 	
+	
 	@Override
 	public Object getAuthor() {
 		throw new Error("Unimplemented");
@@ -123,6 +124,10 @@ public class OutgoingMessage extends MessageBase {
 		
 		
 		MessageData messagedata = builder.build();
+		
+		System.out.println("MSGData:"+messagedata);
+		System.out.println("SigBlob:"+sigblob);
+
 		output.writeRawVarint32(messagedata.getSerializedSize());
 		messagedata.writeTo(output);
 		
@@ -131,6 +136,7 @@ public class OutgoingMessage extends MessageBase {
 			//System.out.println("SigBlob:"+sigblob);
 			sigblob.writeTo(output);
 		}
+		output.flush();
 		
 	}
 

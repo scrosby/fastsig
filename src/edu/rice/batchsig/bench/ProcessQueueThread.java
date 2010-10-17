@@ -32,7 +32,7 @@ public class ProcessQueueThread extends ShutdownableThread {
 	ProcessQueueThread(QueueBase signqueue, int epochtime) {
 		this.setName("ProcessQueue");
 		if (signqueue == null)
-			throw new Error();
+			throw new Error("NO signqueue given");
 		this.signqueue = signqueue;
 		this.epochlength = epochtime;
 	}

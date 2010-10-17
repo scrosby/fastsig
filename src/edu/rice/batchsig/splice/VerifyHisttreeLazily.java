@@ -37,6 +37,7 @@ import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.VerifyHisttreeCommon;
 import edu.rice.batchsig.bench.IncomingMessage;
+import edu.rice.batchsig.bench.Tracker;
 import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
@@ -105,7 +106,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	private Table<Object,Long,OneTree> map1 = HashBasedTable.create();
 
 	/** Track info for expiration */
-	private ExpirationManager expirationqueue;
+	private ExpirationManager expirationqueue = new ExpirationManager();
 
 	/** Force everything in these trees */
 	private HashSet<OneTree> treesToForceAll = new HashSet<OneTree>();
@@ -173,6 +174,17 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 		for (OneTree tree : map1.values())
 			tree.forceAll();
 	}
+	
+	public void forceOldest() {
+		if (expirationqueue.size() == 0)
+			return;
+		OneTree x = expirationqueue.keySet().iterator().next();
+		Tracker.singleton.idleforces++;
+		if (x == null)
+			throw new Error("Expiration queue weirdness");
+		x.forceOldest();
+	}
+	
 	
 	public void add(Message m) {
 		add((IncomingMessage)m);

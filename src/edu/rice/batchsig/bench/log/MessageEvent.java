@@ -20,7 +20,8 @@ import edu.rice.batchsig.bench.OutgoingMessage;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class MessageEvent extends EventBase {
-	static int DEFAULT_BYTESIZE = 5;
+	final static int DEFAULT_BYTESIZE = 5;
+	static int counter = 0;
 	
 	int sender_host, recipient_host; // Hosts or servers.
 	int sender_user, recipient_user; // Usernames on those hosts.
@@ -48,7 +49,15 @@ public class MessageEvent extends EventBase {
 	}
 
 	public OutgoingMessage asOutgoingMessage(CodedOutputStream target) {
-		OutgoingMessage msg = new OutgoingMessage(target,new byte[size], getRecipientHost(), recipient_user);
+		counter++;
+		byte[] contents = new byte[size];
+		contents[0] = (byte)(counter%64);
+		contents[1] = (byte)((counter/64)%64);
+		contents[2] = (byte)((counter/64/64)%64);
+		contents[3] = (byte)((counter/64/64/64)%64);
+
+		OutgoingMessage msg = new OutgoingMessage(target,contents, getRecipientHost(), recipient_user);
+		msg.setVirtualClock(timestamp);
 		return msg;
 	}
 

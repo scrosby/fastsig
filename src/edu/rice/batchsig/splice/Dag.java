@@ -2,10 +2,12 @@ package edu.rice.batchsig.splice;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -13,7 +15,7 @@ public class Dag<T> {
 	/** Map from a descriptor to the DagNode containing it. */
 	final HashMap<T,DagNode> nodeMap = new HashMap<T,DagNode>(); 
 	
-	DagNode makeOrGet(T key) {
+	public DagNode makeOrGet(T key) {
 		if (nodeMap.containsKey(key))
 			return nodeMap.get(key);
 		DagNode out = new DagNode(key);
@@ -35,11 +37,11 @@ public class Dag<T> {
 		
 		public T get() {return object;}
 		
-		Collection<DagNode> getParents() {
-			return parents.get(this);
+		public Collection<DagNode> getParents() {
+			return Collections.unmodifiableCollection(parents.get(this));
 		}
-		Collection<DagNode> getChildren() {
-			return children.get(this);
+		public Collection<DagNode> getChildren() {
+			return Collections.unmodifiableCollection(children.get(this));
 		}
 
 		void remove() {
@@ -67,6 +69,10 @@ public class Dag<T> {
 				public void remove() {throw new UnsupportedOperationException();}
 			};
 		}
+		
+		public String toString() {
+			return  object.toString();
+		}
 	
 	}
 
@@ -82,16 +88,24 @@ public class Dag<T> {
 		}
 		
 		void extend() {
+			System.out.println("Extending FROM "+this);
+			if (path.size() == 0)
+				throw new Error("Cannot extend empty path?");
 			DagNode node=root(), parent;
 			while ((parent = node.getAParent()) != null) {
 				node = parent;
 				path.add(node);	
-		}
+			}
+			System.out.println("Extending TO "+this);
 		}
 		public void next() {
 			removeLast();
 			extend();
 		}
+		public String toString() {
+			return "{{ "+Joiner.on(",").join(path) + " }}";
+		}
+		
 	}
 	
 	Path rootPath(DagNode node) {
@@ -103,7 +117,7 @@ public class Dag<T> {
 			
 
 	
-	void addEdge(DagNode parent, DagNode child) {
+	public void addEdge(DagNode parent, DagNode child) {
 		if (children.get(parent).contains(child))
 			throw new Error("Storing a duplicate edge");
 		if (parents.get(child).contains(parent)) // Should never trigger unless the graph inconsistent.
@@ -111,7 +125,7 @@ public class Dag<T> {
 		children.put(parent,child);
 		parents.put(child,parent);
 	}
-	void removeEdge(DagNode parent, DagNode child) {
+	public void removeEdge(DagNode parent, DagNode child) {
 		if (!children.get(parent).contains(child))
 			throw new Error("Removing non-existant edge");
 		if (!parents.get(child).contains(parent)) // Should never trigger unless the graph inconsistent.
@@ -120,7 +134,7 @@ public class Dag<T> {
 		parents.remove(child,parent);
 	}
 	
-	Collection<DagNode> getAllChildren(DagNode node) {
+	public Collection<DagNode> getAllChildren(DagNode node) {
 		HashSet<DagNode> todo = new HashSet<DagNode>();
 		HashSet<DagNode> out = new HashSet<DagNode>();
 		todo.add(node);

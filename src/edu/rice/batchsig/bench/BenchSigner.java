@@ -62,6 +62,8 @@ import edu.rice.batchsig.bench.log.MessageEvent;
 import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
 import edu.rice.batchsig.bench.log.ReplayAndQueueMessagesForSigningThread;
 import edu.rice.batchsig.bench.log.ReplaySavedMessagesRealtimeThread;
+import edu.rice.batchsig.bench.log.VerifyHisttreeLazilyQueue;
+import edu.rice.batchsig.splice.VerifyHisttreeLazily;
 
 
 /* 
@@ -192,7 +194,6 @@ public class BenchSigner {
 	}
 
 	static final int BIGTIME = 120000;
-	static final int NORMALTIME = 5000;
 
 	/* Run an experiment at an ever-increasing rate */
 	public void doBenchMany(CallBack cb) throws InterruptedException {
@@ -268,6 +269,7 @@ public class BenchSigner {
 		.addOption(OptionBuilder.withDescription("Output file (used when signing)").hasArg().create("output"))
 		.addOption(OptionBuilder.withDescription("Input file (used when verifying)").hasArg().create("input"))
 		.addOption(OptionBuilder.withDescription("Automatically scale the signing rate").create("autorate"))
+		.addOption(OptionBuilder.withDescription("Run at the given timeout").hasArg().create("timeout"))
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate").hasArg().create("rate"))
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate increment").hasArg().create("incr"))
 		.addOption(OptionBuilder.withDescription("Return help").create('h'))
@@ -305,21 +307,20 @@ public class BenchSigner {
 			System.exit(0);
 		}
 
-		if (commands.hasOption("big"))
+		final int timeout = Integer.parseInt(commands.getOptionValue("timeout","5000"));
+		if (timeout > BIGTIME)
 			isBig = true;
 		else
 			isBig = false;
-
-		final int time = isBig ? BIGTIME : NORMALTIME;
 				
 		if (commands.hasOption("verify")) {
 			isTrace = false;
-			handleVerifying(time);
+			handleVerifying(timeout);
 			return;
 		} 
 		if (commands.hasOption("verifytrace")) {
 			isTrace = true;
-			handleVerifyTrace(time);
+			handleVerifyTrace(timeout);
 			return;
 		}
 
@@ -354,19 +355,34 @@ public class BenchSigner {
 			handleTraceSigning();
 		} else if (commands.hasOption("sign")) {
 			hotspotSigning();
-			handleSigning(time);
+			handleSigning(timeout);
 		} else if (commands.hasOption("makeverifytrace")){
 			handleMakeVerifyTrace(0);
 		} else {
 			throw new Error("Need to use a mode");
 		}
-
-
 	}
 
-	private void handleVerifyTrace(int time) {
-		
-		
+	private void handleVerifyTrace(int timeout) throws FileNotFoundException, InterruptedException {
+		final int MAXQUEUE = 40000;
+		if (commands.getOptionValue("input") == null)
+			throw new Error("Need to define an input file");
+		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
+		VerifyHisttreeLazily treeverifier = new VerifyHisttreeLazily((MultiplexedPublicKeyPrims) setupCipher(null));
+		VerifyHisttreeLazilyQueue processThread = new VerifyHisttreeLazilyQueue(treeverifier);
+		ReplaySavedMessagesRealtimeThread makeThread = new ReplaySavedMessagesRealtimeThread(processThread,fileinput,MAXQUEUE);
+		//hotSpotVerifying(fileinput);
+		makeThread.start();
+		processThread.start();
+		try {
+			Thread.sleep(timeout);
+			makeThread.shutdown(); makeThread.join();
+			processThread.interrupt(); // In case it is idle and not doing anything.
+			processThread.shutdown(); processThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}		
+		Tracker.singleton.print(String.format("Trace"));
 	}
 
 	private void handleSigning(final int time) throws FileNotFoundException,
@@ -393,7 +409,7 @@ public class BenchSigner {
 	}
 
 	final static int MAX_TRACE_BACKLOG = 2519;
-	final static int MAX_SENDERS = 31; // Prime number, not 43 or 37
+	final static int MAX_SENDERS = 61; // Prime number, not 43 or 37
 	final static int RSA_EPOCH_LENGTH = 60;
 	final static int DSA_EPOCH_LENGTH = 5;
 	final static int RSA_BATCHSIZE = 300;

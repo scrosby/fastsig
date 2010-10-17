@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 
@@ -38,8 +39,12 @@ public class IncomingMessage extends MessageBase {
 	
 	// Sig = null occurs if there is no message data (aka, this is a non-signed messgae
 	private IncomingMessage(TreeSigBlob sig, MessageData data) {
+		//System.out.println("IncomingMsg Parse"+data+sig);
 		this.sigblob = sig;
-		this.data = data.getMessage().toByteArray();
+		if (data.hasMessage())
+			this.data = data.getMessage().toByteArray();
+		else
+			this.data = null;
 		this.creation_time = System.currentTimeMillis();
 		this.virtual_clock = data.getTimestamp();
 		if (data.getStartBufferingUsersCount() > 0)
@@ -99,9 +104,6 @@ public class IncomingMessage extends MessageBase {
 			input.readMessage(databuilder, ExtensionRegistryLite.getEmptyRegistry());
 			MessageData data = databuilder.build();
 			//System.out.println(data.toString());
-			// No data means we're done.
-			if (data.getMessage().isEmpty())
-				return null;
 
 			if (data.hasMessage()) {
 				input.readMessage(sigbuilder, ExtensionRegistryLite.getEmptyRegistry());
@@ -111,10 +113,18 @@ public class IncomingMessage extends MessageBase {
 				return new IncomingMessage(null,data);
 			}
 		} catch (IOException e) {
-			System.out.println("readFrom stacktrace");
+			System.err.println("readFrom stacktrace (returning null -- nonfatal error!)");
 			e.printStackTrace();
 			return null;
 		}
 	}
 
+	public String toString() {
+		return String.format("Adding message time=%d, RecipientU=%s, leaf=%d at treeversion %d  %s",
+				getVirtualClock(), getRecipientUser(), getSignatureBlob().getLeaf(),
+				getSignatureBlob().getTree().getVersion(),
+				((ByteString)getAuthor()).toStringUtf8()
+		);
+	}
+	
 }

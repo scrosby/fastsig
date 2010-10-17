@@ -9,6 +9,8 @@ public class Tracker {
 	Histogram bytesizehist = new Histogram();
 	AtomicBoolean aborting = new AtomicBoolean();
 	int signcount,verifycount, verifycount_cached;
+	public int idleforces;
+	
 	
 	private Tracker() {
 		reset();
@@ -25,7 +27,7 @@ public class Tracker {
 		latencyhist.reset();
 		batchsizehist.reset();
 		aborting.set(false);
-		signcount = verifycount = verifycount_cached = 0;
+		signcount = verifycount = verifycount_cached = idleforces = 0 ;
 	}
 	
 	public void markAbort() {

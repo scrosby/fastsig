@@ -1,6 +1,7 @@
 package edu.rice.batchsig.bench.log;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.ProcessQueue;
@@ -21,8 +22,13 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	ArrayBlockingQueue<Integer> forcedUserMailbox = new ArrayBlockingQueue<Integer>(MAX_USERS);
 	ArrayBlockingQueue<Message> messageMailbox = new ArrayBlockingQueue<Message>(MAX_MESSAGES);
 	
+	public VerifyHisttreeLazilyQueue(VerifyHisttreeLazily treeverifier) {
+		this.treeverifier = treeverifier;
+	}
+	
 	// Called concurrently.
 	public void add(Message message) {
+		//System.out.println("Adding message "+message+ " into lazy queue");
 		if (message == null) 
 			throw new Error("Cannot store null message");
 		try {
@@ -39,9 +45,9 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 
 	// called concurrently.
 	public void finish() {
-		// We're not really a queue, so this is never actually invoked.
-		// Placeholder due to implementing ProcessQueue interface.
-		throw new Error("Shouldn't be called");
+		Thread.dumpStack();
+		System.out.println("Ordering processing to finish");
+		finished.set(true);
 	}
 
 	// Called concurrently
@@ -59,13 +65,53 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 		}
 	}
 
-	
+	boolean maximally_lazy = false;
 	
 	/** The core processing thread. */
 	@Override
 	public void run() {
+		while (!finished.get()) {
+			while (true) {
+				Message m = messageMailbox.poll();
+				if (m == null)
+					break;
+				treeverifier.add(m);
+			}
+			// If we're not being lazy, force the oldest message.
+			if (!maximally_lazy) {
+				while (true) {
+					Integer i = forcedUserMailbox.poll();
+					if (i == null)
+						break;
+					treeverifier.forceUser(i);
+				}
+			    treeverifier.forceOldest();
+			} else {
+				while (true) {
+					Integer i;
+					try {
+						i = forcedUserMailbox.take();
+					} catch (InterruptedException e) {
+						break;
+					}
+					if (i == null)
+						break;
+					treeverifier.forceUser(i);
+				}
+			}
+			}
+		System.out.println("End mailbox loop");
+
+		// Add any remaining messages in mailbox.
+		while (true) {
+			Message m = messageMailbox.poll();
+			System.out.println("MM:"+m);
+			if (m == null)
+				break;
+			treeverifier.add(m);
+		}
 		
-		
+		treeverifier.forceAll();
 	}
 	
 }
