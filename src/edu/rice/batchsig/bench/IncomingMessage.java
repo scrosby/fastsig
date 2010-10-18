@@ -120,7 +120,7 @@ public class IncomingMessage extends MessageBase {
 	}
 
 	public String toString() {
-		return String.format("Adding message time=%d, RecipientU=%s, leaf=%d at treeversion %d  %s",
+		return String.format("{time=%d, RecipientU=%s, leaf=%d at treeversion %d  %s}",
 				getVirtualClock(), getRecipientUser(), getSignatureBlob().getLeaf(),
 				getSignatureBlob().getTree().getVersion(),
 				((ByteString)getAuthor()).toStringUtf8()

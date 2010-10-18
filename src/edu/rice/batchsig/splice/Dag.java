@@ -45,8 +45,8 @@ public class Dag<T> {
 		}
 
 		void remove() {
-			Collection<DagNode> children = getChildren();
-			Collection<DagNode> parents = getParents();
+			Collection<DagNode> children = new ArrayList<DagNode>(getChildren());
+			Collection<DagNode> parents = new ArrayList<DagNode>(getParents());
 			for (DagNode i : children)
 				removeEdge(this,i);
 			for (DagNode i : parents)

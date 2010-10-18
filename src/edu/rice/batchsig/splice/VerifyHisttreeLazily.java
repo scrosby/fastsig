@@ -180,13 +180,19 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	}
 	
 	public void forceOldest() {
-		if (expirationqueue.size() == 0)
-			return;
-		OneTree x = expirationqueue.keySet().iterator().next();
-		Tracker.singleton.idleforces++;
-		if (x == null)
-			throw new Error("Expiration queue weirdness");
-		x.forceOldest();
+		// Keep on trying until we expire an entry, if any exists.
+		while (true) {
+			if (expirationqueue.size() == 0)
+				return;
+			OneTree x = expirationqueue.keySet().iterator().next();
+			Tracker.singleton.idleforces++;
+			if (x == null)
+				throw new Error("Expiration queue weirdness");
+			if (x.forceOldest())
+				return;
+			if (expirationqueue.size() > 5)
+				expirationqueue.remove(x);
+		}
 	}
 	
 	

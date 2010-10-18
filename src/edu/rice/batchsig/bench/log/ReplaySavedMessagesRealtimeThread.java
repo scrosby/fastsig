@@ -20,6 +20,9 @@
 package edu.rice.batchsig.bench.log;
 
 import java.io.FileInputStream;
+
+import com.google.protobuf.ByteString;
+
 import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.IncomingMessageStreamFromFile;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
@@ -65,7 +68,8 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				System.out.println("EOF");
 				break;
 			}
-				
+
+			
 			// STEP 1: Delay until the inject time equals this time.
 			
 			// Offset in ms from the first message in the trace.
@@ -85,6 +89,9 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				//System.out.println("Bad message "+msg.getVirtualClock() + "data" + msg.getData().length);
 				//if (msg.getSignatureBlob() == null) {System.out.println("Interesting...."); Thread.dumpStack();}
 				//if (msg.getAuthor() == null) {System.out.println("Interesting...."); Thread.dumpStack();}
+				// DEBUG: Only report messages from ONE author.
+				//if (!((ByteString)msg.getAuthor()).toStringUtf8().equals("Signer4"))
+				//	continue;
 				lazyqueue.add(msg);
 			}
 			// STEP 3: Play the forced back.

@@ -108,7 +108,7 @@ public class OneTree {
 	
 	/* Each node in the dag corresponds to a set of bundles. All that end in the same epoch. */
 	void addMessage(IncomingMessage m) {
-		System.out.println("Adding message "+m);
+		System.out.println("\nAdding message2 "+m);
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
 		Integer bundlekey = m.getSignatureBlob().getTree().getVersion();
@@ -169,28 +169,30 @@ public class OneTree {
 			
 		// PART 2: See which prior bundles we splice into.
 		for (Integer predi : m.getSignatureBlob().getSpliceHintList()) {
-			System.out.println("Handling splicehint: "+predi);
+			ByteString aggv = ByteString.copyFrom(tree.aggV(predi.intValue()));
+			System.out.format("Handling splicehint %d with hash %d\n",predi,aggv.hashCode());
 			// For each splicepoint to prior bundles in this message,
-			Message predm = bundles.get(predi);
+			Message predm = validators.get(predi);
 			Dag<Integer>.DagNode prednode = dag.makeOrGet(predi);
 			// Have we seen the prior message?
 			if (predm == null) {
-				System.out.println("No priors found");
+				System.out.println("No priors found, but adding edge anyways.");
 				// Nope. Add the node to the dag. Add an edge to that child; it'll be provisional
 				dag.addEdge(node,prednode);
 			} else {
+				//System.out.format("Agg(%d)=%d of pred\n",predm.getSignatureBlob().getTree().getVersion(),roothashes.get(predi).hashCode());
 				// We have seen that message. We need to check the splice.
-				if (ByteString.copyFrom(tree.aggV(predi.intValue())).equals(roothashes.get(predm))) {
+				if (aggv.equals(roothashes.get(predi))) {
 					System.out.println("Found a prior. Verified the splice!");
 					dag.addEdge(node,prednode);
 				} else {
 					// Splice fails. Remove the edge.
 					System.out.println("Found a prior, but splice failed");
 					prednode = dag.makeOrGet(predi);
-					dag.removeEdge(node,prednode);
 				}
 			}
 		}
+		System.out.format("Stored roothash at (%d) of %d of pred\n",bundlekey,agg.hashCode());
 		roothashes.put(bundlekey,agg);
 		bundles.put(key, m);
 		System.out.println("Finished handling for message");
@@ -209,20 +211,24 @@ public class OneTree {
 		roothashes.remove(index);
 		}
 
-	void forceOldest() {
+	/** Force the oldest thing here, return true if somethign was forced */
+	boolean forceOldest() {
 		System.out.format("Forcing oldest message to OneTree\n");
 
 		Iterator<Integer> i = bundles.keySet().iterator();
 		if (!i.hasNext()) {
-			throw new Error("Can ignore this error, but we shouldn't be forcing the oldest on an empty onetree");
+			if (size != 0)
+				throw new Error("Size should be zero");
+			return false;
 		}
 		forceMessage(bundles.get(i.next()));
+		return true;
 	}
 	
 	
 	
 	void forceMessage(IncomingMessage m) {
-		System.out.format(">>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
+		System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
 		Dag<Integer>.DagNode node = getNode(m);
 
 		// Step one: Find a root.

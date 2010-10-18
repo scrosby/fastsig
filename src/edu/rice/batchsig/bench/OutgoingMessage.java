@@ -125,8 +125,8 @@ public class OutgoingMessage extends MessageBase {
 		
 		MessageData messagedata = builder.build();
 		
-		System.out.println("MSGData:"+messagedata);
-		System.out.println("SigBlob:"+sigblob);
+		//System.out.println("MSGData:"+messagedata);
+		//System.out.println("SigBlob:"+sigblob);
 
 		output.writeRawVarint32(messagedata.getSerializedSize());
 		messagedata.writeTo(output);

@@ -45,7 +45,6 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 
 	// called concurrently.
 	public void finish() {
-		Thread.dumpStack();
 		System.out.println("Ordering processing to finish");
 		finished.set(true);
 	}
@@ -70,6 +69,8 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	/** The core processing thread. */
 	@Override
 	public void run() {
+	
+		long lastExpiration = 0;
 		while (!finished.get()) {
 			while (true) {
 				Message m = messageMailbox.poll();
@@ -85,7 +86,11 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 						break;
 					treeverifier.forceUser(i);
 				}
-			    treeverifier.forceOldest();
+				long now = System.currentTimeMillis();
+				if (now-lastExpiration > 5000) {
+					treeverifier.forceOldest();
+					lastExpiration = now;
+				}
 			} else {
 				while (true) {
 					Integer i;

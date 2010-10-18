@@ -364,6 +364,8 @@ public class BenchSigner {
 	}
 
 	private void handleVerifyTrace(int timeout) throws FileNotFoundException, InterruptedException {
+		Tracker.singleton.reset();
+		Tracker.singleton.enable();
 		final int MAXQUEUE = 40000;
 		if (commands.getOptionValue("input") == null)
 			throw new Error("Need to define an input file");
