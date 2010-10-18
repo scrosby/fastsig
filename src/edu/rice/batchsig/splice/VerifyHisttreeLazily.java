@@ -106,18 +106,22 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	private Table<Object,Long,OneTree> map1 = HashBasedTable.create();
 
 	/** Track info for expiration */
-	private ExpirationManager expirationqueue = new ExpirationManager();
+	private TreeExpirationManager expirationqueue = new TreeExpirationManager(MAX_TREES);
 
 	/** Force everything in these trees */
 	private HashSet<OneTree> treesToForceAll = new HashSet<OneTree>();
 	/** Force the oldest message in these trees */
 	private HashSet<OneTree> treesToForceOne = new HashSet<OneTree>();
 
-	class ExpirationManager extends LinkedHashMap<OneTree,OneTree> {
+	class TreeExpirationManager extends ExpirationManager<OneTree> {
 		private static final long serialVersionUID = 1L;
 
+		TreeExpirationManager(int size_limit) {
+			super(size_limit);
+		}
+		
 		protected boolean removeEldestEntry(Map.Entry<OneTree,OneTree> eldest) {
-			if (this.size() > MAX_TREES) {
+			if (super.removeEldestEntry(eldest)) {
 				treesToForceAll.add(eldest.getValue());
 				return true;
 			}
