@@ -108,7 +108,7 @@ public class OneTree {
 	
 	/* Each node in the dag corresponds to a set of bundles. All that end in the same epoch. */
 	void addMessage(IncomingMessage m) {
-		System.out.println("\nAdding message2 "+m);
+		//System.out.println("\nAdding message "+m);
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
 		Integer bundlekey = m.getSignatureBlob().getTree().getVersion();
@@ -130,7 +130,7 @@ public class OneTree {
 				// TODO: Can't handle these at all. Only solution: Verify it immediately.
 				throw new Error("TODO");
 			}
-			System.out.println("Adding to existing bundle");
+			//System.out.println("Adding to existing bundle");
 		}
 		validators.put(bundlekey,m);
 		
@@ -151,7 +151,7 @@ public class OneTree {
 		// This case should be rare and only occur when bundles arrive out-of-order.
 		for (Dag<Integer>.DagNode succ : bundlenode.getParents()) {
 			// For each later message in the dag that provisionally splices this message.
-			System.out.println("Looking at later bundles");
+			//System.out.println("Looking at later bundles");
 			Integer succi = succ.get();
 			Message succm = bundles.get(succi);
 			if (succm == null)
@@ -170,32 +170,32 @@ public class OneTree {
 		// PART 2: See which prior bundles we splice into.
 		for (Integer predi : m.getSignatureBlob().getSpliceHintList()) {
 			ByteString aggv = ByteString.copyFrom(tree.aggV(predi.intValue()));
-			System.out.format("Handling splicehint %d with hash %d\n",predi,aggv.hashCode());
+			//System.out.format("Handling splicehint %d with hash %d\n",predi,aggv.hashCode());
 			// For each splicepoint to prior bundles in this message,
 			Message predm = validators.get(predi);
 			Dag<Integer>.DagNode prednode = dag.makeOrGet(predi);
 			// Have we seen the prior message?
 			if (predm == null) {
-				System.out.println("No priors found, but adding edge anyways.");
+				//System.out.println("No priors found, but adding edge anyways.");
 				// Nope. Add the node to the dag. Add an edge to that child; it'll be provisional
 				dag.addEdge(node,prednode);
 			} else {
 				//System.out.format("Agg(%d)=%d of pred\n",predm.getSignatureBlob().getTree().getVersion(),roothashes.get(predi).hashCode());
 				// We have seen that message. We need to check the splice.
 				if (aggv.equals(roothashes.get(predi))) {
-					System.out.println("Found a prior. Verified the splice!");
+					//System.out.println("Found a prior. Verified the splice!");
 					dag.addEdge(node,prednode);
 				} else {
 					// Splice fails. Remove the edge.
-					System.out.println("Found a prior, but splice failed");
+					//System.out.println("Found a prior, but splice failed");
 					prednode = dag.makeOrGet(predi);
 				}
 			}
 		}
-		System.out.format("Stored roothash at (%d) of %d of pred\n",bundlekey,agg.hashCode());
+		//System.out.format("Stored roothash at (%d) of %d of pred\n",bundlekey,agg.hashCode());
 		roothashes.put(bundlekey,agg);
 		bundles.put(key, m);
-		System.out.println("Finished handling for message");
+		//System.out.println("Finished handling for message");
 	}
 
 	private void remove(IncomingMessage m) {
@@ -229,18 +229,24 @@ public class OneTree {
 	
 	void forceMessage(IncomingMessage m) {
 		System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
+		
+		if (!bundles.containsKey(m.getSignatureBlob().getLeaf())) {
+			System.out.println("Forcing message that doesn't exist"); // Should trigger occasionally.
+			return;
+		}
+		
 		Dag<Integer>.DagNode node = getNode(m);
 
 		// Step one: Find a root.
 		Dag<Integer>.Path rootPath = dag.rootPath(node);
 		// Step two, until we find a root whose signature verifies.
 		while (true) {
-			System.out.println("WhileLoop at rootPath ="+rootPath);
+			//System.out.println("WhileLoop at rootPath ="+rootPath);
 			Dag<Integer>.DagNode root = rootPath.root();
 			Integer rooti = root.get();
 			// An incoming message that nominally validates the root bundle (may be more than one)
 			IncomingMessage rootm = validators.get(rooti);
-			System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
+			//System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
 			HistoryTree<byte[],byte[]> roottree = verifier.parseHistoryTree(rootm);
 
 			// Verify the root's public key signature.
@@ -250,11 +256,11 @@ public class OneTree {
 				// Now traverse *all* descendents and mark them as good.
 				Collection<Dag<Integer>.DagNode> descendents = dag.getAllChildren(root);
 				for (Dag<Integer>.DagNode i : descendents) {
-					System.out.println("Traversing descendent to mark as valid:"+i.get());
+					//System.out.println("Traversing descendent to mark as valid:"+i.get());
 					//Integer desci = i.get();
 					IncomingMessage descm = bundles.get(i);
 					if (descm != null) {
-						System.out.println("... and marking it as good!");
+						//System.out.println("... and marking it as good!");
 						// This message is not provisional. It is valid.
 						if (descm != null)
 							descm.signatureValidity(true);
@@ -267,7 +273,7 @@ public class OneTree {
 					i.remove();
 				}
 
-				System.out.format("<<<<<< Done with handling force of %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
+				//System.out.format("<<<<<< Done with handling force of %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
 				return;
 			} else {
 				System.out.println("Failed the root's signature");

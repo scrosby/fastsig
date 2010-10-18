@@ -89,7 +89,7 @@ public class Dag<T> {
 		}
 		
 		void extend() {
-			System.out.println("Extending FROM "+this);
+			//System.out.println("Extending FROM "+this);
 			if (path.size() == 0)
 				throw new Error("Cannot extend empty path?");
 			DagNode node=root(), parent;
@@ -97,7 +97,7 @@ public class Dag<T> {
 				node = parent;
 				path.add(node);	
 			}
-			System.out.println("Extending TO "+this);
+			//System.out.println("Extending TO "+this);
 		}
 		public void next() {
 			removeLast();
@@ -119,7 +119,7 @@ public class Dag<T> {
 
 	
 	public void addEdge(DagNode parent, DagNode child) {
-		System.out.format("Adding dag edge for %s -> %s\n",parent.get().toString(),child.get().toString());
+		//System.out.format("Adding dag edge for %s -> %s\n",parent.get().toString(),child.get().toString());
 		if (children.get(parent).contains(child))
 			return;
 		children.put(parent,child);
