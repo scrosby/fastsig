@@ -38,6 +38,8 @@ import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Queue;
 
 
@@ -212,14 +214,38 @@ public class PublicKeyPrims implements SignaturePrimitives {
 
 	/** Queue of verified signatures */
 	Queue<ByteString> expirationQueue;
+
 	/** Map from data bytes to signature bytes */
-	HashMap<ByteString,ByteString> cache;
+	class Cache extends LinkedHashMap<ByteString,ByteString> {
+		final int size_limit;
+		Cache(int size_limit) {
+			this.size_limit = size_limit;
+		}
+		protected boolean removeEldestEntry(Map.Entry<ByteString,ByteString> eldest) {
+			return this.size() > size_limit;
+		}
+		boolean hasValidSignature(byte [] databytes, byte [] sigbytes) {
+			ByteString sig = ByteString.copyFrom(sigbytes);
+			ByteString data = ByteString.copyFrom(databytes);
+			return sig.equals(this.get(data));
+		}
+		void addSignature(byte [] databytes, byte [] sigbytes) {
+			ByteString sig = ByteString.copyFrom(sigbytes);
+			ByteString data = ByteString.copyFrom(databytes);
+			this.put(data, sig);
+		}
+	}
+
+	Cache cache;
 	
-	private boolean caching = false;
 	static final private int CACHE_SIZE = 100;
 	
+	public void activateCache() {
+		cache = new Cache(CACHE_SIZE);
+	}
+		
 	protected boolean verifyBytes(byte [] databytes, byte [] sigbytes) throws SignatureException {
-		if (caching && ByteString.copyFrom(sigbytes).equals(cache.get(ByteString.copyFrom(databytes)))) {
+		if (cache != null && cache.hasValidSignature(databytes,sigbytes)) {
 			if (++Tracker.singleton.verifycount_cached % 100 == 0)
 				System.err.println("Verifycount_cached: "+Tracker.singleton.verifycount_cached);			
 			return true;
@@ -229,13 +255,8 @@ public class PublicKeyPrims implements SignaturePrimitives {
 		verifier.update(databytes);
 		boolean isValid = verifier.verify(sigbytes);
 		
-		if (caching && isValid) {
-			ByteString datastring = ByteString.copyFrom(databytes);
-			cache.put(ByteString.copyFrom(databytes), ByteString.copyFrom(sigbytes));
-			expirationQueue.add(datastring);
-			if (expirationQueue.size() > CACHE_SIZE) {
-				cache.remove(expirationQueue.remove());
-			}
+		if (cache != null && isValid) {
+			cache.addSignature(databytes,sigbytes);
 		}
 		return isValid;
 	}
