@@ -49,8 +49,9 @@ public class Dag<T> {
 			Collection<DagNode> parents = getParents();
 			for (DagNode i : children)
 				removeEdge(this,i);
-			for (DagNode i : parents) 
+			for (DagNode i : parents)
 				removeEdge(i,this);
+			nodeMap.remove(object);
 		}
 			
 		DagNode getAParent() {
@@ -118,22 +119,20 @@ public class Dag<T> {
 
 	
 	public void addEdge(DagNode parent, DagNode child) {
+		System.out.format("Adding dag edge for %s -> %s\n",parent.get().toString(),child.get().toString());
 		if (children.get(parent).contains(child))
-			throw new Error("Storing a duplicate edge");
-		if (parents.get(child).contains(parent)) // Should never trigger unless the graph inconsistent.
-			throw new Error("Storing a duplicate edge");
+			return;
 		children.put(parent,child);
 		parents.put(child,parent);
 	}
 	public void removeEdge(DagNode parent, DagNode child) {
 		if (!children.get(parent).contains(child))
-			throw new Error("Removing non-existant edge");
-		if (!parents.get(child).contains(parent)) // Should never trigger unless the graph inconsistent.
-			throw new Error("Removing non-existant edge");
+			throw new Error("Problem, removing non-existant edge!!");
 		children.remove(parent,child);
 		parents.remove(child,parent);
 	}
 	
+	/** All descendents of a node, including itself */
 	public Collection<DagNode> getAllChildren(DagNode node) {
 		HashSet<DagNode> todo = new HashSet<DagNode>();
 		HashSet<DagNode> out = new HashSet<DagNode>();
@@ -141,7 +140,7 @@ public class Dag<T> {
 		
 		while (todo.size() > 0) {
 			HashSet<DagNode> unvisited = new HashSet<DagNode>();
-			for (DagNode i : unvisited) {
+			for (DagNode i : todo) {
 				for (DagNode j : i.getChildren()) {
 					if (!out.contains(j)) {
 						out.add(j);
