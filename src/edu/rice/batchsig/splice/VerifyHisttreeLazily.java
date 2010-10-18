@@ -211,6 +211,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 		if (tree.size() > MAX_TREE_SIZE)
 			treesToForceOne.add(tree);
 		expirationqueue.put(tree,tree);
+		userToMessages.put(m.getRecipientUser(), m);
 
 	}
 
