@@ -22,17 +22,17 @@ package edu.rice.batchsig;
 /** Represent a queue of messages to be signed with some sort of bulk signature mechanism. */
 public interface ProcessQueue {
 
-	/** Add a message to be processed */
+	/** Add a message to be processed. Called concurrently. */
 	public abstract void add(Message message);
 
 	/**
 	 * Process all of the messages, signing every one. May be done in a separate
-	 * signing thread
+	 * signing thread. Called concurrently.
 	 */
 	abstract public void process();
 
 	/**
-	 * Indicate that all processing is done.
+	 * Indicate that all processing is done. Called concurrently to add().
 	 */
 	abstract public void finish();
 

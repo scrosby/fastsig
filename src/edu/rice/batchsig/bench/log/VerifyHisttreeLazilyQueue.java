@@ -87,7 +87,11 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 					treeverifier.forceUser(i);
 				}
 				long now = System.currentTimeMillis();
-				if (now-lastExpiration > 5000) {
+				if (now-lastExpiration > 5000 || treeverifier.peekSize() > 1000) {
+					if (now-lastExpiration > 5000)
+						System.out.println("Forcing because of age");
+					if (treeverifier.peekSize() > 1000)
+						System.out.format("Forcing because of size %d > 1000",treeverifier.peekSize());
 					treeverifier.forceOldest();
 					lastExpiration = now;
 				}
@@ -101,6 +105,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 					}
 					if (i == null)
 						break;
+					System.out.println("Forcing user "+i);
 					treeverifier.forceUser(i);
 				}
 			}
@@ -110,7 +115,6 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 		// Add any remaining messages in mailbox.
 		while (true) {
 			Message m = messageMailbox.poll();
-			System.out.println("MM:"+m);
 			if (m == null)
 				break;
 			treeverifier.add(m);

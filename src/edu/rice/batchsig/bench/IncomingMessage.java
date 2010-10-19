@@ -88,12 +88,12 @@ public class IncomingMessage extends MessageBase {
 	@Override
 	public void signatureValidity(boolean valid) {
 		Tracker.singleton.trackLatency((int)(System.currentTimeMillis()- creation_time));
-		/*
+		
 		if (valid)
 			System.out.println("Signature valid");
 		else
 			System.out.println("Signature failed");
-	*/
+	
 	}
 
 	static public IncomingMessage readFrom(CodedInputStream input) {
