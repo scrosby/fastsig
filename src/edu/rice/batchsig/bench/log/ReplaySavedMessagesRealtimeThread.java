@@ -20,6 +20,8 @@
 package edu.rice.batchsig.bench.log;
 
 import java.io.FileInputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.protobuf.ByteString;
 
@@ -59,6 +61,8 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 	
 	@Override
 	public void run() {
+
+		Set<Integer> loggedOnUsers = new HashSet<Integer>();
 		long initTime = System.currentTimeMillis(); // When we started.
 		
 		while (!finished.get()) {
@@ -93,13 +97,23 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				//if (!((ByteString)msg.getAuthor()).toStringUtf8().equals("Signer4"))
 				//	continue;
 				lazyqueue.add(msg);
+				if (loggedOnUsers.contains(msg.getRecipientUser()))
+					lazyqueue.forceUser((Integer)msg.getRecipientUser());
 			}
-			// STEP 3: Play the forced back.
-			if (msg.end_buffering != null)
+			// STEP 3: Record any users that have just logged off.
+			if (msg.end_buffering != null) {
 				for (Integer i: msg.end_buffering) {
-					lazyqueue.forceUser(i);
-			checkQueueOverflow();
+					loggedOnUsers.remove(i);
+				}
 			}
+			// STEP 3: Force any users that have just logged on.
+			if (msg.end_buffering != null) {
+				for (Integer i: msg.end_buffering) {
+					loggedOnUsers.add(i);
+					lazyqueue.forceUser(i);
+				}
+			}
+			checkQueueOverflow();
 			//System.out.println("Iterating replay loop");
 		}
 		queue.finish();
