@@ -213,9 +213,10 @@ public class OneTree {
 
 	/** Force the oldest thing here, return true if somethign was forced */
 	boolean forceOldest() {
-		System.out.format("Forcing oldest message to OneTree\n");
+		System.out.format("Forcing oldest message (OneTree)\n");
 
 		Iterator<Integer> i = bundles.keySet().iterator();
+		//System.out.format("%d == %d?\n",size,bundles.size());
 		if (!i.hasNext()) {
 			if (size != 0)
 				throw new Error("Size should be zero");
@@ -228,10 +229,10 @@ public class OneTree {
 	
 	
 	void forceMessage(IncomingMessage m) {
-		System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
+		//System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
 		
 		if (!bundles.containsKey(m.getSignatureBlob().getLeaf())) {
-			System.out.println("Forcing message that doesn't exist"); // Should trigger occasionally.
+			System.out.println("Forcing message that doesn't exist:"+m.toString()); // Should trigger occasionally.
 			return;
 		}
 		
@@ -251,14 +252,14 @@ public class OneTree {
 
 			// Verify the root's public key signature.
 			if (verifier.verifyHistoryRoot(rootm,roottree)) {
-				System.out.println("Verified the root's signature - SUCCESS. It is valid");
+				//System.out.println("Verified the root's signature - SUCCESS. It is valid");
 				// Success!
 				// Now traverse *all* descendents and mark them as good.
 				Collection<Dag<Integer>.DagNode> descendents = dag.getAllChildren(root);
 				for (Dag<Integer>.DagNode i : descendents) {
 					//System.out.println("Traversing descendent to mark as valid:"+i.get());
 					//Integer desci = i.get();
-					IncomingMessage descm = bundles.get(i);
+					IncomingMessage descm = bundles.get(i.get());
 					if (descm != null) {
 						//System.out.println("... and marking it as good!");
 						// This message is not provisional. It is valid.
@@ -290,7 +291,7 @@ public class OneTree {
 	}
 	
 	public void forceAll() {
-		System.out.format("Forcing all bundles in OneTree\n");
+		//System.out.format("Forcing all bundles in OneTree\n");
 		while (!bundles.isEmpty())
 			forceMessage(bundles.entrySet().iterator().next().getValue());
 	}

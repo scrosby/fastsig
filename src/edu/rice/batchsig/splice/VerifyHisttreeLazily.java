@@ -19,6 +19,7 @@
 
 package edu.rice.batchsig.splice;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -147,6 +148,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	
 	/** At the end of a batch of inserts, handle expiration forcing */
 	public void finishBatch() {
+		//System.out.println("  Forcing batch begin");
 		for (OneTree i : treesToForceAll) {
 			i.forceAll();
 			map1.remove(i.getAuthor(),i.getTreeid());
@@ -156,6 +158,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 				i.forceOldest();
 		treesToForceAll.clear();
 		treesToForceOne.clear();
+		//System.out.println("  Forcing batch end");
 	}
 	
 	public void force(IncomingMessage m) {
@@ -168,8 +171,10 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	}
 	
 	public void forceUser(Object user) {
-		for (IncomingMessage m : userToMessages.get(user)) {
+		//System.out.println("Forcing user "+user);
+		for (IncomingMessage m : new ArrayList<IncomingMessage>(userToMessages.get(user))) {
 			m.resetCreationTimeToNow();
+			//System.out.format("For forced user %s, found message %s\n",user.toString(),m.toString());
 			force(m);
 		}
 	}
@@ -190,8 +195,8 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 				throw new Error("Expiration queue weirdness");
 			if (x.forceOldest())
 				return;
-			if (expirationqueue.size() > 5)
-				expirationqueue.remove(x);
+			// If the onetree is empty, remove this from the expiration queue entirely.
+			expirationqueue.remove(x);
 		}
 	}
 	
@@ -212,7 +217,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 			treesToForceOne.add(tree);
 		expirationqueue.put(tree,tree);
 		userToMessages.put(m.getRecipientUser(), m);
-
+		finishBatch();
 	}
 
 	/** Get the size of the queue. May be called concurrently from any number of threads */
