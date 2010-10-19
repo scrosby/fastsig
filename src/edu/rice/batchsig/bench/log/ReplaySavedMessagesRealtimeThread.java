@@ -89,6 +89,8 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				} catch (InterruptedException e) {
 				}
 			}
+			msg.resetCreationTimeToNow(); // So that we correct for the wait time above.
+			
 			if (msg.getData() != null) {
 				//System.out.println("Bad message "+msg.getVirtualClock() + "data" + msg.getData().length);
 				//if (msg.getSignatureBlob() == null) {System.out.println("Interesting...."); Thread.dumpStack();}
