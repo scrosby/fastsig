@@ -30,7 +30,7 @@ public class OneTree {
 	final private VerifyHisttreeLazily verifier;
 	
 	/** Map from an integer version number to the message at that version number */
-	HashMap<Integer,IncomingMessage> bundles = new LinkedHashMap<Integer,IncomingMessage>(1,.75f,false);
+	HashMap<Integer,Message> bundles = new LinkedHashMap<Integer,Message>(1,.75f,false);
 	
 	/** Cache of root hashes for each unvalidated bundle.
 	 *    When we verify a splice, we need to take the predecessor's bundle agg() and compare it to aggV(pred.version).
@@ -107,7 +107,7 @@ public class OneTree {
 	
 	
 	/* Each node in the dag corresponds to a set of bundles. All that end in the same epoch. */
-	void addMessage(IncomingMessage m) {
+	void addMessage(Message m) {
 		//System.out.println("\nAdding message "+m);
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
@@ -228,7 +228,7 @@ public class OneTree {
 	
 	
 	
-	void forceMessage(IncomingMessage m) {
+	void forceMessage(Message m) {
 		//System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
 		
 		if (!bundles.containsKey(m.getSignatureBlob().getLeaf())) {
@@ -259,7 +259,7 @@ public class OneTree {
 				for (Dag<Integer>.DagNode i : descendents) {
 					//System.out.println("Traversing descendent to mark as valid:"+i.get());
 					//Integer desci = i.get();
-					IncomingMessage descm = bundles.get(i.get());
+					Message descm = bundles.get(i.get());
 					if (descm != null) {
 						// TODO: Cache the spliced predecessor hashes from this node as being valid?
 						//System.out.println("... and marking it as good!");
@@ -292,7 +292,7 @@ public class OneTree {
 	public void forceAll() {
 		//System.out.format("Forcing all bundles in OneTree\n");
 		while (!bundles.isEmpty()) {
-			IncomingMessage m = bundles.entrySet().iterator().next().getValue();
+			Message m = bundles.entrySet().iterator().next().getValue();
 			forceMessage(m);
 		}
 	}
