@@ -414,7 +414,7 @@ public class BenchSigner {
 	}
 
 	final static int MAX_TRACE_BACKLOG = 2519;
-	final static int MAX_SENDERS = 4999; // Prime number, not 43 or 37
+	final static int MAX_SENDERS = 53; // Prime number, not 43 or 37
 	final static int RSA_EPOCH_LENGTH = 60;
 	final static int DSA_EPOCH_LENGTH = 5;
 	final static int RSA_BATCHSIZE = 300;
@@ -432,7 +432,7 @@ public class BenchSigner {
 			throw new Error("Must pick dsa or rsa");
 		
 		String outputname=commands.getOptionValue("output");
-		int senders = Integer.parseInt(commands.getOptionValue("verifytracesenders","1001"));
+		int senders = Integer.parseInt(commands.getOptionValue("verifytracesenders","4999"));
 		
 		CodedOutputStream output = CodedOutputStream.newInstance(new FileOutputStream(outputname+".signed"));
 		
@@ -470,10 +470,17 @@ public class BenchSigner {
 		System.err.println("Setting up replay queue");
 		ReplayAndQueueMessagesForSigningThread thr= new ReplayAndQueueMessagesForSigningThread(queue,MAX_TRACE_BACKLOG);
 
+		FileOutputStream nullstream = new FileOutputStream("/dev/null");
+		
 		HashMap<Object, CodedOutputStream> streammap = new HashMap<Object, CodedOutputStream>();
-		for (int i=0 ; i < MAX_SENDERS ; i++) {
+		for (int i=0 ; i < 2 ; i++) {
 			streammap.put(i,CodedOutputStream.newInstance(new FileOutputStream(outputname+".signed="+i)));
 		}
+		// Can only support at most mod-64 streams from the database input file.
+		for (int i=2 ; i < 64 ; i++) {
+			streammap.put(new Integer(i),CodedOutputStream.newInstance(nullstream));
+		}
+
 		
 		thr.configure(streammap );
 		thr.configure(0,events);
