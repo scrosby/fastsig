@@ -97,8 +97,8 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 
 	AtomicInteger size = new AtomicInteger(0);
 	
-	/** Handle all of the cases of removing a message from... everywhere. */
-	public void removeMessage(IncomingMessage m) {
+	/** THis message has been validated, can stop tracking it now. */
+	public void messageValidatorCallback(IncomingMessage m) {
 		userToMessages.remove(m.getRecipientUser(),m);
 		size.decrementAndGet();
 	}
@@ -206,6 +206,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	}
 
 	public void add(IncomingMessage m) {
+		m.registerValidator(this);
 		size.incrementAndGet();
 		if (m == null) {
 			System.err.println("Null message in queue?");

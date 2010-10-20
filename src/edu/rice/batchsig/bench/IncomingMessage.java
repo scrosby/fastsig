@@ -21,12 +21,14 @@ package edu.rice.batchsig.bench;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 
+import edu.rice.batchsig.splice.VerifyHisttreeLazily;
 import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
@@ -36,6 +38,8 @@ public class IncomingMessage extends MessageBase {
 	public List<Integer> start_buffering;
 	public List<Integer> end_buffering;
 	int recipientuser;
+	AtomicBoolean solved = new AtomicBoolean(false);
+	private VerifyHisttreeLazily validator;
 	
 	// Sig = null occurs if there is no message data (aka, this is a non-signed messgae
 	private IncomingMessage(TreeSigBlob sig, MessageData data) {
@@ -89,9 +93,22 @@ public class IncomingMessage extends MessageBase {
 		throw new Error("Unimplemented");
 	}
 
+	public void registerValidator(VerifyHisttreeLazily validator) {
+		this.validator = validator;
+	}
+	
 	@Override
 	public void signatureValidity(boolean valid) {
 		Tracker.singleton.trackLatency((int)(System.currentTimeMillis()- creation_time));
+		// Runs in the validation thread, not the submit thread 
+		Tracker.singleton.validated++;
+		if (solved.compareAndSet(false, true)) {
+			validator.messageValidatorCallback(this);
+			// Now do a callback into the verifier to count ourselves as done.
+		} else {
+			throw new Error("Can't report the same message twice");
+		}
+	
 		/*
 		if (valid)
 			System.out.println("Signature valid");

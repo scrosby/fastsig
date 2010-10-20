@@ -43,7 +43,7 @@ public class OneTree {
 	 * When we find the 'root' node of a dependency tree, that will be an exlempar, but not correspond to a 'real' message. This will.
 	 * 
 	 */
-	HashMap<Integer,IncomingMessage> validators = new HashMap<Integer,IncomingMessage>();
+	HashMap<Integer,Message> validators = new HashMap<Integer,Message>();
 	
 	/**
 	 * Invariant; The dag contains nodes for each message and the version
@@ -89,7 +89,7 @@ public class OneTree {
 		this.verifier = verifier;
 	}
 
-	private void failMessage(IncomingMessage m) {
+	private void failMessage(Message m) {
 		m.signatureValidity(true);
 		size--;
 	}
@@ -198,12 +198,12 @@ public class OneTree {
 		//System.out.println("Finished handling for message");
 	}
 
-	private void remove(IncomingMessage m) {
-		verifier.removeMessage(m);
+	/** Called to remove a real message from all tracking */
+	private void remove(Message m) {
 		int index = m.getSignatureBlob().getLeaf();
 		remove(index);
 	}
-
+	/** Called to remove a message index from all tracking */
 	private void remove(int index) {
 		if (bundles.remove(index)!= null)
 			size--;
@@ -246,7 +246,7 @@ public class OneTree {
 			Dag<Integer>.DagNode root = rootPath.root();
 			Integer rooti = root.get();
 			// An incoming message that nominally validates the root bundle (may be more than one)
-			IncomingMessage rootm = validators.get(rooti);
+			Message rootm = validators.get(rooti);
 			//System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
 			HistoryTree<byte[],byte[]> roottree = verifier.parseHistoryTree(rootm);
 
@@ -261,11 +261,10 @@ public class OneTree {
 					//Integer desci = i.get();
 					IncomingMessage descm = bundles.get(i.get());
 					if (descm != null) {
+						// TODO: Cache the spliced predecessor hashes from this node as being valid?
 						//System.out.println("... and marking it as good!");
 						// This message is not provisional. It is valid.
-						if (descm != null)
-							descm.signatureValidity(true);
-						// TODO: Cache the spliced predecessor hashes from this node as being valid?
+						descm.signatureValidity(true);
 						// Remove the message from further tracking.
 						remove(descm);
 					}
