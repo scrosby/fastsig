@@ -263,7 +263,8 @@ public class BenchSigner {
 				.addOption(OptionBuilder.withDescription("Sign each message with merkle tree").create("merkle"))
 				.addOption(OptionBuilder.withDescription("Sign each message with history tree").create("history")))
 		.addOption(OptionBuilder.withDescription("Do longer duration experiments").create("big"))
-		.addOption(OptionBuilder.withDescription("Trace to use").hasArg().create("trace"))
+		//.addOption(OptionBuilder.withDescription("Trace to use").hasArg().create("trace"))
+		.addOption(OptionBuilder.withDescription("Number of senders to generate in verifytrace (prime number, not 43 or 37)").hasArg().create("verifytracesenders"))
 		.addOption(OptionBuilder.withDescription("name of event trace").hasArg().create("eventtrace"))
 		.addOption(OptionBuilder.withDescription("name of user logonlogoff trace").hasArg().create("usertrace"))
 		.addOption(OptionBuilder.withDescription("Output file (used when signing)").hasArg().create("output"))
@@ -370,10 +371,12 @@ public class BenchSigner {
 		if (commands.getOptionValue("input") == null)
 			throw new Error("Need to define an input file");
 		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
-		VerifyHisttreeLazily treeverifier = new VerifyHisttreeLazily((MultiplexedPublicKeyPrims) setupCipher(null));
+		MultiplexedPublicKeyPrims prims = (MultiplexedPublicKeyPrims) setupCipher(null);
+		VerifyHisttreeLazily treeverifier = new VerifyHisttreeLazily(prims);
 		VerifyHisttreeLazilyQueue processThread = new VerifyHisttreeLazilyQueue(treeverifier);
 		ReplaySavedMessagesRealtimeThread makeThread = new ReplaySavedMessagesRealtimeThread(processThread,fileinput,MAXQUEUE);
 		//hotSpotVerifying(fileinput);
+		makeThread.setup(prims); // Pre-load all of the crypto keys.
 		makeThread.start();
 		processThread.start();
 		try {
@@ -411,7 +414,7 @@ public class BenchSigner {
 	}
 
 	final static int MAX_TRACE_BACKLOG = 2519;
-	final static int MAX_SENDERS = 61; // Prime number, not 43 or 37
+	final static int MAX_SENDERS = 4999; // Prime number, not 43 or 37
 	final static int RSA_EPOCH_LENGTH = 60;
 	final static int DSA_EPOCH_LENGTH = 5;
 	final static int RSA_BATCHSIZE = 300;
@@ -429,11 +432,12 @@ public class BenchSigner {
 			throw new Error("Must pick dsa or rsa");
 		
 		String outputname=commands.getOptionValue("output");
-
+		int senders = Integer.parseInt(commands.getOptionValue("verifytracesenders","1001"));
+		
 		CodedOutputStream output = CodedOutputStream.newInstance(new FileOutputStream(outputname+".signed"));
 		
 		BuildLogForVerificationBench builder = new BuildLogForVerificationBench(
-				epochlength,queuefn,MAX_SENDERS,batchsize,output);
+				epochlength,queuefn,senders,batchsize,output);
 		String eventtracename=commands.getOptionValue("eventtrace");
 		String usertracename=commands.getOptionValue("usertrace");
 		

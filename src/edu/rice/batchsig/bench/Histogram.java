@@ -33,6 +33,8 @@ public class Histogram {
 	public void add(int time) {
 		if (disabled)
 			return;
+		if (time < 0)
+			return;
 		sum += time;
 		n++;
 		if (time > max) 

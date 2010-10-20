@@ -27,6 +27,7 @@ public class IncomingMessageStreamFromFile {
 			throw new Error("Cannot reset",e);
 		}
 		this.input = CodedInputStream.newInstance(fileinput);
+		this.input.setSizeLimit(64*1024*1024);
 	}
 	
 	/** Read the next message. Resetting the stream back to the beginning if we're at the end */

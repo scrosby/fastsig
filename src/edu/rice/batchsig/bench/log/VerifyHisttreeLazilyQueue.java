@@ -86,6 +86,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	/** The core processing thread. */
 	@Override
 	public void run() {
+		long verbose=0;
 		long lastExpiration = 0;
 		try {
 			while (!finished.get()) {
@@ -94,6 +95,8 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 					// We have work waiting.... Release the semaphore and do it.
 					sleepSemaphore.release();
 				} else {
+					if (verbose++%10 == 0)
+						System.out.println("Queuesize:"+treeverifier.peekSize());
 					// No work that must be done right now, can we eagerly do something?
 					if (!maximally_lazy) {
 						long now = System.currentTimeMillis();
@@ -107,7 +110,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 							continue; // And try again for more eager work.
 						}
 					} else {
-						if (treeverifier.peekSize() > 10000) {
+						if (treeverifier.peekSize() > 80000) {
 							System.out.format("Forcing because of size %d > 10000",treeverifier.peekSize());
 							treeverifier.forceOldest();
 							continue; // And try again for more eager work.
@@ -128,9 +131,10 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 				// Is it a message to process right now?
 				m = forcedMessageMailbox.poll();
 				if (m != null) {
-					treeverifier.add(m);
-					treeverifier.force(m);
-					continue;
+					throw new Error("CODE IS UNIMPLEMENTED");
+					//treeverifier.add(m);
+					//treeverifier.force(m);
+					//continue;
 				}
 
 				// Is it a user to force?

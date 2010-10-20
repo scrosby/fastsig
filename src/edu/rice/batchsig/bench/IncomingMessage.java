@@ -79,6 +79,10 @@ public class IncomingMessage extends MessageBase {
 		creation_time = System.currentTimeMillis();
 	}
 	
+	public void resetCreationTimeNull() {
+		creation_time = 0;
+	}
+	
 	@Override
 	public void signatureResult(TreeSigBlob message) {
 		// TODO: Used when creating a message to be logged. Leave unspecified for now.
@@ -88,12 +92,12 @@ public class IncomingMessage extends MessageBase {
 	@Override
 	public void signatureValidity(boolean valid) {
 		Tracker.singleton.trackLatency((int)(System.currentTimeMillis()- creation_time));
-		
+		/*
 		if (valid)
 			System.out.println("Signature valid");
 		else
 			System.out.println("Signature failed");
-	
+	*/
 	}
 
 	static public IncomingMessage readFrom(CodedInputStream input) {

@@ -54,7 +54,8 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 		// First pass: Preload all of the verification keys and get the timestamp bias.
 		IncomingMessage im;
 		while ((im = input.nextOnePass()) != null) {
-			prims.load(im.getSignatureBlob()); // Fetch the signature blob.
+			if (im.getSignatureBlob() != null)
+				prims.load(im.getSignatureBlob()); // Fetch the signature blob.
 		}
 		input.resetStream();
 	}
@@ -67,6 +68,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 		
 		while (!finished.get()) {
 			IncomingMessage msg = input.nextOnePass();
+			msg.resetCreationTimeNull();
 			// We're at the end.
 			if (msg == null) {
 				System.out.println("EOF");
@@ -89,7 +91,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				} catch (InterruptedException e) {
 				}
 			}
-			msg.resetCreationTimeToNow(); // So that we correct for the wait time above.
+			//msg.resetCreationTimeToNow(); // So that we correct for the wait time above.
 			
 			if (msg.getData() != null) {
 				//System.out.println("Bad message "+msg.getVirtualClock() + "data" + msg.getData().length);

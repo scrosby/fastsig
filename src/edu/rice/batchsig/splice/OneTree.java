@@ -292,8 +292,10 @@ public class OneTree {
 	
 	public void forceAll() {
 		//System.out.format("Forcing all bundles in OneTree\n");
-		while (!bundles.isEmpty())
-			forceMessage(bundles.entrySet().iterator().next().getValue());
+		while (!bundles.isEmpty()) {
+			IncomingMessage m = bundles.entrySet().iterator().next().getValue();
+			forceMessage(m);
+		}
 	}
 	
 	public boolean isEmpty() {
