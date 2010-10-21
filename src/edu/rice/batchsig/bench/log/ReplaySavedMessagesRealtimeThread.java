@@ -68,7 +68,6 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 		
 		while (!finished.get()) {
 			IncomingMessage msg = input.nextOnePass();
-			msg.resetCreationTimeNull();
 			// We're at the end.
 			if (msg == null) {
 				System.out.println("EOF");
@@ -91,7 +90,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				} catch (InterruptedException e) {
 				}
 			}
-			msg.resetCreationTimeNull(); // So that we correct for the wait time above.
+			//msg.resetCreationTimeNull(); // So that we correct for the wait time above.
 			
 			if (msg.getData() != null) {
 				//System.out.println("Bad message "+msg.getVirtualClock() + "data" + msg.getData().length);
@@ -100,10 +99,13 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				// DEBUG: Only report messages from ONE author.
 				//if (!((ByteString)msg.getAuthor()).toStringUtf8().equals("Signer4"))
 				//	continue;
-				lazyqueue.add(msg);
+				
 				if (loggedOnUsers.contains(msg.getRecipientUser())) {
+					//lazyqueue.addForced(msg);
+					lazyqueue.add(msg);
 					lazyqueue.forceUser((Integer)msg.getRecipientUser());
-					msg.resetCreationTimeToNow(); // So that we correct for the wait time above.
+				} else {
+					lazyqueue.add(msg);
 				}
 			}
 			// STEP 3: Record any users that have just logged off.

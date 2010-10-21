@@ -123,22 +123,23 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 				
 				// There's something sitting around to be done right now.
 				sleepSemaphore.acquire();
-
-				// Is it a message to process?
 				Message m;
+
+				
+				// Is it a message to process right now?
+				m = forcedMessageMailbox.poll();
+				if (m != null) {
+					treeverifier.add(m);
+					treeverifier.force((IncomingMessage)m);
+					continue;
+				}
+				// Is it a message to process?
 				m = messageMailbox.poll();
 				if (m != null) {
 					treeverifier.add(m);
 					continue;
 				}
-				// Is it a message to process right now?
-				m = forcedMessageMailbox.poll();
-				if (m != null) {
-					throw new Error("TEST POS");
-					//treeverifier.add(m);
-					//treeverifier.force((IncomingMessage)m);
-					//continue;
-				}
+
 
 				// Is it a user to force?
 				Integer i = forcedUserMailbox.poll();

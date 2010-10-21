@@ -65,7 +65,9 @@ public class ReplaySavedMessagesThread extends MessageGeneratorThreadBase {
 			if (insertedNum < targetNum) {
 				while (insertedNum < targetNum) {
 					insertedNum++;
-					queue.add(input.next());
+					IncomingMessage m = input.next();
+					m.resetCreationTimeToNow();
+					queue.add(m);
 					checkQueueOverflow();
 				}
 			} else { 

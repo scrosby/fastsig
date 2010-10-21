@@ -34,7 +34,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class IncomingMessage extends MessageBase {
 	/** The time that this message was created. Used to get processing latency */
-	private long creation_time;
+	private long creation_time = -1;
 	public List<Integer> start_buffering;
 	public List<Integer> end_buffering;
 	int recipientuser;
@@ -49,7 +49,7 @@ public class IncomingMessage extends MessageBase {
 			this.data = data.getMessage().toByteArray();
 		else
 			this.data = null;
-		this.creation_time = System.currentTimeMillis();
+		//this.creation_time = System.currentTimeMillis();
 		this.virtual_clock = data.getTimestamp();
 		if (data.getStartBufferingUsersCount() > 0)
 			this.start_buffering = data.getStartBufferingUsersList();
@@ -80,14 +80,19 @@ public class IncomingMessage extends MessageBase {
 	}
 
 	public void resetCreationTimeToNow() {
+		if (creation_time != -1)
+			throw new Error("");
 		creation_time = System.currentTimeMillis();
 	}
 	public void resetCreationTimeTo(long tstamp) {
+		if (creation_time != -1)
+			throw new Error("");
 		creation_time = tstamp;
 	}
 	
 	public void resetCreationTimeNull() {
-		creation_time = 0;
+		if (creation_time != -1)
+			throw new Error("");
 	}
 	
 	@Override
