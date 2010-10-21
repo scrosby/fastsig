@@ -251,7 +251,7 @@ public class PublicKeyPrims implements SignaturePrimitives {
 			return true;
 		}
 		if (++Tracker.singleton.verifycount % 1000 == 0)
-			System.err.println("Verifycount: "+Tracker.singleton.verifycount + "/"+Tracker.singleton.verifycount_cached);
+			System.err.println("Verifycount: "+Tracker.singleton.verifycount + "/"+Tracker.singleton.verifycount_cached + " for " + Tracker.singleton.validated);
 		verifier.update(databytes);
 		boolean isValid = verifier.verify(sigbytes);
 		

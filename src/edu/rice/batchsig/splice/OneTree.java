@@ -222,7 +222,9 @@ public class OneTree {
 				throw new Error("Size should be zero");
 			return false;
 		}
-		forceMessage(bundles.get(i.next()));
+		Message m = bundles.get(i.next());
+		((IncomingMessage)m).resetCreationTimeNull();
+		forceMessage(m);
 		return true;
 	}
 	
@@ -293,6 +295,7 @@ public class OneTree {
 		//System.out.format("Forcing all bundles in OneTree\n");
 		while (!bundles.isEmpty()) {
 			Message m = bundles.entrySet().iterator().next().getValue();
+			((IncomingMessage)m).resetCreationTimeNull();
 			forceMessage(m);
 		}
 	}

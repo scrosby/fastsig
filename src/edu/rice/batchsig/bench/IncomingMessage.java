@@ -82,6 +82,9 @@ public class IncomingMessage extends MessageBase {
 	public void resetCreationTimeToNow() {
 		creation_time = System.currentTimeMillis();
 	}
+	public void resetCreationTimeTo(long tstamp) {
+		creation_time = tstamp;
+	}
 	
 	public void resetCreationTimeNull() {
 		creation_time = 0;

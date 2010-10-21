@@ -90,7 +90,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	public static int MAX_TREES = 1000;
-	public static int MAX_TREE_SIZE = 100;
+	public static int MAX_TREE_SIZE = 1000;
 	public VerifyHisttreeLazily(MultiplexedPublicKeyPrims signer) {
 		super(signer);
 	}
@@ -123,6 +123,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 		
 		protected boolean removeEldestEntry(Map.Entry<OneTree,OneTree> eldest) {
 			if (super.removeEldestEntry(eldest)) {
+				System.out.println("Expiration for too many trees");
 				treesToForceAll.add(eldest.getValue());
 				return true;
 			}
@@ -170,10 +171,10 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 		tree.forceMessage(m);
 	}
 	
-	public void forceUser(Object user) {
+	public void forceUser(Object user, long timestamp) {
 		//System.out.println("Forcing user "+user);
 		for (IncomingMessage m : new ArrayList<IncomingMessage>(userToMessages.get(user))) {
-			m.resetCreationTimeToNow();
+			m.resetCreationTimeTo(timestamp);
 			//System.out.format("For forced user %s, found message %s\n",user.toString(),m.toString());
 			force(m);
 		}
@@ -186,18 +187,16 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	
 	public void forceOldest() {
 		// Keep on trying until we expire an entry, if any exists.
-		while (true) {
-			if (expirationqueue.size() == 0)
-				return;
-			OneTree x = expirationqueue.keySet().iterator().next();
-			Tracker.singleton.idleforces++;
-			if (x == null)
-				throw new Error("Expiration queue weirdness");
-			if (x.forceOldest())
-				return;
-			// If the onetree is empty, remove this from the expiration queue entirely.
-			expirationqueue.remove(x);
-		}
+		if (expirationqueue.size() == 0)
+			return;
+		OneTree x = expirationqueue.keySet().iterator().next();
+		Tracker.singleton.idleforces++;
+		if (x == null)
+			throw new Error("Expiration queue weirdness");
+		if (x.forceOldest())
+			return;
+		// If the onetree is empty, remove this from the expiration queue entirely.
+		expirationqueue.remove(x);
 	}
 	
 	
@@ -208,14 +207,12 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	public void add(IncomingMessage m) {
 		m.registerValidator(this);
 		size.incrementAndGet();
-		if (m == null) {
-			System.err.println("Null message in queue?");
-			return;
-		}
 		OneTree tree = this.makeOneTreeForMessage(m);
 		tree.addMessage(m);
-		if (tree.size() > MAX_TREE_SIZE)
+		if (tree.size() > MAX_TREE_SIZE) {
 			treesToForceOne.add(tree);
+			System.out.println("Expiration for too big tree.");
+		}
 		expirationqueue.put(tree,tree);
 		userToMessages.put(m.getRecipientUser(), m);
 		finishBatch();
