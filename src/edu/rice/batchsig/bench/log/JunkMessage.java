@@ -5,7 +5,8 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 public class JunkMessage implements Message {
 	static final byte[] NODATA = new byte[0];
-
+	static final JunkMessage singleton = new JunkMessage();
+	
 	@Override
 	public byte[] getData() {
 		return NODATA;

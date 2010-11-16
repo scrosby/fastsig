@@ -20,6 +20,7 @@
 package edu.rice.batchsig.splice;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -172,8 +173,12 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
 	}
 	
 	public void forceUser(Object user, long timestamp) {
-		//System.out.println("Forcing user "+user);
-		for (IncomingMessage m : new ArrayList<IncomingMessage>(userToMessages.get(user))) {
+		while (true) {
+			Collection<IncomingMessage> ml = userToMessages.get(user);
+			if (ml.isEmpty())
+				return;
+			IncomingMessage m = ml.iterator().next();
+			//System.out.format("Forcing user %s at %d was %d  -- %s\n",user.toString(),timestamp,m.getCreationTime(),m.toString());
 			m.resetCreationTimeTo(timestamp);
 			//System.out.format("For forced user %s, found message %s\n",user.toString(),m.toString());
 			force(m);

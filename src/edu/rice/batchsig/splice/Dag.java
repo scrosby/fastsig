@@ -137,6 +137,7 @@ public class Dag<T> {
 		HashSet<DagNode> todo = new HashSet<DagNode>();
 		HashSet<DagNode> out = new HashSet<DagNode>();
 		todo.add(node);
+		out.add(node);
 		
 		while (todo.size() > 0) {
 			HashSet<DagNode> unvisited = new HashSet<DagNode>();

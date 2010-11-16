@@ -28,6 +28,7 @@ import com.google.protobuf.ByteString;
 import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.IncomingMessageStreamFromFile;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
+import edu.rice.batchsig.bench.Tracker;
 
 /** Given a logfile of 'messages' that were signed, verify them 'in real time', using the included timestamp. Used to benchmark verification. */
 
@@ -102,6 +103,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				
 				if (loggedOnUsers.contains(msg.getRecipientUser())) {
 					//lazyqueue.addForced(msg);
+					Tracker.singleton.immediate++;
 					lazyqueue.add(msg);
 					lazyqueue.forceUser((Integer)msg.getRecipientUser());
 				} else {

@@ -26,6 +26,7 @@ public class MessageGeneratorThreadBase extends ShutdownableThread {
 				System.err.format("Queue overfull(contains %d messages)\n",queue.peekSize());
 				// Abort the second time we get a bad message.
 				if (skip > 2) {
+					shutdown();
 					Tracker.singleton.markAbort();
 					System.out.println("***** Marking message generation thread for finishing *******");
 				}

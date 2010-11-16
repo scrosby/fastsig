@@ -108,7 +108,7 @@ public class BuildLogForVerificationBench {
 				// Add in junk messages to reach the target.
 				int targetsize = batchsizefn.get();
 				for (int j = queue.peekSize() ; j < targetsize ; j++)
-					queue.add(new JunkMessage());
+					queue.add(JunkMessage.singleton);
 				queue.process();
 			}
 			toRun.clear();

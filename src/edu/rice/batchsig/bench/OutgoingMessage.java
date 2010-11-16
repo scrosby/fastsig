@@ -128,10 +128,18 @@ public class OutgoingMessage extends MessageBase {
 		//System.out.println("MSGData:"+messagedata);
 		//System.out.println("SigBlob:"+sigblob);
 
+		if (messagedata.getSerializedSize() > 1000000) {
+			System.out.println(messagedata);
+			throw new Error("Unexpectedly big message");
+		}
 		output.writeRawVarint32(messagedata.getSerializedSize());
 		messagedata.writeTo(output);
 		
 		if (data != null) {
+			if (sigblob.getSerializedSize() > 1000000) {
+				System.out.println(sigblob);
+				throw new Error("Unexpectedly big message");
+			}
 			output.writeRawVarint32(sigblob.getSerializedSize());
 			//System.out.println("SigBlob:"+sigblob);
 			sigblob.writeTo(output);

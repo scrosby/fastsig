@@ -235,7 +235,8 @@ public class OneTree {
 		
 		if (!bundles.containsKey(m.getSignatureBlob().getLeaf())) {
 			System.out.println("Forcing message that doesn't exist:"+m.toString()); // Should trigger occasionally.
-			return;
+			throw new Error("WARN");
+			//return;
 		}
 		
 		Dag<Integer>.DagNode node = getNode(m);

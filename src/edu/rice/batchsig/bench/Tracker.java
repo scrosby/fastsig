@@ -8,8 +8,11 @@ public class Tracker {
 	Histogram latencyhist = new Histogram();
 	Histogram bytesizehist = new Histogram();
 	AtomicBoolean aborting = new AtomicBoolean();
-	int signcount,verifycount, verifycount_cached, validated;
+	public int signcount,verifycount, verifycount_cached, validated;
 	public int idleforces;
+	public int immediate;
+	
+	public static long init = System.currentTimeMillis();
 	
 	
 	private Tracker() {
@@ -28,6 +31,7 @@ public class Tracker {
 		batchsizehist.reset();
 		aborting.set(false);
 		validated = signcount = verifycount = verifycount_cached = idleforces = 0 ;
+		immediate = 0;
 	}
 	
 	public void markAbort() {
@@ -77,13 +81,17 @@ public class Tracker {
 		histline(hist,3000,4000);
 		histline(hist,4000,4001);		
 	}
-	
+	public String cryptoreport() {
+	    long now = System.currentTimeMillis();
+		return String.format("(%.3f) MSGS:%d, Sign=%d  VTotal=%d VCached=%d Forced=%d",(now-init)/1000.0,validated,signcount,verifycount,verifycount_cached,immediate);
+	}
 	
 	public void print(String prefix) {
+		System.out.format("MSGS: %d Immed:%d\n",validated,immediate);
 		System.out.format("bsize: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,batchsizehist.n,(double)batchsizehist.sum/batchsizehist.n,batchsizehist.max);
 		printlineset(batchsizehist);
 
-		System.out.format("crypt: Rate=%s  N=%d  Sign=%d  VTotal=%d VCached=%d MSGS=%d\n",prefix,latencyhist.n,signcount,verifycount,verifycount_cached,validated);
+		System.out.format("crypt: Rate=%s  N=%d  Sign=%d  VTotal=%d VCached=%d\n",prefix,latencyhist.n,signcount,verifycount,verifycount_cached);
 		System.out.format("laten: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,latencyhist.n,(double)latencyhist.sum/latencyhist.n,latencyhist.max);
 		printlineset(latencyhist);
 		System.out.format("proof: Rate=%s  N=%d  Avg=%f  Max=%d\n",prefix,bytesizehist.n,(double)bytesizehist.sum/latencyhist.n,bytesizehist.max);

@@ -273,6 +273,7 @@ public class BenchSigner {
 		.addOption(OptionBuilder.withDescription("Run at the given timeout").hasArg().create("timeout"))
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate").hasArg().create("rate"))
 		.addOption(OptionBuilder.withDescription("Run at the given signing rate increment").hasArg().create("incr"))
+		.addOption(OptionBuilder.withDescription("Batchsize when creating the verify trace").hasArg().create("batchsize"))
 		.addOption(OptionBuilder.withDescription("Return help").create('h'))
 		.addOption(OptionBuilder.withDescription("Which crypto provider to use").hasArg().create("provider"))
 		//.addOption(OptionBuilder.withDescription("When verifying, which signer ID to use").hasArg().create("signerid"))
@@ -353,7 +354,7 @@ public class BenchSigner {
 		
 		if (commands.hasOption("signtrace")) {
 			hotspotSigning();
-			handleTraceSigning();
+			handleTraceSigning(timeout);
 		} else if (commands.hasOption("sign")) {
 			hotspotSigning();
 			handleSigning(timeout);
@@ -365,6 +366,32 @@ public class BenchSigner {
 	}
 
 	private void handleVerifyTrace(int timeout) throws FileNotFoundException, InterruptedException {
+		Tracker.singleton.reset();
+		Tracker.singleton.enable();
+		final int MAXQUEUE = 40000;
+		if (commands.getOptionValue("input") == null)
+			throw new Error("Need to define an input file");
+		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
+		MultiplexedPublicKeyPrims prims = (MultiplexedPublicKeyPrims) setupCipher(null);
+		VerifyHisttreeLazily treeverifier = new VerifyHisttreeLazily(prims);
+		VerifyHisttreeLazilyQueue processThread = new VerifyHisttreeLazilyQueue(treeverifier);
+		ReplaySavedMessagesRealtimeThread makeThread = new ReplaySavedMessagesRealtimeThread(processThread,fileinput,MAXQUEUE);
+		//hotSpotVerifying(fileinput);
+		makeThread.setup(prims); // Pre-load all of the crypto keys.
+		makeThread.start();
+		processThread.start();
+		try {
+			Thread.sleep(timeout);
+			makeThread.shutdown(); makeThread.join();
+			processThread.interrupt(); // In case it is idle and not doing anything.
+			processThread.shutdown(); processThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}		
+		Tracker.singleton.print(String.format("Trace"));
+	}
+
+	private void handleVerifyTrace2(int timeout) throws FileNotFoundException, InterruptedException {
 		Tracker.singleton.reset();
 		Tracker.singleton.enable();
 		final int MAXQUEUE = 40000;
@@ -413,31 +440,29 @@ public class BenchSigner {
 			output.flush();
 	}
 
-	final static int MAX_TRACE_BACKLOG = 2519;
+	final static int MAX_TRACE_BACKLOG = 6000;
 	final static int MAX_SENDERS = 53; // Prime number, not 43 or 37
 	final static int RSA_EPOCH_LENGTH = 60;
 	final static int DSA_EPOCH_LENGTH = 5;
-	final static int RSA_BATCHSIZE = 300;
-	final static int DSA_BATCHSIZE = 20;
 	private void handleMakeVerifyTrace(int epochtime) throws IOException {
 		int epochlength = 0;
-		Supplier<Integer> batchsize;
+		final int batchsize = Integer.parseInt(commands.getOptionValue("batchsize"));
+		Supplier<Integer> batchsizefn;
 		if (commands.hasOption("rsa")) {
 			epochlength = RSA_EPOCH_LENGTH; 
-			batchsize = new Supplier<Integer>() { public Integer get() { return RSA_BATCHSIZE; };};
 		} else if(commands.hasOption("dsa")) {
 			epochlength = RSA_EPOCH_LENGTH;
-			batchsize = new Supplier<Integer>() { public Integer get() { return DSA_BATCHSIZE; };};
 		} else
 			throw new Error("Must pick dsa or rsa");
+		batchsizefn = new Supplier<Integer>() { public Integer get() { return batchsize; };};
 		
 		String outputname=commands.getOptionValue("output");
-		int senders = Integer.parseInt(commands.getOptionValue("verifytracesenders","4999"));
-		
+		int senders = Integer.parseInt(commands.getOptionValue("verifytracesenders","1001"));
+
 		CodedOutputStream output = CodedOutputStream.newInstance(new FileOutputStream(outputname+".signed"));
 		
 		BuildLogForVerificationBench builder = new BuildLogForVerificationBench(
-				epochlength,queuefn,senders,batchsize,output);
+				epochlength,queuefn,senders,batchsizefn,output);
 		String eventtracename=commands.getOptionValue("eventtrace");
 		String usertracename=commands.getOptionValue("usertrace");
 		
@@ -454,7 +479,7 @@ public class BenchSigner {
 	
 	}
 	
-	private void handleTraceSigning() throws FileNotFoundException {
+	private void handleTraceSigning(int timeout) throws FileNotFoundException {
 		String signer_id = commands.getOptionValue("signerid","Host0");
 		queue = queuefn.apply(signer_id);
 		Tracker.singleton.reset();
@@ -484,7 +509,7 @@ public class BenchSigner {
 		
 		thr.configure(streammap );
 		thr.configure(0,events);
-		doCommon(MAX_TRACE_BACKLOG, thr);
+		doCommon(timeout, thr);
 		Tracker.singleton.print(String.format("Trace-%s",eventtracename));
 	}
 

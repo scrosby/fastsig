@@ -43,7 +43,7 @@ public class VerifyQueue extends QueueBase {
 		this.signer = signer;
 		this.merkleverifier = new VerifyMerkle(signer);
 		this.atomicverifier = new VerifyAtomicSignature(signer);
-		this.histtreeverifier = new VerifyHisttreeSingle(signer);
+		this.histtreeverifier = new VerifyHisttreeGroup(signer);
 	}
 	
 	public void process() {

@@ -21,7 +21,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	final static int MAX_USERS = 10000;
 	final static int MAX_MESSAGES = 50000;
 	/** The paramater to tune */
-	final static int MAX_OUTSTANDING = 100000;
+	final static int MAX_OUTSTANDING = 40000;
 	
 	ArrayBlockingQueue<Integer> forcedUserMailbox = new ArrayBlockingQueue<Integer>(MAX_USERS);
 	ArrayBlockingQueue<Long> forcedUserTimestampMailbox = new ArrayBlockingQueue<Long>(MAX_USERS);

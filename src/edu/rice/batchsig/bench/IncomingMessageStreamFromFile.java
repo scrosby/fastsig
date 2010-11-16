@@ -27,7 +27,6 @@ public class IncomingMessageStreamFromFile {
 			throw new Error("Cannot reset",e);
 		}
 		this.input = CodedInputStream.newInstance(fileinput);
-		this.input.setSizeLimit(64*1024*1024);
 	}
 	
 	/** Read the next message. Resetting the stream back to the beginning if we're at the end */
@@ -37,6 +36,7 @@ public class IncomingMessageStreamFromFile {
 			IncomingMessage msg = IncomingMessage.readFrom(input);
 			// Bad message. Reset the stream and try again.
 			//System.out.println("Reading message");
+			input.resetSizeCounter();
 			if (msg != null ) {
 				return msg;
 			}
@@ -47,6 +47,8 @@ public class IncomingMessageStreamFromFile {
 	
 	/** Read the next message unconditionally, without resetting the stream to the beginning on end. */
 	public IncomingMessage nextOnePass() {
-		return IncomingMessage.readFrom(input);
+		IncomingMessage m = IncomingMessage.readFrom(input);
+		input.resetSizeCounter();
+		return m;
 	}
 }

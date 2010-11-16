@@ -95,6 +95,11 @@ public class IncomingMessage extends MessageBase {
 			throw new Error("");
 	}
 	
+	public long getCreationTime() {
+		return creation_time;
+	}
+	
+		
 	@Override
 	public void signatureResult(TreeSigBlob message) {
 		// TODO: Used when creating a message to be logged. Leave unspecified for now.
@@ -111,7 +116,8 @@ public class IncomingMessage extends MessageBase {
 		// Runs in the validation thread, not the submit thread 
 		Tracker.singleton.validated++;
 		if (solved.compareAndSet(false, true)) {
-			validator.messageValidatorCallback(this);
+			if (validator != null)
+				validator.messageValidatorCallback(this);
 			// Now do a callback into the verifier to count ourselves as done.
 		} else {
 			throw new Error("Can't report the same message twice");
@@ -132,11 +138,13 @@ public class IncomingMessage extends MessageBase {
 			
 			input.readMessage(databuilder, ExtensionRegistryLite.getEmptyRegistry());
 			MessageData data = databuilder.build();
-			//System.out.println(data.toString());
+			
+			//System.out.println("DATA"+data.toString());
 
 			if (data.hasMessage()) {
 				input.readMessage(sigbuilder, ExtensionRegistryLite.getEmptyRegistry());
 				TreeSigBlob sig = sigbuilder.build();
+				//System.out.println("SIG"+sig.toString());
 				return new IncomingMessage(sig,data);
 			} else {
 				return new IncomingMessage(null,data);
@@ -144,6 +152,7 @@ public class IncomingMessage extends MessageBase {
 		} catch (IOException e) {
 			System.err.println("readFrom stacktrace (returning null -- nonfatal error!)");
 			e.printStackTrace();
+			//throw new Error("ERROR",e);
 			return null;
 		}
 	}
