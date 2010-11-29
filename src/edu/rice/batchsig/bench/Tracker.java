@@ -10,7 +10,7 @@ public class Tracker {
 	AtomicBoolean aborting = new AtomicBoolean();
 	public int signcount,verifycount, verifycount_cached, validated;
 	public int idleforces;
-	public int immediate;
+	public int immediate,lazy;
 	
 	public static long init = System.currentTimeMillis();
 	
@@ -31,7 +31,7 @@ public class Tracker {
 		batchsizehist.reset();
 		aborting.set(false);
 		validated = signcount = verifycount = verifycount_cached = idleforces = 0 ;
-		immediate = 0;
+		immediate = lazy = 0;
 	}
 	
 	public void markAbort() {
@@ -83,7 +83,7 @@ public class Tracker {
 	}
 	public String cryptoreport() {
 	    long now = System.currentTimeMillis();
-		return String.format("(%.3f) MSGS:%d, Sign=%d  VTotal=%d VCached=%d Forced=%d",(now-init)/1000.0,validated,signcount,verifycount,verifycount_cached,immediate);
+		return String.format("(%.3f) MSGS:%d, Sign=%d  VTotal=%d VCached=%d  Imm=%d Lazy=%d  Idle=%d",(now-init)/1000.0,validated,signcount,verifycount,verifycount_cached,immediate,lazy,idleforces);
 	}
 	
 	public void print(String prefix) {

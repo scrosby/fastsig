@@ -34,7 +34,7 @@ abstract public class MessageBase implements Message {
 	protected TreeSigBlob sigblob;
 	protected byte [] data;
 	/** Contains a virtual clock time, for simulations */
-	protected long virtual_clock = -1;
+	protected long virtual_clock = -3;
 	
 	public MessageBase() {
 		super();

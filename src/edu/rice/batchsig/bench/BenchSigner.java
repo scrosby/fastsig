@@ -64,6 +64,8 @@ import edu.rice.batchsig.bench.log.ReplayAndQueueMessagesForSigningThread;
 import edu.rice.batchsig.bench.log.ReplaySavedMessagesRealtimeThread;
 import edu.rice.batchsig.bench.log.VerifyHisttreeLazilyQueue;
 import edu.rice.batchsig.splice.VerifyHisttreeLazily;
+import edu.rice.batchsig.splice.VerifyLazily;
+import edu.rice.batchsig.splice.VerifyMerkleLazily;
 
 
 /* 
@@ -373,7 +375,14 @@ public class BenchSigner {
 			throw new Error("Need to define an input file");
 		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
 		MultiplexedPublicKeyPrims prims = (MultiplexedPublicKeyPrims) setupCipher(null);
-		VerifyHisttreeLazily treeverifier = new VerifyHisttreeLazily(prims);
+		VerifyLazily treeverifier;
+		if (commands.hasOption("merkle"))
+			treeverifier = new VerifyMerkleLazily(prims);
+		else if (commands.hasOption("history"))
+			treeverifier = new VerifyHisttreeLazily(prims);
+		else 
+			throw new Error("Need -merkle or -history");
+		
 		VerifyHisttreeLazilyQueue processThread = new VerifyHisttreeLazilyQueue(treeverifier);
 		ReplaySavedMessagesRealtimeThread makeThread = new ReplaySavedMessagesRealtimeThread(processThread,fileinput,MAXQUEUE);
 		//hotSpotVerifying(fileinput);
@@ -391,31 +400,6 @@ public class BenchSigner {
 		Tracker.singleton.print(String.format("Trace"));
 	}
 
-	private void handleVerifyTrace2(int timeout) throws FileNotFoundException, InterruptedException {
-		Tracker.singleton.reset();
-		Tracker.singleton.enable();
-		final int MAXQUEUE = 40000;
-		if (commands.getOptionValue("input") == null)
-			throw new Error("Need to define an input file");
-		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
-		MultiplexedPublicKeyPrims prims = (MultiplexedPublicKeyPrims) setupCipher(null);
-		VerifyHisttreeLazily treeverifier = new VerifyHisttreeLazily(prims);
-		VerifyHisttreeLazilyQueue processThread = new VerifyHisttreeLazilyQueue(treeverifier);
-		ReplaySavedMessagesRealtimeThread makeThread = new ReplaySavedMessagesRealtimeThread(processThread,fileinput,MAXQUEUE);
-		//hotSpotVerifying(fileinput);
-		makeThread.setup(prims); // Pre-load all of the crypto keys.
-		makeThread.start();
-		processThread.start();
-		try {
-			Thread.sleep(timeout);
-			makeThread.shutdown(); makeThread.join();
-			processThread.interrupt(); // In case it is idle and not doing anything.
-			processThread.shutdown(); processThread.join();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}		
-		Tracker.singleton.print(String.format("Trace"));
-	}
 
 	private void handleSigning(final int time) throws FileNotFoundException,
 			InterruptedException, IOException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {

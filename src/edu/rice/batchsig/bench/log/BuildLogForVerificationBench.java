@@ -124,7 +124,7 @@ public class BuildLogForVerificationBench {
 						logouts.add(i.getRecipientUser());
 					i = ii.hasNext() ? ii.next() :null;
 				}
-				writeLoginLogoutMsg(logins, logouts);
+				writeLoginLogoutMsg(logins, logouts, i.getTimestamp());
 			}
 
 		}
@@ -133,10 +133,11 @@ public class BuildLogForVerificationBench {
 	}
 
 	private void writeLoginLogoutMsg(ArrayList<Integer> logins,
-			ArrayList<Integer> logouts) throws IOException {
+			ArrayList<Integer> logouts, long timestamp) throws IOException {
 		if (logins.size() > 0 || logouts.size() > 0) {
 			OutgoingMessage out = new OutgoingMessage(outstream, null, destinationTarget,null);
 			out.setLoginsLogouts(logins,logouts);
+			out.setVirtualClock(timestamp);
 			out.writeTo(outstream);
 		}
 	}

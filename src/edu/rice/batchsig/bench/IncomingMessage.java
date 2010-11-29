@@ -29,6 +29,7 @@ import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 
 import edu.rice.batchsig.splice.VerifyHisttreeLazily;
+import edu.rice.batchsig.splice.VerifyLazily;
 import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
@@ -39,7 +40,7 @@ public class IncomingMessage extends MessageBase {
 	public List<Integer> end_buffering;
 	int recipientuser;
 	AtomicBoolean solved = new AtomicBoolean(false);
-	private VerifyHisttreeLazily validator;
+	private VerifyLazily validator;
 	
 	// Sig = null occurs if there is no message data (aka, this is a non-signed messgae
 	private IncomingMessage(TreeSigBlob sig, MessageData data) {
@@ -50,12 +51,15 @@ public class IncomingMessage extends MessageBase {
 		else
 			this.data = null;
 		//this.creation_time = System.currentTimeMillis();
+		if (!data.hasTimestamp())
+			throw new Error("Serialized messages must have timestamps");
 		this.virtual_clock = data.getTimestamp();
 		if (data.getStartBufferingUsersCount() > 0)
 			this.start_buffering = data.getStartBufferingUsersList();
 		if (data.getEndBufferingUsersCount() > 0)
 			this.end_buffering = data.getEndBufferingUsersList();
 		this.recipientuser = data.getRecipientUser();
+		//System.out.print(this);
 	}
 
 	@Override
@@ -106,13 +110,14 @@ public class IncomingMessage extends MessageBase {
 		throw new Error("Unimplemented");
 	}
 
-	public void registerValidator(VerifyHisttreeLazily validator) {
+	public void registerValidator(VerifyLazily validator) {
 		this.validator = validator;
 	}
 	
 	@Override
 	public void signatureValidity(boolean valid) {
-		Tracker.singleton.trackLatency((int)(System.currentTimeMillis()- creation_time));
+		if (creation_time > 0)
+			Tracker.singleton.trackLatency((int)(System.currentTimeMillis()- creation_time));
 		// Runs in the validation thread, not the submit thread 
 		Tracker.singleton.validated++;
 		if (solved.compareAndSet(false, true)) {
@@ -158,11 +163,14 @@ public class IncomingMessage extends MessageBase {
 	}
 
 	public String toString() {
-		return String.format("{time=%d, RecipientU=%s, leaf=%d at treeversion %d  %s}",
-				getVirtualClock(), getRecipientUser(), getSignatureBlob().getLeaf(),
-				getSignatureBlob().getTree().getVersion(),
-				((ByteString)getAuthor()).toStringUtf8()
-		);
+		if (getSignatureBlob()!= null && getRecipientUser() != null)
+			return String.format("{time=%d, RecipientU=%s, leaf=%d at treeversion %d  %s}",
+					getVirtualClock(), getRecipientUser(), getSignatureBlob().getLeaf(),
+					getSignatureBlob().getTree().getVersion(),
+					((ByteString)getAuthor()).toStringUtf8());
+		else
+			return String.format("{time=%d, RecipientU=%s, leaf=XXX at treeversion XXX  XXX}",
+					getVirtualClock(), getRecipientUser());
 	}
 	
 }

@@ -89,7 +89,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 
 
-public class VerifyHisttreeLazily extends VerifyHisttreeCommon {
+public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements VerifyLazily {
 	public static int MAX_TREES = 1000;
 	public static int MAX_TREE_SIZE = 1000;
 	public VerifyHisttreeLazily(MultiplexedPublicKeyPrims signer) {

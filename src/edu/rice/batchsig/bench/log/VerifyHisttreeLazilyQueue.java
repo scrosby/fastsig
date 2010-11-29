@@ -9,6 +9,7 @@ import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.ShutdownableThread;
 import edu.rice.batchsig.splice.VerifyHisttreeLazily;
+import edu.rice.batchsig.splice.VerifyLazily;
 
 /** Handle the glue code. 
  * 
@@ -16,7 +17,7 @@ import edu.rice.batchsig.splice.VerifyHisttreeLazily;
  * 
  * Handle the thread that handles the processing. */
 public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements ProcessQueue {
-	VerifyHisttreeLazily treeverifier;
+	VerifyLazily treeverifier;
 
 	final static int MAX_USERS = 10000;
 	final static int MAX_MESSAGES = 50000;
@@ -28,9 +29,12 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	ArrayBlockingQueue<Message> messageMailbox = new ArrayBlockingQueue<Message>(MAX_MESSAGES);
 	ArrayBlockingQueue<Message> forcedMessageMailbox = new ArrayBlockingQueue<Message>(MAX_MESSAGES);
 
+	
+	// Release the semaphore each time we add some form of work to be processed (IE, a new message or user being forced.
+    // It is empty if there is nothing to do. 
 	Semaphore sleepSemaphore = new Semaphore(0);
 	
-	public VerifyHisttreeLazilyQueue(VerifyHisttreeLazily treeverifier) {
+	public VerifyHisttreeLazilyQueue(VerifyLazily treeverifier) {
 		this.treeverifier = treeverifier;
 	}
 	
@@ -75,22 +79,25 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 
 	// Called concurrently. Immediately add on the requested message.
 	public void addForced(Message m) {
+		throw new Error("Not actually used");
+		/*
 		try {
 			((IncomingMessage)m).resetCreationTimeToNow();
 			forcedMessageMailbox.put(m);
 			sleepSemaphore.release();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 
-	boolean maximally_lazy = true;
+	boolean maximally_lazy = false;
 	
 	/** The core processing thread. */
 	@Override
 	public void run() {
 		long verbose=0;
 		long lastExpiration = 0;
+		long lastMessage=0;
 		try {
 			while (!finished.get()) {
 				// Since we're idle? See if there's any useful work we could do right now.
@@ -98,18 +105,14 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 					// We have work waiting.... Release the semaphore and do it.
 					sleepSemaphore.release();
 				} else {
-					if (verbose++%10 == 0)
+					// No work waiting to do. See if we can eagerly use this idle time.
+					if (verbose++%100 == 0)
 						System.out.println("Queuesize: "+treeverifier.peekSize());
 					// No work that must be done right now, can we eagerly do something?
 					if (!maximally_lazy) {
-						long now = System.currentTimeMillis();
-						if (now-lastExpiration > 5000 || treeverifier.peekSize() > 1000) {
-							if (now-lastExpiration > 5000)
-								System.out.println("Forcing because of age");
-							if (treeverifier.peekSize() > 1000)
-								System.out.format("Forcing because of size %d > 1000\n",treeverifier.peekSize());
+						//long now = System.currentTimeMillis();
+						if (treeverifier.peekSize() > 100) {
 							treeverifier.forceOldest();
-							lastExpiration = now; 
 							continue; // And try again for more eager work.
 						}
 					} else {
@@ -119,6 +122,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 							continue; // And try again for more eager work.
 						}
 					}
+					// Only way we got here is if there is no work we could do. Time to block (on the acquire below)
 				}
 				
 				// There's something sitting around to be done right now.
@@ -136,6 +140,8 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 				// Is it a message to process?
 				m = messageMailbox.poll();
 				if (m != null) {
+					if (verbose++%5000 == 0)
+						System.out.println("Virt: "+((IncomingMessage)m).getVirtualClock());
 					treeverifier.add(m);
 					continue;
 				}
