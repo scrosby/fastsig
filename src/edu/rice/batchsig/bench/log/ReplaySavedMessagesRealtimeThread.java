@@ -66,7 +66,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 
 		Set<Integer> loggedOnUsers = new HashSet<Integer>();
 		long initTime = System.currentTimeMillis(); // When we started.
-		
+		long msgOffsetTime = 0;
 		while (!finished.get()) {
 			IncomingMessage msg = input.nextOnePass();
 			// We're at the end.
@@ -74,12 +74,12 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				System.out.println("EOF");
 				break;
 			}
-
 			
 			// STEP 1: Delay until the inject time equals this time.
 			
-			// Offset in ms from the first message in the trace.
-			long msgOffsetTime = msg.getVirtualClock();
+			// Problem is that loginlogoff messages do NOT have timestamps. Borrow the timestamp from the prior message.
+		    if (msg.getVirtualClock() >0)
+		    	msgOffsetTime = msg.getVirtualClock();
 			// What time should we insert.
 			long injectTime = msgOffsetTime + initTime;
 			long now = System.currentTimeMillis();
@@ -91,6 +91,9 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				} catch (InterruptedException e) {
 				}
 			}
+			if (now - injectTime > 100)
+				System.err.format("Runnign behind %dms on message injection  %d  %d   %d\n",now-injectTime,now,injectTime,msgOffsetTime);
+			
 			//msg.resetCreationTimeNull(); // So that we correct for the wait time above.
 			
 			if (msg.getData() != null) {
@@ -107,6 +110,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 					lazyqueue.add(msg);
 					lazyqueue.forceUser((Integer)msg.getRecipientUser());
 				} else {
+					Tracker.singleton.lazy++;
 					lazyqueue.add(msg);
 				}
 			}
