@@ -1,4 +1,4 @@
 #! /bin/bash
 
-protoc --java_out=src proofs.proto
+protoc --java_out=src.generated proofs.proto
 
