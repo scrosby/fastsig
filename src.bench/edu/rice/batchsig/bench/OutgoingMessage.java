@@ -32,10 +32,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 
+import edu.rice.batchsig.OMessage;
 import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-public class OutgoingMessage extends MessageBase {
+public class OutgoingMessage extends MessageBase implements OMessage {
 	CodedOutputStream output;
 	Object recipient_user;
 	Object recipient;
@@ -59,18 +60,8 @@ public class OutgoingMessage extends MessageBase {
 	
 	
 	@Override
-	public Object getAuthor() {
-		throw new Error("Unimplemented");
-	}
-
-	@Override
 	public Object getRecipient() {
 		return recipient;
-	}
-
-	@Override
-	public TreeSigBlob getSignatureBlob() {
-		throw new Error("Unimplemented");
 	}
 
 	@Override
@@ -87,11 +78,6 @@ public class OutgoingMessage extends MessageBase {
 		}
 	}
 
-	@Override
-	public void signatureValidity(boolean valid) {
-		// TODO Auto-generated method stub
-	}
-	
 	void track() {
 		Tracker tracker = Tracker.singleton;
 		if (tracker != null) {

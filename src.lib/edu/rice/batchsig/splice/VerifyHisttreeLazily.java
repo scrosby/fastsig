@@ -39,7 +39,6 @@ import edu.rice.batchsig.Message;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.VerifyHisttreeCommon;
-import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.Tracker;
 import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
@@ -90,9 +89,13 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 
 
-public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements VerifyLazily {
+public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements VerifyLazily, WrappedIMessage.Callback {
 	public static int MAX_TREES = 1000;
 	public static int MAX_TREE_SIZE = 1000;
+	/** Map from recipient_user to the messages queued to that recipient_user */
+	Multimap<Object,IMessage> userToMessages = HashMultimap.create();
+	
+	
 	public VerifyHisttreeLazily(MultiplexedPublicKeyPrims signer) {
 		super(signer);
 	}
@@ -100,7 +103,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 	AtomicInteger size = new AtomicInteger(0);
 	
 	/** THis message has been validated, can stop tracking it now. */
-	public void messageValidatorCallback(IncomingMessage m) {
+	public void messageValidatorCallback(IMessage m, boolean valid) {
 		userToMessages.remove(m.getRecipientUser(),m);
 		size.decrementAndGet();
 	}
@@ -133,14 +136,11 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 		}
 	}
 	
-	/** Map from recipient_user to the messages queued to that recipient_user */
-	Multimap<Object,IncomingMessage> userToMessages = HashMultimap.create();
-	
-	
-	OneTree getOneTreeForMessage(IncomingMessage m) {
+
+	OneTree getOneTreeForMessage(IMessage m) {
 		return map1.get(m.getAuthor(),m.getSignatureBlob().getTreeId());
 	}
-	OneTree makeOneTreeForMessage(IncomingMessage m) {
+	OneTree makeOneTreeForMessage(IMessage m) {
 		OneTree out = getOneTreeForMessage(m);
 		if (out == null) {
 			out = new OneTree(this,m.getAuthor(),m.getSignatureBlob().getTreeId());
@@ -164,7 +164,8 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 		//System.out.println("  Forcing batch end");
 	}
 	
-	public void force(IncomingMessage m) {
+	/** Force one message */
+	public void force(IMessage m) {
 		OneTree tree = getOneTreeForMessage(m);
 		if (tree == null) {
 			System.out.println("Forcing message thats not in the tree??? Don't do anything.");
@@ -173,14 +174,15 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 		tree.forceMessage(m);
 	}
 	
+	/** Force all messages by the one user */
 	public void forceUser(Object user, long timestamp) {
 		while (true) {
-			Collection<IncomingMessage> ml = userToMessages.get(user);
+			Collection<IMessage> ml = userToMessages.get(user);
 			if (ml.isEmpty())
 				return;
-			IncomingMessage m = ml.iterator().next();
+			IMessage m = ml.iterator().next();
 			//System.out.format("Forcing user %s at %d was %d  -- %s\n",user.toString(),timestamp,m.getCreationTime(),m.toString());
-			m.resetCreationTimeTo(timestamp);
+			//TODO: m.resetCreationTimeTo(timestamp);
 			//System.out.format("For forced user %s, found message %s\n",user.toString(),m.toString());
 			force(m);
 		}
@@ -204,14 +206,8 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 		// If the onetree is empty, remove this from the expiration queue entirely.
 		expirationqueue.remove(x);
 	}
-	
-	
-	public void add(IMessage m) {
-		add((IncomingMessage)m);
-	}
 
-	public void add(IncomingMessage m) {
-		m.registerValidator(this);
+	public void add(IMessage m) {
 		size.incrementAndGet();
 		OneTree tree = this.makeOneTreeForMessage(m);
 		tree.addMessage(m);

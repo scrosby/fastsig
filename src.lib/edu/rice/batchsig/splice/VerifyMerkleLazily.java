@@ -21,37 +21,26 @@ package edu.rice.batchsig.splice;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
 
 import edu.rice.batchsig.IMessage;
-import edu.rice.batchsig.Message;
-import edu.rice.batchsig.ProcessQueue;
-import edu.rice.batchsig.SignaturePrimitives;
-import edu.rice.batchsig.VerifyHisttreeCommon;
 import edu.rice.batchsig.VerifyMerkle;
-import edu.rice.batchsig.bench.IncomingMessage;
 import edu.rice.batchsig.bench.Tracker;
 import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
-import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 
 
-public class VerifyMerkleLazily implements VerifyLazily {
+public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callback {
 	public static int MAX_MESSAGES = 100000;
 	final public VerifyMerkle merkleverify;
 	AtomicInteger size = new AtomicInteger(0);
+	/** Map from recipient_user to the messages queued to that recipient_user */
+	Multimap<Object,IMessage> userToMessages = HashMultimap.create();
 	
 	public VerifyMerkleLazily(MultiplexedPublicKeyPrims signer) {
 		merkleverify = new VerifyMerkle(signer);
@@ -59,7 +48,7 @@ public class VerifyMerkleLazily implements VerifyLazily {
 
 	
 	/** THis message has been validated, can stop tracking it now. */
-	public void messageValidatorCallback(IncomingMessage m) {
+	public void messageValidatorCallback(IMessage m, boolean valid) {
 		userToMessages.remove(m.getRecipientUser(),m);
 		size.decrementAndGet();
 	}
@@ -68,16 +57,16 @@ public class VerifyMerkleLazily implements VerifyLazily {
 	private TreeExpirationManager expirationqueue = new TreeExpirationManager(MAX_MESSAGES);
 
 	// NOT USED RIGHT NOW
-	private ArrayList<IncomingMessage> expired = new ArrayList<IncomingMessage>();
+	private ArrayList<IMessage> expired = new ArrayList<IMessage>();
 	
-	class TreeExpirationManager extends ExpirationManager<IncomingMessage> {
+	class TreeExpirationManager extends ExpirationManager<IMessage> {
 		private static final long serialVersionUID = 1L;
 
 		TreeExpirationManager(int size_limit) {
 			super(size_limit);
 		}
 		
-		protected boolean removeEldestEntry(Map.Entry<IncomingMessage,IncomingMessage> eldest) {
+		protected boolean removeEldestEntry(Map.Entry<IMessage,IMessage> eldest) {
 			if (super.removeEldestEntry(eldest)) {
 				System.out.println("Expiration for too many trees");
 				merkleverify.add(eldest.getKey());
@@ -87,41 +76,32 @@ public class VerifyMerkleLazily implements VerifyLazily {
 		}
 	}
 	
-	/** Map from recipient_user to the messages queued to that recipient_user */
-	Multimap<Object,IncomingMessage> userToMessages = HashMultimap.create();
-
-	
-	public void force(IncomingMessage m) {
-		throw new Error("Not actually used");
-		/* merkleverify.add(m); */
-	}
-	
 	public void forceUser(Object user, long timestamp) {
-		Collection<IncomingMessage> ml = new ArrayList<IncomingMessage>(userToMessages.get(user));
-		for (IncomingMessage m : ml) {
+		Collection<IMessage> ml = new ArrayList<IMessage>(userToMessages.get(user));
+		for (IMessage m : ml) {
 			//System.out.println("Forcing "+user + "   " +  m.getVirtualClock());
-			m.resetCreationTimeTo(timestamp);
+			//TODO: m.resetCreationTimeTo(timestamp);
 			merkleverify.add(m);
 			expirationqueue.remove(m);
 		}
 	}
 	
 	public void forceAll() {
-		for (IncomingMessage m : expired) {
-			m.resetCreationTimeNull();
+		for (IMessage m : expired) {
+			//TODO: m.resetCreationTimeNull();
 			merkleverify.add(m); // Process eldest.
 		}
-		for (IncomingMessage m : new ArrayList<IncomingMessage>(expirationqueue.keySet())) {
-			m.resetCreationTimeNull();
+		for (IMessage m : new ArrayList<IMessage>(expirationqueue.keySet())) {
+			//TODO: m.resetCreationTimeNull();
 			merkleverify.add(m);
 		}
 	}
 	
 	public void forceOldest() {
 		if (expired.size() > 0) {
-			Iterator<IncomingMessage> i = expired.iterator();
-			IncomingMessage m = i.next();
-			m.resetCreationTimeNull();
+			Iterator<IMessage> i = expired.iterator();
+			IMessage m = i.next();
+			//TODO: m.resetCreationTimeNull();
 			merkleverify.add(m);
 			i.remove();
 		}
@@ -129,7 +109,7 @@ public class VerifyMerkleLazily implements VerifyLazily {
 		// Keep on trying until we expire an entry, if any exists.
 		if (expirationqueue.size() == 0)
 			return;
-		IncomingMessage x = expirationqueue.keySet().iterator().next();
+		IMessage x = expirationqueue.keySet().iterator().next();
 		Tracker.singleton.idleforces++;
 		if (x == null)
 			throw new Error("Expiration queue weirdness");
@@ -138,19 +118,16 @@ public class VerifyMerkleLazily implements VerifyLazily {
 		expirationqueue.remove(x);
 	}
 	
-	
-	public void add(IMessage m) {
-		add((IncomingMessage)m);
-	}
 
-	public void add(IncomingMessage m) {
-		m.registerValidator(this);
+	public void add(IMessage m) {
+		WrappedIMessage msg = new WrappedIMessage(m);
+		msg.setCallback(this);
 		size.incrementAndGet();
 		//if (tree.size() > MAX_TREE_SIZE) {
 		//	System.out.println("Expiration for too big tree.");
 		//}
-		expirationqueue.put(m,m);
-		userToMessages.put(m.getRecipientUser(), m);
+		expirationqueue.put(msg,msg);
+		userToMessages.put(msg.getRecipientUser(), m);
 	}
 
 	/** Get the size of the queue. May be called concurrently from any number of threads */

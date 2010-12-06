@@ -1,8 +1,6 @@
 package edu.rice.batchsig.splice;
 
 import edu.rice.batchsig.IMessage;
-import edu.rice.batchsig.Message;
-import edu.rice.batchsig.bench.IncomingMessage;
 
 public interface VerifyLazily {
 
@@ -13,12 +11,7 @@ public interface VerifyLazily {
 
 	void add(IMessage m);
 
-	void force(IncomingMessage m);
-
 	void forceUser(Object i, long tstamp);
 
 	void forceAll();
-
-	void messageValidatorCallback(IncomingMessage incomingMessage);
-
 }

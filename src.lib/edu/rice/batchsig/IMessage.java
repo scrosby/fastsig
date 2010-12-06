@@ -16,4 +16,7 @@ public interface IMessage extends Message {
 	 *  Return value must be suitable for a key in a hash table */
 	public Object getAuthor();	
 
+	/** Which user is targetted this message? */
+	public Object getRecipientUser();
+
 }

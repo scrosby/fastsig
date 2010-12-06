@@ -29,7 +29,6 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	ArrayBlockingQueue<Integer> forcedUserMailbox = new ArrayBlockingQueue<Integer>(MAX_USERS);
 	ArrayBlockingQueue<Long> forcedUserTimestampMailbox = new ArrayBlockingQueue<Long>(MAX_USERS);
 	ArrayBlockingQueue<IMessage> messageMailbox = new ArrayBlockingQueue<IMessage>(MAX_MESSAGES);
-	ArrayBlockingQueue<IMessage> forcedMessageMailbox = new ArrayBlockingQueue<IMessage>(MAX_MESSAGES);
 
 	
 	// Release the semaphore each time we add some form of work to be processed (IE, a new message or user being forced.
@@ -79,19 +78,6 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 		}
 	}
 
-	// Called concurrently. Immediately add on the requested message.
-	public void addForced(Message m) {
-		throw new Error("Not actually used");
-		/*
-		try {
-			((IncomingMessage)m).resetCreationTimeToNow();
-			forcedMessageMailbox.put(m);
-			sleepSemaphore.release();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}*/
-	}
-
 	boolean maximally_lazy = false;
 	
 	/** The core processing thread. */
@@ -131,14 +117,6 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 				sleepSemaphore.acquire();
 				IMessage m;
 
-				
-				// Is it a message to process right now?
-				m = forcedMessageMailbox.poll();
-				if (m != null) {
-					treeverifier.add(m);
-					treeverifier.force((IncomingMessage)m);
-					continue;
-				}
 				// Is it a message to process?
 				m = messageMailbox.poll();
 				if (m != null) {

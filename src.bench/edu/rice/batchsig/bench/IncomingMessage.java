@@ -34,14 +34,13 @@ import edu.rice.batchsig.splice.VerifyLazily;
 import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-public class IncomingMessage extends MessageBase {
+public class IncomingMessage extends MessageBase implements IMessage {
 	/** The time that this message was created. Used to get processing latency */
 	private long creation_time = -1;
 	public List<Integer> start_buffering;
 	public List<Integer> end_buffering;
 	int recipientuser;
 	AtomicBoolean solved = new AtomicBoolean(false);
-	private VerifyLazily validator;
 	
 	// Sig = null occurs if there is no message data (aka, this is a non-signed messgae
 	private IncomingMessage(TreeSigBlob sig, MessageData data) {
@@ -70,11 +69,6 @@ public class IncomingMessage extends MessageBase {
 	}
 
 	@Override
-	public Object getRecipient() {
-		// TODO: Used when creating a message to be logged. Illegal on incomming messages.
-		throw new Error("Illegal Operation");
-	}
-
 	public Object getRecipientUser() {
 		return recipientuser;
 	}
@@ -103,18 +97,7 @@ public class IncomingMessage extends MessageBase {
 	public long getCreationTime() {
 		return creation_time;
 	}
-	
 		
-	@Override
-	public void signatureResult(TreeSigBlob message) {
-		// TODO: Used when creating a message to be logged. Leave unspecified for now.
-		throw new Error("Unimplemented");
-	}
-
-	public void registerValidator(VerifyLazily validator) {
-		this.validator = validator;
-	}
-	
 	@Override
 	public void signatureValidity(boolean valid) {
 		if (creation_time > 0)
@@ -122,8 +105,6 @@ public class IncomingMessage extends MessageBase {
 		// Runs in the validation thread, not the submit thread 
 		Tracker.singleton.validated++;
 		if (solved.compareAndSet(false, true)) {
-			if (validator != null)
-				validator.messageValidatorCallback(this);
 			// Now do a callback into the verifier to count ourselves as done.
 		} else {
 			throw new Error("Can't report the same message twice");
