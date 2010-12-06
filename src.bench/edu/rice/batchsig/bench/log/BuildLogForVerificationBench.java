@@ -127,7 +127,7 @@ public class BuildLogForVerificationBench {
 						logouts.add(i.getRecipientUser());
 					i = ii.hasNext() ? ii.next() :null;
 				}
-				writeLoginLogoutMsg(logins, logouts, i.getTimestamp());
+				writeLoginLogoutMsg(logins, logouts, epochend);
 			}
 
 		}
