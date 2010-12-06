@@ -32,7 +32,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 
 /** Simple queue that signs every message */
-public class SimpleQueue extends QueueBase {
+public class SimpleQueue extends QueueBase<OMessage> implements ProcessQueue<OMessage> {
 	private SignaturePrimitives signer;
 	private long initTime;
 
@@ -44,14 +44,13 @@ public class SimpleQueue extends QueueBase {
 		this.initTime = System.currentTimeMillis();
 	}
 
-
 	public void process() {
 		long now = System.currentTimeMillis();
-		ArrayList<Message> oldqueue = atomicGetQueue();
+		ArrayList<OMessage> oldqueue = queue.atomicGetQueue();
 		//System.out.println(String.format("Processing batch of %d messages at time %d",oldqueue.size(),now-initTime));
 		if (oldqueue.size() == 0)
 			return;
-		for (Message m : oldqueue) {
+		for (OMessage m : oldqueue) {
 			TreeSigBlob.Builder sigblob = TreeSigBlob.newBuilder();
 			sigblob.setSignatureType(SignatureType.SINGLE_MESSAGE);
 

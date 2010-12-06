@@ -28,6 +28,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.splice.VerifyHisttreeLazily;
 import edu.rice.batchsig.splice.VerifyLazily;
 import edu.rice.historytree.generated.Serialization.MessageData;

@@ -11,7 +11,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
 public abstract class VerifyHisttreeCommon extends Verifier {
-	public static HistoryTree<byte[],byte[]> parseHistoryTree(Message message) {
+	public static HistoryTree<byte[],byte[]> parseHistoryTree(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 		PrunedTree pb=sigblob.getTree();
 		HistoryTree<byte[],byte[]> tree= new HistoryTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
@@ -24,7 +24,7 @@ public abstract class VerifyHisttreeCommon extends Verifier {
 		super(signer);
 	}
 
-	public boolean verifyHistoryRoot(Message message, HistoryTree<byte[],byte[]> parsed) {
+	public boolean verifyHistoryRoot(IMessage message, HistoryTree<byte[],byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 	
 		// See if the message is in the tree.

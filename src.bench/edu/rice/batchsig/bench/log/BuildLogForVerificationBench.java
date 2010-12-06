@@ -32,6 +32,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.protobuf.CodedOutputStream;
 
+import edu.rice.batchsig.OMessage;
+import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.bench.MessageBase;
@@ -55,19 +57,20 @@ import edu.rice.batchsig.bench.PublicKeyPrims;
 public class BuildLogForVerificationBench {
 	final Object destinationTarget = new Integer(0);
 	final private int epochlength;
-	final QueueBase queues[];
+	final ProcessQueue<OMessage> queues[];
 	final private int sender_server_count;
 	final private Supplier<Integer> batchsizefn;
 	final private CodedOutputStream outstream;
 
-	public BuildLogForVerificationBench(int epochlength, Function<String,QueueBase> queuefactory, 
+	@SuppressWarnings("unchecked")
+	public BuildLogForVerificationBench(int epochlength, Function<String,ProcessQueue<OMessage>> queuefactory, 
 			int sender_server_count, Supplier<Integer> batchsizefn, CodedOutputStream outstream) {
 		this.epochlength = epochlength;
 		this.sender_server_count = sender_server_count;
 		this.batchsizefn = batchsizefn;
 		this.outstream = outstream;
 		
-		queues = new QueueBase[sender_server_count];
+		queues = (ProcessQueue<OMessage>[])new ProcessQueue<?>[sender_server_count];
 		for (int i= 0 ; i < sender_server_count ; i++) {
 			queues[i] = queuefactory.apply("Signer"+i); // Must match that used in BenchSigner.handleVerifyTrace
 		}
@@ -82,7 +85,7 @@ public class BuildLogForVerificationBench {
 
 		int counter = 0;
 
-		Set<QueueBase> toRun = new HashSet<QueueBase>();
+		Set<ProcessQueue<OMessage>> toRun = new HashSet<ProcessQueue<OMessage>>();
 		
 		for (int epochstart = 0 ; i != null && e != null ; epochstart += epochlength) {
 			long epochend = e.getTimestamp() + epochlength;
@@ -104,7 +107,7 @@ public class BuildLogForVerificationBench {
 			}
 
 			/// Now run the queues.
-			for (QueueBase queue : toRun) {
+			for (ProcessQueue<OMessage> queue : toRun) {
 				// Add in junk messages to reach the target.
 				int targetsize = batchsizefn.get();
 				for (int j = queue.peekSize() ; j < targetsize ; j++)

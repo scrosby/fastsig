@@ -20,10 +20,10 @@
 package edu.rice.batchsig;
 
 /** Represent a queue of messages to be signed with some sort of bulk signature mechanism. */
-public interface ProcessQueue {
+public interface ProcessQueue<T> {
 
 	/** Add a message to be processed. Called concurrently. */
-	public abstract void add(Message message);
+	public abstract void add(T message);
 
 	/**
 	 * Process all of the messages, signing every one. May be done in a separate
@@ -37,4 +37,6 @@ public interface ProcessQueue {
 	abstract public void finish();
 
 	public abstract int peekSize();
+	
+	abstract public AsyncQueue<T> getAsync();
 }

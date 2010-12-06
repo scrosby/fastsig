@@ -13,7 +13,7 @@ public class VerifyHisttreeGroup extends VerifyHisttree {
 	}
 
 	/** Handle all messages with the same treeID */
-	protected void processMessagesFromTree(ArrayList<Message> l) {
+	protected void processMessagesFromTree(ArrayList<IMessage> l) {
 		// Traverse in reverse order from most recent to earliest.
 		Collections.reverse(l);
 	
@@ -25,12 +25,12 @@ public class VerifyHisttreeGroup extends VerifyHisttree {
 		 */
 		
 		/** For each version number a confirmed valid message that claims to splice the requested message */
-		HashMap<Integer,Message> splices = new HashMap<Integer,Message>();
+		HashMap<Integer,IMessage> splices = new HashMap<Integer,IMessage>();
 	
 		/** Cache of the parsed trees */
-		HashMap<Message,HistoryTree<byte[],byte[]>> trees = new HashMap<Message,HistoryTree<byte[],byte[]>>();
+		HashMap<IMessage,HistoryTree<byte[],byte[]>> trees = new HashMap<IMessage,HistoryTree<byte[],byte[]>>();
 		
-		for (Message m : l) {
+		for (IMessage m : l) {
 			//System.out.format("*Checking message at leaf %d\n",m.getSignatureBlob().getLeaf());
 			
 			boolean validated = false;
@@ -44,7 +44,7 @@ public class VerifyHisttreeGroup extends VerifyHisttree {
 			int version = tree.version();
 			// See if this message can be spliced on to something we already know about.
 			if (splices.containsKey(version)) {
-				Message latermsg = splices.get(version);
+				IMessage latermsg = splices.get(version);
 				HistoryTree<byte[],byte[]> latertree = trees.get(latermsg);
 				// Confirm the splice.
 				if (Arrays.equals(latertree.aggV(version),tree.agg())) {

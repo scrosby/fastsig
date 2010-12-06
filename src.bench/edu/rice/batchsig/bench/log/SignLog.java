@@ -26,6 +26,7 @@ import java.io.InputStream;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.VerifyQueue;
 import edu.rice.batchsig.bench.IncomingMessage;
@@ -52,7 +53,7 @@ public class SignLog implements Runnable {
 	}
 
 	public void run() {
-		Message message;
+		IMessage message;
 		while ((message = IncomingMessage.readFrom(input)) != null) {
 			queue.add(message);
 		}

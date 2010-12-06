@@ -1,9 +1,10 @@
 package edu.rice.batchsig.bench.log;
 
 import edu.rice.batchsig.Message;
+import edu.rice.batchsig.OMessage;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-public class JunkMessage implements Message {
+public class JunkMessage implements OMessage {
 	static final byte[] NODATA = new byte[0];
 	static final JunkMessage singleton = new JunkMessage();
 	
@@ -18,23 +19,7 @@ public class JunkMessage implements Message {
 	}
 
 	@Override
-	public void signatureValidity(boolean valid) {
-		throw new Error("Never called");
-	}
-
-	@Override
-	public TreeSigBlob getSignatureBlob() {
-		throw new Error("Never called");
-	}
-
-	@Override
 	public Object getRecipient() {
 		return new Object();
 	}
-
-	@Override
-	public Object getAuthor() {
-		throw new Error("Never called");
-	}
-
 }

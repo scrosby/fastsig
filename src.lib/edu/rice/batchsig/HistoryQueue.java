@@ -40,7 +40,7 @@ import edu.rice.historytree.storage.AppendOnlyArrayStore;
 import edu.rice.historytree.storage.HashStore;
 
 /** Process the messages by placing them into a History tree, one for each batch. */
-public class HistoryQueue extends QueueBase {
+public class HistoryQueue extends QueueBase<OMessage> implements ProcessQueue<OMessage> {
 	/** Largest size we want the history tree to grow to before rotating  */
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
 	private SignaturePrimitives signer;
@@ -52,7 +52,6 @@ public class HistoryQueue extends QueueBase {
 	public HistoryTree<byte[], byte[]> histtree;
 	
 	Object processLock = new Object();
-	
 	
 	public HistoryQueue(SignaturePrimitives signer) {
 		super();
@@ -75,7 +74,7 @@ public class HistoryQueue extends QueueBase {
 	}
 	
 	public void process() {
-		ArrayList<Message> oldqueue = atomicGetQueue();
+		ArrayList<OMessage> oldqueue = queue.atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
 		Tracker.singleton.trackBatchSize(oldqueue.size());
@@ -123,7 +122,7 @@ public class HistoryQueue extends QueueBase {
 			}
 			// Update the last contacts for each message.
 			for (int i = 0; i < oldqueue.size(); i++) {
-				Message message = oldqueue.get(i);
+				OMessage message = oldqueue.get(i);
 				Object recipient = message.getRecipient();
 				// Indicate that we want a splicepoint to the end of the bundle.
 				lastcontacts.put(recipient,histtree.version());
@@ -132,7 +131,7 @@ public class HistoryQueue extends QueueBase {
 		}
 	}
 
-	private void processMessage(Message message, int leaf_offset, TreeSigBlob.Builder template) {
+	private void processMessage(OMessage message, int leaf_offset, TreeSigBlob.Builder template) {
 		try {
 			//System.out.format("Processing leaf %d for recipient host %s\n",leaf_offset, message.getRecipient().toString());
 			// Make the pruned tree.

@@ -1,17 +1,17 @@
 package edu.rice.batchsig.bench;
 
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.ProcessQueue;
-import edu.rice.batchsig.QueueBase;
 
 /* Badly named class that processes messages at a given maxsize and dies if messages are generated too fast */
-public class MessageGeneratorThreadBase extends ShutdownableThread {
+public class MessageGeneratorThreadBase<T> extends ShutdownableThread {
 
 	private final int maxsize;
-	protected final ProcessQueue queue;
+	protected final ProcessQueue<T> queue;
 	static long lastErr = 0;
 	static long skip = 0;
 
-	public MessageGeneratorThreadBase(ProcessQueue verifyqueue, int maxsize) {
+	public MessageGeneratorThreadBase(ProcessQueue<T> verifyqueue, int maxsize) {
 		this.setName("Generate Messages");
 		//if (verifyqueue == null)
 		//	throw new Error("Null queue");

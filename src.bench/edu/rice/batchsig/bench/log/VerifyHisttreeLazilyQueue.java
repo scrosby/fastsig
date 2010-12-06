@@ -4,6 +4,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import edu.rice.batchsig.AsyncQueue;
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.bench.IncomingMessage;
@@ -16,7 +18,7 @@ import edu.rice.batchsig.splice.VerifyLazily;
  * Runs the thread that handles various incoming processing requests.
  * 
  * Handle the thread that handles the processing. */
-public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements ProcessQueue {
+public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements ProcessQueue<IMessage> {
 	VerifyLazily treeverifier;
 
 	final static int MAX_USERS = 10000;
@@ -26,8 +28,8 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	
 	ArrayBlockingQueue<Integer> forcedUserMailbox = new ArrayBlockingQueue<Integer>(MAX_USERS);
 	ArrayBlockingQueue<Long> forcedUserTimestampMailbox = new ArrayBlockingQueue<Long>(MAX_USERS);
-	ArrayBlockingQueue<Message> messageMailbox = new ArrayBlockingQueue<Message>(MAX_MESSAGES);
-	ArrayBlockingQueue<Message> forcedMessageMailbox = new ArrayBlockingQueue<Message>(MAX_MESSAGES);
+	ArrayBlockingQueue<IMessage> messageMailbox = new ArrayBlockingQueue<IMessage>(MAX_MESSAGES);
+	ArrayBlockingQueue<IMessage> forcedMessageMailbox = new ArrayBlockingQueue<IMessage>(MAX_MESSAGES);
 
 	
 	// Release the semaphore each time we add some form of work to be processed (IE, a new message or user being forced.
@@ -39,7 +41,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	}
 	
 	// Called concurrently.
-	public void add(Message message) {
+	public void add(IMessage message) {
 		//System.out.println("Adding message "+message+ " into lazy queue");
 		try {
 			messageMailbox.put(message);
@@ -127,7 +129,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 				
 				// There's something sitting around to be done right now.
 				sleepSemaphore.acquire();
-				Message m;
+				IMessage m;
 
 				
 				// Is it a message to process right now?
@@ -163,13 +165,18 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 		
 		// Add any remaining messages in mailbox.
 		while (true) {
-			Message m = messageMailbox.poll();
+			IMessage m = messageMailbox.poll();
 			if (m == null)
 				break;
 			treeverifier.add(m);
 		}
 		
 		treeverifier.forceAll();
+	}
+
+	@Override
+	public AsyncQueue getAsync() {
+		throw new Error("Should never be called");
 	}
 	
 }

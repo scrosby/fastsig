@@ -29,7 +29,11 @@ import edu.rice.historytree.HistoryTree;
 import edu.rice.historytree.generated.Serialization.SignatureType;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-public class VerifyQueue extends QueueBase {
+/**
+ * Top level queue for verifying incoming messages. Works eagerly, verifying all
+ * outstanding messages on each invocation.
+ */
+public class VerifyQueue extends QueueBase<IMessage> implements ProcessQueue<IMessage> {
 	private Verifier verifier;
 	private SignaturePrimitives signer;
 	private VerifyMerkle merkleverifier;
@@ -47,11 +51,11 @@ public class VerifyQueue extends QueueBase {
 	}
 	
 	public void process() {
-		ArrayList<Message> oldqueue = atomicGetQueue();
+		ArrayList<IMessage> oldqueue = queue.atomicGetQueue();
 
 
 		// Go over each message
-		for (Message m : oldqueue) {
+		for (IMessage m : oldqueue) {
 			if (m == null) {
 				System.err.println("Null message in queue?");
 				continue;

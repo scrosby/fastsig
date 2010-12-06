@@ -33,19 +33,21 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 
+import edu.rice.batchsig.IMessage;
+import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class ReplaySavedMessagesThread extends MessageGeneratorThreadBase {
+public class ReplaySavedMessagesThread extends MessageGeneratorThreadBase<IMessage> {
 	final private IncomingMessageStreamFromFile input;
 	int rate;
 	/** Add new messages to the queue at the requested. 
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	ReplaySavedMessagesThread(QueueBase verifyqueue, FileInputStream fileinput, int rate) {
+	ReplaySavedMessagesThread(ProcessQueue<IMessage> verifyqueue, FileInputStream fileinput, int rate) {
 		super(verifyqueue,rate);
 		if (fileinput == null)
 			throw new Error();

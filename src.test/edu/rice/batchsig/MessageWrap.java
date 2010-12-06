@@ -8,7 +8,7 @@ import edu.rice.batchsig.Message;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 /** Simple message creator that can store signatures and all the rest. */
-class MessageWrap implements Message {
+class MessageWrap implements IMessage, OMessage {
 	final byte data[];
 	TreeSigBlob signature;
 	Boolean targetvalidity = null;

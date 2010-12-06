@@ -26,11 +26,13 @@ import java.io.InputStream;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Message;
+import edu.rice.batchsig.OMessage;
 import edu.rice.historytree.generated.Serialization.MessageData;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-abstract public class MessageBase implements Message {
+abstract public class MessageBase implements IMessage, OMessage {
 	protected TreeSigBlob sigblob;
 	protected byte [] data;
 	/** Contains a virtual clock time, for simulations */

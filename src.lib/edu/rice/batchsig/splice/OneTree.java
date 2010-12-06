@@ -13,7 +13,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.protobuf.ByteString;
 
-import edu.rice.batchsig.Message;
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.Verifier;
 import edu.rice.batchsig.bench.IncomingMessage;
@@ -30,7 +30,7 @@ public class OneTree {
 	final private VerifyHisttreeLazily verifier;
 	
 	/** Map from an integer version number to the message at that version number */
-	HashMap<Integer,Message> bundles = new LinkedHashMap<Integer,Message>(1,.75f,false);
+	HashMap<Integer,IMessage> bundles = new LinkedHashMap<Integer,IMessage>(1,.75f,false);
 	
 	/** Cache of root hashes for each unvalidated bundle.
 	 *    When we verify a splice, we need to take the predecessor's bundle agg() and compare it to aggV(pred.version).
@@ -43,7 +43,7 @@ public class OneTree {
 	 * When we find the 'root' node of a dependency tree, that will be an exlempar, but not correspond to a 'real' message. This will.
 	 * 
 	 */
-	HashMap<Integer,Message> validators = new HashMap<Integer,Message>();
+	HashMap<Integer,IMessage> validators = new HashMap<Integer,IMessage>();
 	
 	/**
 	 * Invariant; The dag contains nodes for each message and the version
@@ -72,7 +72,7 @@ public class OneTree {
 		return treeid;
 	}
 
-	Dag<Integer>.DagNode getNode(Message m) {
+	Dag<Integer>.DagNode getNode(IMessage m) {
 		Integer key = m.getSignatureBlob().getLeaf();
 		return dag.makeOrGet(key);
 	}
@@ -89,7 +89,7 @@ public class OneTree {
 		this.verifier = verifier;
 	}
 
-	private void failMessage(Message m) {
+	private void failMessage(IMessage m) {
 		m.signatureValidity(true);
 		size--;
 	}
@@ -107,7 +107,7 @@ public class OneTree {
 	
 	
 	/* Each node in the dag corresponds to a set of bundles. All that end in the same epoch. */
-	void addMessage(Message m) {
+	void addMessage(IMessage m) {
 		//System.out.println("\nAdding message "+m);
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
@@ -153,7 +153,7 @@ public class OneTree {
 			// For each later message in the dag that provisionally splices this message.
 			//System.out.println("Looking at later bundles");
 			Integer succi = succ.get();
-			Message succm = bundles.get(succi);
+			IMessage succm = bundles.get(succi);
 			if (succm == null)
 				throw new Error("Algorithm bug.");
 			// Time to verify the splice is OK. 
@@ -172,7 +172,7 @@ public class OneTree {
 			ByteString aggv = ByteString.copyFrom(tree.aggV(predi.intValue()));
 			//System.out.format("Handling splicehint %d with hash %d\n",predi,aggv.hashCode());
 			// For each splicepoint to prior bundles in this message,
-			Message predm = validators.get(predi);
+			IMessage predm = validators.get(predi);
 			Dag<Integer>.DagNode prednode = dag.makeOrGet(predi);
 			// Have we seen the prior message?
 			if (predm == null) {
@@ -199,7 +199,7 @@ public class OneTree {
 	}
 
 	/** Called to remove a real message from all tracking */
-	private void remove(Message m) {
+	private void remove(IMessage m) {
 		int index = m.getSignatureBlob().getLeaf();
 		remove(index);
 	}
@@ -222,7 +222,7 @@ public class OneTree {
 				throw new Error("Size should be zero");
 			return false;
 		}
-		Message m = bundles.get(i.next());
+		IMessage m = bundles.get(i.next());
 		((IncomingMessage)m).resetCreationTimeNull();
 		forceMessage(m);
 		return true;
@@ -230,7 +230,7 @@ public class OneTree {
 	
 	
 	
-	void forceMessage(Message m) {
+	void forceMessage(IMessage m) {
 		//System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
 		
 		if (!bundles.containsKey(m.getSignatureBlob().getLeaf())) {
@@ -249,7 +249,7 @@ public class OneTree {
 			Dag<Integer>.DagNode root = rootPath.root();
 			Integer rooti = root.get();
 			// An incoming message that nominally validates the root bundle (may be more than one)
-			Message rootm = validators.get(rooti);
+			IMessage rootm = validators.get(rooti);
 			//System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
 			HistoryTree<byte[],byte[]> roottree = verifier.parseHistoryTree(rootm);
 
@@ -262,7 +262,7 @@ public class OneTree {
 				for (Dag<Integer>.DagNode i : descendents) {
 					//System.out.println("Traversing descendent to mark as valid:"+i.get());
 					//Integer desci = i.get();
-					Message descm = bundles.get(i.get());
+					IMessage descm = bundles.get(i.get());
 					if (descm != null) {
 						// TODO: Cache the spliced predecessor hashes from this node as being valid?
 						//System.out.println("... and marking it as good!");
@@ -295,7 +295,7 @@ public class OneTree {
 	public void forceAll() {
 		//System.out.format("Forcing all bundles in OneTree\n");
 		while (!bundles.isEmpty()) {
-			Message m = bundles.entrySet().iterator().next().getValue();
+			IMessage m = bundles.entrySet().iterator().next().getValue();
 			((IncomingMessage)m).resetCreationTimeNull();
 			forceMessage(m);
 		}

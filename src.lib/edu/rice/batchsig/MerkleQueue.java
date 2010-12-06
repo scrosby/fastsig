@@ -39,9 +39,8 @@ import edu.rice.historytree.storage.ArrayStore;
 import edu.rice.historytree.storage.HashStore;
 
 /** Process the messages by placing them into a Merkle, one for each batch. */
-public class MerkleQueue extends QueueBase {
+public class MerkleQueue extends QueueBase<OMessage> implements ProcessQueue<OMessage> {
 	private SignaturePrimitives signer;
-
 	public MerkleQueue(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
@@ -49,9 +48,8 @@ public class MerkleQueue extends QueueBase {
 		this.signer = signer;
 	}
 
-
 	public void process() {
-		ArrayList<Message> oldqueue = atomicGetQueue();
+		ArrayList<OMessage> oldqueue = queue.atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
 
@@ -93,7 +91,7 @@ public class MerkleQueue extends QueueBase {
 			processMessage(histtree,oldqueue.get(i), i, TreeSigBlob.newBuilder(template));
 		}
 	}
-	private void processMessage(TreeBase<byte[], byte[]> histtree, Message message, int i, TreeSigBlob.Builder template) {	
+	private void processMessage(TreeBase<byte[], byte[]> histtree, OMessage message, int i, TreeSigBlob.Builder template) {	
 		try {
 			// Make the pruned tree.
 			TreeBase<byte[], byte[]> pruned = histtree

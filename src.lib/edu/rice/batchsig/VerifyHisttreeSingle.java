@@ -13,8 +13,8 @@ public class VerifyHisttreeSingle extends VerifyHisttree {
 	}
 
 	/** Handle all messages with the same treeID */
-	protected void processMessagesFromTree(ArrayList<Message> l) {
-		for (Message m : l) {
+	protected void processMessagesFromTree(ArrayList<IMessage> l) {
+		for (IMessage m : l) {
 			HistoryTree<byte[],byte[]> tree = parseHistoryTree(m);			
 			m.signatureValidity(Verifier.checkLeaf(m,tree) && verifyHistoryRoot(m,tree));
 		}

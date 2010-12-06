@@ -16,7 +16,7 @@ public class VerifyMerkle extends Verifier {
 		super(signer);
 	}
 
-	public void add(Message message) {
+	public void add(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
 		// Parse the tree.
@@ -34,7 +34,7 @@ public class VerifyMerkle extends Verifier {
 
 		message.signatureValidity(checkSig(sigblob, msgbuilder));
 	}
-	static public MerkleTree<byte[],byte[]> parseMerkleTree(Message message) {
+	static public MerkleTree<byte[],byte[]> parseMerkleTree(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 		PrunedTree pb=sigblob.getTree();
 		MerkleTree<byte[],byte[]> tree= new MerkleTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());

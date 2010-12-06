@@ -44,7 +44,7 @@ abstract public class Verifier {
 	}
 
 	/** Within each batch, add this message to be processed */
-	public abstract void add(Message message);
+	public abstract void add(IMessage message);
 	/** At the end of each batch, mark the end of the batch */
 	public abstract void finishBatch();
 
@@ -65,7 +65,7 @@ abstract public class Verifier {
 	}
 	*/
 
-	static public boolean checkLeaf(Message message, TreeBase<byte[], byte[]> parsed) {
+	static public boolean checkLeaf(IMessage message, TreeBase<byte[], byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
 		// See if the message is in the tree.

@@ -5,17 +5,19 @@ import java.util.Iterator;
 
 import com.google.protobuf.CodedOutputStream;
 
+import edu.rice.batchsig.OMessage;
+import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.bench.MessageGeneratorThreadBase;
 import edu.rice.batchsig.bench.OutgoingMessage;
 
 
 /** Build a trace of messages from a signer to several recipients from a trace. Model 'real world' timing. */
-public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase {
+public class ReplayAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase<OMessage> {
 	Object sourceTarget;
 	Iterator<MessageEvent> trace;
 	HashMap<Object,CodedOutputStream> streammap;
-	public ReplayAndQueueMessagesForSigningThread(QueueBase queue, int maxsize) {
+	public ReplayAndQueueMessagesForSigningThread(ProcessQueue<OMessage> queue, int maxsize) {
 		super(queue,maxsize);
 	}
 	

@@ -12,7 +12,7 @@ public class VerifyAtomicSignature extends Verifier {
 		super(signer);
 	}
 
-	public void add(Message message) {
+	public void add(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
 		// Parse the tree.

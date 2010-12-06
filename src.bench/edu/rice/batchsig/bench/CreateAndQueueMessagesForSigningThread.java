@@ -28,12 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 
-import edu.rice.batchsig.QueueBase;
+import edu.rice.batchsig.OMessage;
+import edu.rice.batchsig.ProcessQueue;
 import edu.rice.historytree.generated.Serialization.MessageData;
 
 /** Given a logfile of 'messages' to be signed, play them. Each message has an arrival timestamp. */
 
-public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase {
+public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThreadBase<OMessage> {
 	final private CodedOutputStream output;
 	long seqno = 0;
 	long rate = 0;
@@ -41,7 +42,7 @@ public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThre
 	 * 
 	 * @param rate Messages per second.
 	 * */
-	CreateAndQueueMessagesForSigningThread(QueueBase signqueue, CodedOutputStream output, int rate) {
+	CreateAndQueueMessagesForSigningThread(ProcessQueue<OMessage> signqueue, CodedOutputStream output, int rate) {
 		super(signqueue,rate);
 		this.output = output;
 		this.rate = rate;

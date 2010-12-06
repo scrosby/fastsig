@@ -1,5 +1,6 @@
 package edu.rice.batchsig.splice;
 
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.bench.IncomingMessage;
 
@@ -10,7 +11,7 @@ public interface VerifyLazily {
 
 	void forceOldest();
 
-	void add(Message m);
+	void add(IMessage m);
 
 	void force(IncomingMessage m);
 

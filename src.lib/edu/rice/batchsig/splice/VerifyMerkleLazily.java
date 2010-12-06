@@ -35,6 +35,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.SignaturePrimitives;
@@ -138,7 +139,7 @@ public class VerifyMerkleLazily implements VerifyLazily {
 	}
 	
 	
-	public void add(Message m) {
+	public void add(IMessage m) {
 		add((IncomingMessage)m);
 	}
 

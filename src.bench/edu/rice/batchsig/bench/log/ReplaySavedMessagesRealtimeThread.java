@@ -63,7 +63,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 	
 	@Override
 	public void run() {
-
+		int count = 0;
 		Set<Integer> loggedOnUsers = new HashSet<Integer>();
 		long initTime = System.currentTimeMillis(); // When we started.
 		long msgOffsetTime = 0;
@@ -91,8 +91,9 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				} catch (InterruptedException e) {
 				}
 			}
+			count++;
 			if (now - injectTime > 100)
-				System.err.format("Runnign behind %dms on message injection  %d  %d   %d\n",now-injectTime,now,injectTime,msgOffsetTime);
+				System.err.format("Runnign behind %dms on message #%d injection  %d  %d   %d\n",now-injectTime,count,now,injectTime,msgOffsetTime);
 			
 			//msg.resetCreationTimeNull(); // So that we correct for the wait time above.
 			

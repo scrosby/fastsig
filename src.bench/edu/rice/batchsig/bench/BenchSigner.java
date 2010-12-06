@@ -51,7 +51,11 @@ import com.google.common.base.Supplier;
 import com.google.protobuf.CodedOutputStream;
 
 import edu.rice.batchsig.HistoryQueue;
+import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.MerkleQueue;
+import edu.rice.batchsig.Message;
+import edu.rice.batchsig.OMessage;
+import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.SimpleQueue;
@@ -76,37 +80,30 @@ import edu.rice.batchsig.splice.VerifyMerkleLazily;
 
 public class BenchSigner {
 	boolean isBatch, isBig, isVerifying, isTrace;
-	QueueBase queue; // One of the three signing queues or a verifying queue 
+	ProcessQueue<IMessage> iqueue; // One of the three signing queues or a verifying queue 
+	ProcessQueue<OMessage> oqueue; // One of the three signing queues or a verifying queue 
 	//SignaturePrimitives prims;
 	//String ciphertype;
 	CommandLine commands;
-	Function<String,QueueBase> queuefn;
+	Function<String,ProcessQueue<OMessage>> queuefn;
 	
 
 	/** Setup to do a single run of signing, creating and waiting for the threads to die. */
 	protected void doSigningRun(CodedOutputStream output, int makeRate, int signRate, int sleepTime) {
 		System.out.format("Signing run: %d makeRate, %d signRate, %d experimentTime\n",makeRate,signRate, sleepTime);
-		CreateAndQueueMessagesForSigningThread makeThread = new CreateAndQueueMessagesForSigningThread(queue, output, makeRate);
-		doCommon(sleepTime, makeThread);
+		CreateAndQueueMessagesForSigningThread makeThread = new CreateAndQueueMessagesForSigningThread(oqueue, output, makeRate);
+		doCommon(oqueue, sleepTime, makeThread);
 		}
 
 	/** Setup to do a single run of verifying, creating and waiting for the threads to die. */
 	protected void doVerifyingRun(FileInputStream input, int makeRate, int signRate, int sleepTime) {
 		System.out.format("Verifyign run: %d makeRate, %d signRate, %d experimentTime\n",makeRate,signRate, sleepTime);
-		ReplaySavedMessagesThread makeThread = new ReplaySavedMessagesThread(queue,input, makeRate);
-		doCommon(sleepTime, makeThread);
-		}
-
-	/** Setup to do a single run of verifying, creating and waiting for the threads to die. */
-	protected void doVerifyingRunFromTraced(FileInputStream input, int makeRate, int signRate, int sleepTime) {
-		// TODO: Code is copy&paste and wrong.
-		ReplaySavedMessagesRealtimeThread makeThread = null; // TODO: new ReplaySavedMessagesRealtimeThread(queue,input,makeRate);
-		//makeThread.setup((MultiplexedPublicKeyPrims) prims);
-		doCommon(sleepTime, makeThread);
+		ReplaySavedMessagesThread makeThread = new ReplaySavedMessagesThread(iqueue,input, makeRate);
+		doCommon(iqueue, sleepTime, makeThread);
 		}
 
 	
-	private void doCommon(int sleepTime, ShutdownableThread makeThread) {
+	private void doCommon(ProcessQueue<? extends Message> queue, int sleepTime, ShutdownableThread makeThread) {
 		ProcessQueueThread processThread = new ProcessQueueThread(queue, 0);
 		makeThread.start();
 		processThread.start();
@@ -125,11 +122,11 @@ public class BenchSigner {
 	public void hotspotSigning() throws InterruptedException, FileNotFoundException {
 		// Activate the hotspot over the data in question. 
 		// Store a scratch copy of the queue, then reset to null.
-		if (queue != null) 
+		if (oqueue != null) 
 			throw new Error("Queue should be null!");
 		String signer_id = commands.getOptionValue("signerid","Host0");
 		CodedOutputStream output = CodedOutputStream.newInstance(new FileOutputStream("/dev/null"));
-		queue = queuefn.apply(signer_id);
+		oqueue = queuefn.apply(signer_id);
 
 		System.err.println("Starting hotspot signing");
 		if (isBatch) {
@@ -153,7 +150,7 @@ public class BenchSigner {
 			}
 		}
 		System.err.println("End hotspot signing");
-		queue = null;
+		oqueue = null;
 	}
 
 	/** Do some processing to warm up the hotspot compiler 
@@ -341,13 +338,13 @@ public class BenchSigner {
 		// Create queues.
 		if (commands.hasOption("history")) {
 			isBatch = true;
-			queuefn=new Function<String,QueueBase>(){public QueueBase apply(String signer_id) {return new HistoryQueue(setupCipher(signer_id));}};
+			queuefn=new Function<String,ProcessQueue<OMessage>>(){public ProcessQueue<OMessage> apply(String signer_id) {return new HistoryQueue(setupCipher(signer_id));}};
 		} else if (commands.hasOption("merkle")) {
 			isBatch = true;
-			queuefn=new Function<String,QueueBase>(){public QueueBase apply(String signer_id) {return new MerkleQueue(setupCipher(signer_id));}};
+			queuefn=new Function<String,ProcessQueue<OMessage>>(){public ProcessQueue<OMessage> apply(String signer_id) {return new MerkleQueue(setupCipher(signer_id));}};
 		} else if (commands.hasOption("simple")) {
 			isBatch = false;
-			queuefn=new Function<String,QueueBase>(){public QueueBase apply(String signer_id) {return new SimpleQueue(setupCipher(signer_id));}};
+			queuefn=new Function<String,ProcessQueue<OMessage>>(){public ProcessQueue<OMessage> apply(String signer_id) {return new SimpleQueue(setupCipher(signer_id));}};
 		} else {
 			throw new IllegalArgumentException("Unknown signqueue type. Please choose one of -history -merkle or -simple");
 		}
@@ -404,7 +401,7 @@ public class BenchSigner {
 	private void handleSigning(final int time) throws FileNotFoundException,
 			InterruptedException, IOException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
 		String signer_id = commands.getOptionValue("signerid","Host0");
-		queue = queuefn.apply(signer_id);
+		oqueue = queuefn.apply(signer_id);
 		CodedOutputStream tmpoutput;
 		CodedOutputStream output = null;
 		if (commands.hasOption("output")) {
@@ -465,7 +462,7 @@ public class BenchSigner {
 	
 	private void handleTraceSigning(int timeout) throws FileNotFoundException {
 		String signer_id = commands.getOptionValue("signerid","Host0");
-		queue = queuefn.apply(signer_id);
+		oqueue = queuefn.apply(signer_id);
 		Tracker.singleton.reset();
 		Tracker.singleton.enable();
 		String eventtracename=commands.getOptionValue("eventtrace");
@@ -477,7 +474,7 @@ public class BenchSigner {
 		Iterator<MessageEvent> events = new MessageEvent.Iter(new FileInputStream(eventtracename));		
 		
 		System.err.println("Setting up replay queue");
-		ReplayAndQueueMessagesForSigningThread thr= new ReplayAndQueueMessagesForSigningThread(queue,MAX_TRACE_BACKLOG);
+		ReplayAndQueueMessagesForSigningThread thr= new ReplayAndQueueMessagesForSigningThread(oqueue,MAX_TRACE_BACKLOG);
 
 		FileOutputStream nullstream = new FileOutputStream("/dev/null");
 		
@@ -493,7 +490,7 @@ public class BenchSigner {
 		
 		thr.configure(streammap );
 		thr.configure(0,events);
-		doCommon(timeout, thr);
+		doCommon(oqueue, timeout, thr);
 		Tracker.singleton.print(String.format("Trace-%s",eventtracename));
 	}
 
@@ -501,7 +498,7 @@ public class BenchSigner {
 	private void handleVerifying(final int time) throws FileNotFoundException,
 			Error, InterruptedException, InvalidKeyException, NoSuchAlgorithmException, NoSuchProviderException {
 		String signer_id = commands.getOptionValue("signerid","Host0");
-		queue = new VerifyQueue(setupCipher(signer_id));
+		iqueue = new VerifyQueue(setupCipher(signer_id));
 		if (commands.getOptionValue("input") == null)
 			throw new Error("Need to define an input file");
 		final FileInputStream fileinput = new FileInputStream(commands.getOptionValue("input"));
