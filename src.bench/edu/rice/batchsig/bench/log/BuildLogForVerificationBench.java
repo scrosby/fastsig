@@ -36,6 +36,7 @@ import edu.rice.batchsig.OMessage;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
 import edu.rice.batchsig.SignaturePrimitives;
+import edu.rice.batchsig.SuspendableProcessQueue;
 import edu.rice.batchsig.bench.MessageBase;
 import edu.rice.batchsig.bench.OutgoingMessage;
 import edu.rice.batchsig.bench.PublicKeyPrims;
@@ -57,20 +58,20 @@ import edu.rice.batchsig.bench.PublicKeyPrims;
 public class BuildLogForVerificationBench {
 	final Object destinationTarget = new Integer(0);
 	final private int epochlength;
-	final ProcessQueue<OMessage> queues[];
+	final SuspendableProcessQueue<OMessage> queues[];
 	final private int sender_server_count;
 	final private Supplier<Integer> batchsizefn;
 	final private CodedOutputStream outstream;
 
 	@SuppressWarnings("unchecked")
-	public BuildLogForVerificationBench(int epochlength, Function<String,ProcessQueue<OMessage>> queuefactory, 
+	public BuildLogForVerificationBench(int epochlength, Function<String,SuspendableProcessQueue<OMessage>> queuefactory, 
 			int sender_server_count, Supplier<Integer> batchsizefn, CodedOutputStream outstream) {
 		this.epochlength = epochlength;
 		this.sender_server_count = sender_server_count;
 		this.batchsizefn = batchsizefn;
 		this.outstream = outstream;
 		
-		queues = (ProcessQueue<OMessage>[])new ProcessQueue<?>[sender_server_count];
+		queues = (SuspendableProcessQueue<OMessage>[])new SuspendableProcessQueue<?>[sender_server_count];
 		for (int i= 0 ; i < sender_server_count ; i++) {
 			queues[i] = queuefactory.apply("Signer"+i); // Must match that used in BenchSigner.handleVerifyTrace
 		}

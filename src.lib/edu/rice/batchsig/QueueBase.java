@@ -29,4 +29,8 @@ abstract public class QueueBase<T> {
 	protected ArrayList<T> atomicGetQueue() {
 		return queue.atomicGetQueue();
 	}
+	
+	public void suspendTillNonEmpty() {
+		queue.suspendTillNonEmpty();
+	}
 }

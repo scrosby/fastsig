@@ -33,7 +33,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
  * Top level queue for verifying incoming messages. Works eagerly, verifying all
  * outstanding messages on each invocation.
  */
-public class VerifyQueue extends QueueBase<IMessage> implements ProcessQueue<IMessage> {
+public class VerifyQueue extends QueueBase<IMessage> implements SuspendableProcessQueue<IMessage> {
 	private Verifier verifier;
 	private SignaturePrimitives signer;
 	private VerifyMerkle merkleverifier;

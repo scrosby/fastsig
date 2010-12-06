@@ -8,8 +8,8 @@ import edu.rice.batchsig.AsyncQueue;
 import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Message;
 import edu.rice.batchsig.ProcessQueue;
+import edu.rice.batchsig.ShutdownableThread;
 import edu.rice.batchsig.bench.IncomingMessage;
-import edu.rice.batchsig.bench.ShutdownableThread;
 import edu.rice.batchsig.splice.VerifyHisttreeLazily;
 import edu.rice.batchsig.splice.VerifyLazily;
 
@@ -174,9 +174,5 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 		treeverifier.forceAll();
 	}
 
-	@Override
-	public AsyncQueue getAsync() {
-		throw new Error("Should never be called");
-	}
-	
+
 }

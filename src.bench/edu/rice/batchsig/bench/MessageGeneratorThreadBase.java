@@ -2,6 +2,7 @@ package edu.rice.batchsig.bench;
 
 import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.ProcessQueue;
+import edu.rice.batchsig.ShutdownableThread;
 
 /* Badly named class that processes messages at a given maxsize and dies if messages are generated too fast */
 public class MessageGeneratorThreadBase<T> extends ShutdownableThread {

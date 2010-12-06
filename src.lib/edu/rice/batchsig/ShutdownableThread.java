@@ -1,11 +1,8 @@
-package edu.rice.batchsig.bench;
+package edu.rice.batchsig;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ShutdownableThread extends Thread {
-	// How long to wait before polls with the sleep?
-	final static int SLEEP_POLL = 1000;
-	
 	protected AtomicBoolean finished = new AtomicBoolean(false);
 
 	public ShutdownableThread() {

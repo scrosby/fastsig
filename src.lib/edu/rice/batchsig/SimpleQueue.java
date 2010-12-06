@@ -32,7 +32,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 
 /** Simple queue that signs every message */
-public class SimpleQueue extends QueueBase<OMessage> implements ProcessQueue<OMessage> {
+public class SimpleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	private SignaturePrimitives signer;
 	private long initTime;
 

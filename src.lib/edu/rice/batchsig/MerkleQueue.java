@@ -39,7 +39,7 @@ import edu.rice.historytree.storage.ArrayStore;
 import edu.rice.historytree.storage.HashStore;
 
 /** Process the messages by placing them into a Merkle, one for each batch. */
-public class MerkleQueue extends QueueBase<OMessage> implements ProcessQueue<OMessage> {
+public class MerkleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	private SignaturePrimitives signer;
 	public MerkleQueue(SignaturePrimitives signer) {
 		super();

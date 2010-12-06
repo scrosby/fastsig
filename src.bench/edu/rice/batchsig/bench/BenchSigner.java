@@ -57,8 +57,10 @@ import edu.rice.batchsig.Message;
 import edu.rice.batchsig.OMessage;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
+import edu.rice.batchsig.ShutdownableThread;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.SimpleQueue;
+import edu.rice.batchsig.SuspendableProcessQueue;
 import edu.rice.batchsig.VerifyQueue;
 import edu.rice.batchsig.bench.log.BuildLogForVerificationBench;
 import edu.rice.batchsig.bench.log.LogonLogoffEvent;
@@ -80,12 +82,12 @@ import edu.rice.batchsig.splice.VerifyMerkleLazily;
 
 public class BenchSigner {
 	boolean isBatch, isBig, isVerifying, isTrace;
-	ProcessQueue<IMessage> iqueue; // One of the three signing queues or a verifying queue 
-	ProcessQueue<OMessage> oqueue; // One of the three signing queues or a verifying queue 
+	SuspendableProcessQueue<IMessage> iqueue; // One of the three signing queues or a verifying queue 
+	SuspendableProcessQueue<OMessage> oqueue; // One of the three signing queues or a verifying queue 
 	//SignaturePrimitives prims;
 	//String ciphertype;
 	CommandLine commands;
-	Function<String,ProcessQueue<OMessage>> queuefn;
+	Function<String,SuspendableProcessQueue<OMessage>> queuefn;
 	
 
 	/** Setup to do a single run of signing, creating and waiting for the threads to die. */
@@ -103,7 +105,7 @@ public class BenchSigner {
 		}
 
 	
-	private void doCommon(ProcessQueue<? extends Message> queue, int sleepTime, ShutdownableThread makeThread) {
+	private void doCommon(SuspendableProcessQueue<? extends Message> queue, int sleepTime, ShutdownableThread makeThread) {
 		ProcessQueueThread processThread = new ProcessQueueThread(queue, 0);
 		makeThread.start();
 		processThread.start();
@@ -338,13 +340,13 @@ public class BenchSigner {
 		// Create queues.
 		if (commands.hasOption("history")) {
 			isBatch = true;
-			queuefn=new Function<String,ProcessQueue<OMessage>>(){public ProcessQueue<OMessage> apply(String signer_id) {return new HistoryQueue(setupCipher(signer_id));}};
+			queuefn=new Function<String,SuspendableProcessQueue<OMessage>>(){public SuspendableProcessQueue<OMessage> apply(String signer_id) {return new HistoryQueue(setupCipher(signer_id));}};
 		} else if (commands.hasOption("merkle")) {
 			isBatch = true;
-			queuefn=new Function<String,ProcessQueue<OMessage>>(){public ProcessQueue<OMessage> apply(String signer_id) {return new MerkleQueue(setupCipher(signer_id));}};
+			queuefn=new Function<String,SuspendableProcessQueue<OMessage>>(){public SuspendableProcessQueue<OMessage> apply(String signer_id) {return new MerkleQueue(setupCipher(signer_id));}};
 		} else if (commands.hasOption("simple")) {
 			isBatch = false;
-			queuefn=new Function<String,ProcessQueue<OMessage>>(){public ProcessQueue<OMessage> apply(String signer_id) {return new SimpleQueue(setupCipher(signer_id));}};
+			queuefn=new Function<String,SuspendableProcessQueue<OMessage>>(){public SuspendableProcessQueue<OMessage> apply(String signer_id) {return new SimpleQueue(setupCipher(signer_id));}};
 		} else {
 			throw new IllegalArgumentException("Unknown signqueue type. Please choose one of -history -merkle or -simple");
 		}

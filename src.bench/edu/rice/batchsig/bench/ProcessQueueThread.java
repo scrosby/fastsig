@@ -25,14 +25,16 @@ import edu.rice.batchsig.Message;
 import edu.rice.batchsig.OMessage;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.QueueBase;
+import edu.rice.batchsig.ShutdownableThread;
+import edu.rice.batchsig.SuspendableProcessQueue;
 
 /** Run processs over a at a given minimum epoch time. */
 
 public class ProcessQueueThread extends ShutdownableThread {
 	private int epochlength;
-	private ProcessQueue<? extends Message> signqueue;
+	private SuspendableProcessQueue<? extends Message> signqueue;
 		
-	ProcessQueueThread(ProcessQueue<? extends Message> signqueue, int epochtime) {
+	ProcessQueueThread(SuspendableProcessQueue<? extends Message> signqueue, int epochtime) {
 		this.setName("ProcessQueue");
 		if (signqueue == null)
 			throw new Error("NO signqueue given");
@@ -46,7 +48,7 @@ public class ProcessQueueThread extends ShutdownableThread {
 		while (!finished.get()) {
 			//System.out.println("SigningLoop");
 			long epochstart = System.currentTimeMillis();
-			signqueue.getAsync().suspendTillNonEmpty();
+			signqueue.suspendTillNonEmpty();
 			signqueue.process();
 
 			long now = System.currentTimeMillis();

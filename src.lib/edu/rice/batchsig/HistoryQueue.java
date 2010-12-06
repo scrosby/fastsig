@@ -40,7 +40,7 @@ import edu.rice.historytree.storage.AppendOnlyArrayStore;
 import edu.rice.historytree.storage.HashStore;
 
 /** Process the messages by placing them into a History tree, one for each batch. */
-public class HistoryQueue extends QueueBase<OMessage> implements ProcessQueue<OMessage> {
+public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	/** Largest size we want the history tree to grow to before rotating  */
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
 	private SignaturePrimitives signer;
