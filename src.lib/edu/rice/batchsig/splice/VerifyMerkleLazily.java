@@ -29,9 +29,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import edu.rice.batchsig.IMessage;
+import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.VerifyMerkle;
 import edu.rice.batchsig.bench.Tracker;
-import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
 
 
 
@@ -42,7 +42,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 	/** Map from recipient_user to the messages queued to that recipient_user */
 	Multimap<Object,IMessage> userToMessages = HashMultimap.create();
 	
-	public VerifyMerkleLazily(MultiplexedPublicKeyPrims signer) {
+	public VerifyMerkleLazily(SignaturePrimitives signer) {
 		merkleverify = new VerifyMerkle(signer);
 	}
 
@@ -80,7 +80,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		Collection<IMessage> ml = new ArrayList<IMessage>(userToMessages.get(user));
 		for (IMessage m : ml) {
 			//System.out.println("Forcing "+user + "   " +  m.getVirtualClock());
-			//TODO: m.resetCreationTimeTo(timestamp);
+			m.resetCreationTimeTo(timestamp);
 			merkleverify.add(m);
 			expirationqueue.remove(m);
 		}
@@ -88,11 +88,11 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 	
 	public void forceAll() {
 		for (IMessage m : expired) {
-			//TODO: m.resetCreationTimeNull();
+			m.resetCreationTimeNull();
 			merkleverify.add(m); // Process eldest.
 		}
 		for (IMessage m : new ArrayList<IMessage>(expirationqueue.keySet())) {
-			//TODO: m.resetCreationTimeNull();
+			m.resetCreationTimeNull();
 			merkleverify.add(m);
 		}
 	}
@@ -101,7 +101,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		if (expired.size() > 0) {
 			Iterator<IMessage> i = expired.iterator();
 			IMessage m = i.next();
-			//TODO: m.resetCreationTimeNull();
+			m.resetCreationTimeNull();
 			merkleverify.add(m);
 			i.remove();
 		}

@@ -2,22 +2,14 @@ package edu.rice.batchsig.splice;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.protobuf.ByteString;
 
 import edu.rice.batchsig.IMessage;
-import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.Verifier;
-import edu.rice.batchsig.bench.IncomingMessage;
-import edu.rice.batchsig.splice.Dag.DagNode;
 import edu.rice.historytree.HistoryTree;
 
 /** Represent all of the message from one history tree instance */
@@ -77,12 +69,6 @@ public class OneTree {
 		return dag.makeOrGet(key);
 	}
 
-	// TODO: Remove this function!
-	private String getName() {
-		return String.format("OneTree(%s-%d)",((ByteString)author).toStringUtf8(),treeid);
-	}
-	
-	
 	public OneTree(VerifyHisttreeLazily verifier, Object object, long l) {
 		this.author = object;
 		this.treeid = l;
@@ -223,7 +209,7 @@ public class OneTree {
 			return false;
 		}
 		IMessage m = bundles.get(i.next());
-		((IncomingMessage)m).resetCreationTimeNull();
+		m.resetCreationTimeNull();
 		forceMessage(m);
 		return true;
 	}
@@ -296,7 +282,7 @@ public class OneTree {
 		//System.out.format("Forcing all bundles in OneTree\n");
 		while (!bundles.isEmpty()) {
 			IMessage m = bundles.entrySet().iterator().next().getValue();
-			((IncomingMessage)m).resetCreationTimeNull();
+			m.resetCreationTimeNull();
 			forceMessage(m);
 		}
 	}

@@ -19,29 +19,20 @@
 
 package edu.rice.batchsig.splice;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
 
 import edu.rice.batchsig.IMessage;
-import edu.rice.batchsig.Message;
-import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.VerifyHisttreeCommon;
 import edu.rice.batchsig.bench.Tracker;
-import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
-import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 
 
@@ -96,7 +87,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 	Multimap<Object,IMessage> userToMessages = HashMultimap.create();
 	
 	
-	public VerifyHisttreeLazily(MultiplexedPublicKeyPrims signer) {
+	public VerifyHisttreeLazily(SignaturePrimitives signer) {
 		super(signer);
 	}
 
@@ -182,7 +173,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 				return;
 			IMessage m = ml.iterator().next();
 			//System.out.format("Forcing user %s at %d was %d  -- %s\n",user.toString(),timestamp,m.getCreationTime(),m.toString());
-			//TODO: m.resetCreationTimeTo(timestamp);
+			m.resetCreationTimeTo(timestamp);
 			//System.out.format("For forced user %s, found message %s\n",user.toString(),m.toString());
 			force(m);
 		}

@@ -46,4 +46,14 @@ public class WrappedIMessage implements IMessage {
 	public void setCallback(Callback c) {
 		validator = c;
 	}
+
+	@Override
+	public void resetCreationTimeNull() {
+		o.resetCreationTimeNull();
+	}
+
+	@Override
+	public void resetCreationTimeTo(long tstamp) {
+		o.resetCreationTimeTo(tstamp);
+	}
 }

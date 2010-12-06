@@ -19,4 +19,16 @@ public interface IMessage extends Message {
 	/** Which user is targetted this message? */
 	public Object getRecipientUser();
 
+	
+	
+	/** Function to help in tracking the latency. 
+	 * 
+	 * Mark this message as not needing its latency measured, for instance, if it was verified idly. 
+	 * */
+	public void resetCreationTimeNull();
+	/** Function to help in tracking the latency. 
+	 * 
+	 * Remember when the message was 'forced', so that we can figure out how long it took until it was later verified. */
+	public void resetCreationTimeTo(long tstamp);
+
 }
