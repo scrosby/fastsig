@@ -116,8 +116,8 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 				}
 			}
 			// STEP 3: Record any users that have just logged off.
-			if (msg.end_buffering != null) {
-				for (Integer i: msg.end_buffering) {
+			if (msg.start_buffering != null) {
+				for (Integer i: msg.start_buffering) {
 					loggedOnUsers.remove(i);
 				}
 			}
