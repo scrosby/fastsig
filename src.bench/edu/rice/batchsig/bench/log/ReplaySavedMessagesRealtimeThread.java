@@ -93,7 +93,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 			}
 			count++;
 			if (now - injectTime > 100)
-				System.err.format("Runnign behind %dms on message #%d injection  %d  %d   %d\n",now-injectTime,count,now,injectTime,msgOffsetTime);
+				System.err.format("Runnign behind %dms on message #%d injection  %d  %d   %d\n",now-injectTime,count,now-initTime,injectTime-initTime,msgOffsetTime);
 			
 			//msg.resetCreationTimeNull(); // So that we correct for the wait time above.
 			
@@ -115,6 +115,12 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 					lazyqueue.add(msg);
 				}
 			}
+			int tot_users = 0;
+			tot_users += msg.start_buffering == null ? 0 : msg.start_buffering.size();
+			tot_users += msg.end_buffering == null ? 0 : msg.end_buffering.size();
+
+			if (tot_users > 100)
+				System.err.format("Lots of messages changing buffering %d \n",tot_users);
 			// STEP 3: Record any users that have just logged off.
 			if (msg.start_buffering != null) {
 				for (Integer i: msg.start_buffering) {
