@@ -49,7 +49,7 @@ public class MerkleQueue extends QueueBase<OMessage> implements ProcessQueue<OMe
 	}
 
 	public void process() {
-		ArrayList<OMessage> oldqueue = queue.atomicGetQueue();
+		ArrayList<OMessage> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
 

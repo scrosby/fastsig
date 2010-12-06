@@ -74,7 +74,7 @@ public class HistoryQueue extends QueueBase<OMessage> implements ProcessQueue<OM
 	}
 	
 	public void process() {
-		ArrayList<OMessage> oldqueue = queue.atomicGetQueue();
+		ArrayList<OMessage> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)
 			return;
 		Tracker.singleton.trackBatchSize(oldqueue.size());

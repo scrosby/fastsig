@@ -51,7 +51,7 @@ public class VerifyQueue extends QueueBase<IMessage> implements ProcessQueue<IMe
 	}
 	
 	public void process() {
-		ArrayList<IMessage> oldqueue = queue.atomicGetQueue();
+		ArrayList<IMessage> oldqueue = atomicGetQueue();
 
 
 		// Go over each message

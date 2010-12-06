@@ -1,7 +1,9 @@
 package edu.rice.batchsig;
 
+import java.util.ArrayList;
+
 abstract public class QueueBase<T> {
-	final protected AsyncQueue<T> queue = new AsyncQueue<T>();
+	final private AsyncQueue<T> queue = new AsyncQueue<T>();
 
 	public QueueBase() {
 		super();
@@ -24,5 +26,7 @@ abstract public class QueueBase<T> {
 	public AsyncQueue<T> getAsync() {
 		return queue;
 	}
-	
+	protected ArrayList<T> atomicGetQueue() {
+		return queue.atomicGetQueue();
+	}
 }
