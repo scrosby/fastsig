@@ -37,6 +37,12 @@ import edu.rice.historytree.generated.Serialization.PrunedTree;
  *            Type of the value being stored.
  */
 public abstract class TreeBase<A,V> {
+	protected int time;
+	protected NodeCursor<A,V> root;
+	protected HistoryDataStoreInterface<A,V> datastore;
+	protected AggregationInterface<A,V> aggobj;
+
+	
 	/** Make an empty history tree with a given aggobj and datastore.  */
 	public TreeBase(AggregationInterface<A,V> aggobj,
 	    		   HistoryDataStoreInterface<A,V> datastore) {
@@ -365,63 +371,71 @@ protected boolean parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
 	 * leaf. We also need to ensure that each sibling node on that path that is
 	 * a stub also has an agg.
 	 * 
-	 * WORKS: with history tree. UNTESTED: with a merkle tree.
+	 * @param orig
+	 *            The original tree.
+	 * @param origleaf
+	 *            The leaf in the original tree we're copying siblings from.
+	 * @param leaf
+	 *            The leaf in this tree we're copyingto.
+	 * @param force
+	 *            Do we copy siblings all the way to the root unconditionally?
+	 *            Used when the pruned tree violates the invariant of all but
+	 *            the newly added leaf containing sibling aggs.
+	 * 
+	 * 
 	 * */
-protected void copySiblingAggs(TreeBase<A, V> orig, NodeCursor<A,V> origleaf, NodeCursor<A,V> leaf,
-		boolean force) {
-			assert(orig.time == this.time); // Except for concurrent copies&updates, time shouldn't change.
-			NodeCursor<A,V> node,orignode;
-			orignode = origleaf.getParent(orig.root);
-			node = leaf.getParent(root);
+	protected void copySiblingAggs(TreeBase<A, V> orig,
+			NodeCursor<A, V> origleaf, NodeCursor<A, V> leaf, boolean force) {
+		assert (orig.time == this.time); // Except for concurrent
+											// copies&updates, time shouldn't
+											// change.
+		NodeCursor<A, V> node, orignode;
+		orignode = origleaf.getParent(orig.root);
+		node = leaf.getParent(root);
 		
-			boolean continuing = true;
-			// Invariant: We have a well-formed tree with all stubs include hashes EXCEPT possibly siblings in the path from the leaf to where it merged into the existing pruned tree.
-		    // Iterate up the tree, copying over sibling agg's for stubs. If we hit a node with two siblings. we're done. Earlier inserts will have already inserted sibling hashes for ancestor nodes.
-			while (continuing && node != null) {
-				//System.out.println("CA("+orig.version()+"): "+orignode+" --> "+node);
-				// FIX: THE INITAL TREE VIOLATES THE INVARIANTS.
-				if (!force && node.left() != null && node.right() != null)
-					continuing = false;
-				NodeCursor<A,V> origleft,origright;
-				//System.out.println("NO BREAK");
-				origleft = orignode.left();
-				//System.out.println("CL: "+origleft+" --> "+node.forceLeft());
-				if (origleft != null && origleft.getAgg() != null)
-					node.forceLeft().copyAgg(origleft);
-				
-				// A right node may or may not exist.
-				origright = orignode.right();
-				//System.out.println("RIGHT:"+origright+"  "+time); 
-				if (origright!= null && origright.getAgg() != null)
-						node.forceRight().copyAgg(origright);
-		
-				//System.out.println("LOOP");
-			
-				orignode = orignode.getParent(orig.root);
-				node = node.getParent(root);
-			}
-			// Handle the root-is-frozen case
-			if (root.isFrozen(time)) {
-				root.markValid();
-				root.copyAgg(orig.root);
-			}
+		// Do we continue up the tree?
+		boolean continuing = true;
+		// Invariant: We have a well-formed tree with all stubs include hashes
+		// EXCEPT possibly siblings in the path from the given leaf to where it merged
+		// into the existing pruned tree.
+
+		// Iterate up the tree, copying over sibling agg's for stubs. If we hit
+		// a node with two siblings. we're done. Earlier inserts will have
+		// already inserted sibling hashes for ancestor nodes.
+		while (continuing && node != null) {
+			if (!force && node.left() != null && node.right() != null)
+				continuing = false;
+			NodeCursor<A, V> origleft, origright;
+			origleft = orignode.left();
+			if (origleft != null && origleft.getAgg() != null)
+				node.forceLeft().copyAgg(origleft);
+
+			// A right node may or may not exist.
+			origright = orignode.right();
+			if (origright != null && origright.getAgg() != null)
+				node.forceRight().copyAgg(origright);
+
+			orignode = orignode.getParent(orig.root);
+			node = node.getParent(root);
 		}
+		// Handle the root-is-frozen case
+		if (root.isFrozen(time)) {
+			root.markValid();
+			root.copyAgg(orig.root);
+		}
+	}
 
-protected int time;
-  protected NodeCursor<A,V> root;
-  protected HistoryDataStoreInterface<A,V> datastore;
-  protected AggregationInterface<A,V> aggobj;
 
-  public static int log2(int x) {
-  	int i = 0, pow = 1;
-  	while (pow <= x) {
-  		pow = pow*2;
-  		i=i+1;
-  	}
-  	return i;
-  }
-abstract public TreeBase<A,V> makePruned(
-		HistoryDataStoreInterface<A,V> datastore);
+	public static int log2(int x) {
+		int i = 0, pow = 1;
+		while (pow <= x) {
+			pow = pow * 2;
+			i = i + 1;
+		}
+		return i;
+	}
 
+	abstract public TreeBase<A, V> makePruned(
+			HistoryDataStoreInterface<A, V> datastore);
 
 }
