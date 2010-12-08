@@ -65,6 +65,24 @@ class MessageWrap implements IMessage, OMessage {
 
 	public void wantValid() {targetvalidity = true;}
 	public void wantInValid() {targetvalidity = false;}
+
+	@Override
+	public Object getRecipientUser() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void resetCreationTimeNull() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void resetCreationTimeTo(long tstamp) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 
 	
