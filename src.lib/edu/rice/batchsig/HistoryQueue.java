@@ -39,20 +39,25 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.AppendOnlyArrayStore;
 import edu.rice.historytree.storage.HashStore;
 
-/** Process the messages by placing them into a History tree, one for each batch. */
+/** Sign a set of messages by placing them into a history tree.
+ * 
+ * 
+ */
+
 public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	/** Largest size we want the history tree to grow to before rotating  */
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
+	/** Underlying signign algorithm */
 	private SignaturePrimitives signer;
 	
-	/** Track when we last contacted a given recipient_host */
+	/** Track when we last contacted a given recipient_host, so we know which splices to use. */
 	public HashMap<Object,Integer> lastcontacts;
 	/** As a history tree may be used among multiple messages, indicate which message this is dealing with. */
 	public long treeid;
+
+	/** The actual history tree */
 	public HistoryTree<byte[], byte[]> histtree;
-	
-	Object processLock = new Object();
-	
+		
 	public HistoryQueue(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
@@ -89,7 +94,8 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 		 * TODO: If we fix that, then a simple many-readers/one-writers lock will 
 		 * allow concurrency between RSA, adding to the history tree and generating proofs.
 		 */
-		synchronized (processLock) {
+		// Lock the history tree from concurrent modification 
+		synchronized (histtree) {
 			// First, is it big enough to build a new tree?
 			rotateStore(oldqueue.size());
 
@@ -131,6 +137,9 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 		}
 	}
 
+	/** Fill in the protocol buffer object for each message with the appropriate pruned tree.
+	 * 
+	 */
 	private void processMessage(OMessage message, int leaf_offset, TreeSigBlob.Builder template) {
 		try {
 			//System.out.format("Processing leaf %d for recipient host %s\n",leaf_offset, message.getRecipient().toString());
