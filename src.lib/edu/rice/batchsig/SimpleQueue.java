@@ -31,7 +31,9 @@ import edu.rice.historytree.generated.Serialization.SignatureType;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 
-/** Simple queue that signs every message */
+/** Sign a set of messages by signing them one at a time.
+ * 
+ */
 public class SimpleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	private SignaturePrimitives signer;
 	private long initTime;
@@ -67,6 +69,7 @@ public class SimpleQueue extends QueueBase<OMessage> implements SuspendableProce
 		}
 	}
 
+	/** Helper function for hashing a byte array */
 	static public byte[] hash(byte[] data) {
 		try {
 			MessageDigest md=MessageDigest.getInstance("SHA-256");

@@ -2,6 +2,7 @@ package edu.rice.batchsig;
 
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
+/** Interface for representing outgoing messages to be signed. */
 public interface OMessage extends Message {
 	/** Callback invoked with the signed result. Used by the message signing thread to set the signature when it is computed. May be executed concurrently.
 	 *

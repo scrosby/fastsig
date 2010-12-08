@@ -19,7 +19,8 @@
 
 package edu.rice.batchsig;
 
-/** Represent a queue of messages to be signed with some sort of bulk signature mechanism. */
+/** Represent a queue of messages to be signed, or verified, 
+ * with some sort of bulk signature or verification mechanism. */
 public interface ProcessQueue<T> {
 
 	/** Add a message to be processed. Called concurrently. */
@@ -36,5 +37,6 @@ public interface ProcessQueue<T> {
 	 */
 	abstract public void finish();
 
+	/** An estimate of how many messages are outstanding in the queue */
 	public abstract int peekSize();
 }

@@ -21,10 +21,14 @@ package edu.rice.batchsig;
 
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
-
+/**
+ * Abstract API for how the the batch signing algorithms communicate to an
+ * underlying public key signature algorithm.
+ */
 public interface SignaturePrimitives {
 
-	/** Sign an input message in protobuf format. Should set the following fields in the protobuf:
+	/** Sign an input message, placing the signature data in the protocol buffer requested
+	 *   It Should set the following fields in the protobuf:
 	 * 
 	 *   optional bytes signature_bytes;
 	 *   optional bytes signer_id;
@@ -32,6 +36,6 @@ public interface SignaturePrimitives {
 	 * */
 	void sign(byte[] data, TreeSigBlob.Builder out);
 	
-	/** Verify the signature */
+	/** Verify the signature. */
 	boolean verify(byte [] data, TreeSigBlob sig);
 }

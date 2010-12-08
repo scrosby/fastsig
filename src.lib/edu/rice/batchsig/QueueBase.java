@@ -2,12 +2,15 @@ package edu.rice.batchsig;
 
 import java.util.ArrayList;
 
-abstract public class QueueBase<T> {
+/**
+ * Common code shared by the different signing queue implementations.
+ * 
+ * For the most part, wraps an underlying AsyncQueue for managing the
+ * outstanding unprocessed messages.
+ * */
+abstract public class QueueBase<T> implements ProcessQueue<T> {
 	final private AsyncQueue<T> queue = new AsyncQueue<T>();
 
-	public QueueBase() {
-		super();
-	}
 	// Called Async. 
 	public void add(T m) {
 		queue.add(m);
@@ -23,13 +26,17 @@ abstract public class QueueBase<T> {
 	
 	public abstract void process();
 
-	public AsyncQueue<T> getAsync() {
-		return queue;
-	}
+	
+	/** 
+	 * @see edu.rice.batchsig.AsyncQueue#atomicGetQueue
+	 */
 	protected ArrayList<T> atomicGetQueue() {
 		return queue.atomicGetQueue();
 	}
 	
+	/** 
+	 * @see edu.rice.batchsig.AsyncQueue#suspendTillNonEmpty
+	 */
 	public void suspendTillNonEmpty() {
 		queue.suspendTillNonEmpty();
 	}

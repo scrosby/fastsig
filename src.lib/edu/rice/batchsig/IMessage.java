@@ -2,6 +2,7 @@ package edu.rice.batchsig;
 
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
+/** Template representing an incoming message to be verified. */
 public interface IMessage extends Message {
 	/** Callback invoked to report on the signature validity */
 	public void signatureValidity(boolean valid);
@@ -16,7 +17,7 @@ public interface IMessage extends Message {
 	 *  Return value must be suitable for a key in a hash table */
 	public Object getAuthor();	
 
-	/** Which user is targetted this message? */
+	/** Which user is targetted by this message? */
 	public Object getRecipientUser();
 
 	
@@ -25,6 +26,7 @@ public interface IMessage extends Message {
 	 * 
 	 * Mark this message as not needing its latency measured, for instance, if it was verified idly. 
 	 * */
+
 	public void resetCreationTimeNull();
 	/** Function to help in tracking the latency. 
 	 * 

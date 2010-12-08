@@ -23,7 +23,13 @@ package edu.rice.historytree;
 import edu.rice.historytree.generated.Serialization;
 
 
-
+/** Top level function for implementing a history tree. 
+ *
+ * @author crosby
+ *
+ * @param <A> The type of aggregate value
+ * @param <V> The type of annotation
+ */
 
 public class HistoryTree<A,V> extends TreeBase<A,V> {
 	/** Make an empty merkle tree with a given aggobj and datastore.  */
