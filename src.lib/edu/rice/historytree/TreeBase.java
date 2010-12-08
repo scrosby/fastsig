@@ -53,19 +53,28 @@ public abstract class TreeBase<A,V> {
   	return this;
   }
 
+	/**
+	 * Adds the current tree as the left child of a new tree until the tree can
+	 * hold a message of the requested timestamp.
+	 * 
+	 * @param time
+	 */
   protected void reparent(int time) {
   	while (!(time <= (1<<root.layer)-1))
   		this.root = root.reparent();
   }
 
+  /** Get a clone of the aggregation object */
   public AggregationInterface<A,V> getAggObj() {
   	return aggobj.clone();
   }
-
+  
+  /** Get the version of the history tree. Tree contains $time+1$ events at indices [0...time] */
   public int version() {
   	return time;
   }
 
+  /** Helper method for prettyprinting a tree */
   public String toString(String prefix) {
   	StringBuilder b = new StringBuilder();
   	b.append(prefix);
@@ -123,11 +132,13 @@ public abstract class TreeBase<A,V> {
   	return b.toString();
   }
 
-  protected String aggToString(A a) {
+  /** Helper wrapper function for prettyprinting */
+  private String aggToString(A a) {
   	return aggobj.serializeAgg(a).toStringUtf8();
   }
 
-  protected String valToString(V v) {
+  /** Helper wrapper function for prettyprinting */
+  private String valToString(V v) {
   	return aggobj.serializeVal(v).toStringUtf8();
   }
 
@@ -141,6 +152,7 @@ public abstract class TreeBase<A,V> {
   	}
   }
 
+  /** Serialize a tree into a protobuf and serialize that into a byte array */
   public byte[] serializeTree() {
   	Serialization.PrunedTree.Builder builder= Serialization.PrunedTree.newBuilder();
   	serializeTree(builder);
@@ -255,18 +267,23 @@ public abstract class TreeBase<A,V> {
   }
 
 
-
-public void copyV(TreeBase<A, V> orig, int version, boolean copyValueFlag) throws ProofError {
-	if (version < 0 || version > version())
-		throw new IllegalArgumentException(String.format("Version %d beyond the bounds of the tree [0,%d]",version,version()));
+/** Copy the path to a given leaf from the original tree into this (pruned) tree. 
+ *
+ * @param leafnum Which leaf to copy? 
+ * @param copyValueFlag Should the value under the given leaf be copied, or just the annotation?
+ * 
+ * */
+public void copyV(TreeBase<A, V> orig, int leafnum, boolean copyValueFlag) throws ProofError {
+	if (leafnum < 0 || leafnum > version())
+		throw new IllegalArgumentException(String.format("Version %d beyond the bounds of the tree [0,%d]",leafnum,version()));
 	// If source tree is null
 	if (root == null) {
 		root = datastore.makeRoot(orig.root.layer);
 	}
 	
 	NodeCursor<A,V> origleaf, selfleaf;
-	selfleaf = forceLeaf(version);
-	origleaf = orig.leaf(version);
+	selfleaf = forceLeaf(leafnum);
+	origleaf = orig.leaf(leafnum);
 
 	assert origleaf.getAgg() != null;
 
@@ -311,6 +328,7 @@ public void parseTree(Serialization.PrunedTree in) {
 	}
 }
 
+/** Parse a tree from a serialized protocol buffer */
 public void parseTree(byte data[]) throws InvalidProtocolBufferException {
 	parseTree(PrunedTree.parseFrom(data));
 }
