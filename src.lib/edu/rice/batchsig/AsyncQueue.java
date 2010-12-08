@@ -20,35 +20,47 @@
 package edu.rice.batchsig;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Manage an asynchronous queue of messages to process.
+ * 
+ * Messages can be added to the queue at any time, and the contents can be
+ * atomically fetched out. (which empties the queue)
+ * 
+ * @author scrosby
+ * 
+ * @param <T>
+ */
 public class AsyncQueue<T> {
 	private ArrayList<T> queue;
-
+	AtomicInteger size = new AtomicInteger(0);
+	
 	public AsyncQueue() {
 		initQueue();
 	}
 
-	/* (non-Javadoc)
-	 * @see edu.rice.batchsig.SignerQueue#add(edu.rice.batchsig.Message)
-	 */
+	/** Add the given message to the queue */
 	public synchronized void add(T message) {
 		queue.add(message);
+		size.addAndGet(1);
 		this.notify();
-		//System.out.println("QUEUE");
 	}
 
-	/** Get the current queue size */
-	public synchronized int peekSize() {
-		return queue.size();
+	/** Get the current queue size.  */
+	public int peekSize() {
+		return size.get();
 	}
-	
+
 	private void initQueue() {
 		queue = new ArrayList<T>(32);
+		size.set(0);
 	}
 
 	/**
-	 * Get the queued messages which need to be signed atomically. This
-	 * permanently removes them from the queue and the invoker is responsible
+	 * Get the set of queued messages atomically and empty the queue. 
+	 * 
+	 * This permanently removes them from the queue and the invoker is responsible
 	 * for processing (or re-queuing) the messages.
 	 */
 	protected ArrayList<T> atomicGetQueue() {
@@ -68,4 +80,3 @@ public class AsyncQueue<T> {
 		}
 	}
 }
-
