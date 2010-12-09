@@ -10,6 +10,7 @@ import com.google.protobuf.ByteString;
 
 import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.Verifier;
+import edu.rice.batchsig.VerifyHisttreeCommon;
 import edu.rice.historytree.HistoryTree;
 
 /** Represent all of the message from one history tree instance */
@@ -237,7 +238,7 @@ public class OneTree {
 			// An incoming message that nominally validates the root bundle (may be more than one)
 			IMessage rootm = validators.get(rooti);
 			//System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
-			HistoryTree<byte[],byte[]> roottree = verifier.parseHistoryTree(rootm);
+			HistoryTree<byte[],byte[]> roottree = VerifyHisttreeCommon.parseHistoryTree(rootm);
 
 			// Verify the root's public key signature.
 			if (verifier.verifyHistoryRoot(rootm,roottree)) {
