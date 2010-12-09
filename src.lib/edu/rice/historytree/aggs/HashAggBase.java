@@ -26,8 +26,21 @@ import com.google.protobuf.ByteString;
 
 import edu.rice.historytree.AggregationInterface;
 
+/**
+ * Many aggreagate-by-cryptographic-hash functions are very similar to each
+ * other. the data being input and output is byte[]. This base class makes it
+ * convenient to implement them.
+ * 
+ * 
+ * @author crosby
+ * 
+ */
 abstract public class HashAggBase implements AggregationInterface<byte[], byte[]> {
 
+	/**
+	 *  @param tag A tag byte used to distinguish hashes used on leaves and non-leaves
+	 *  @return The message digest algorithm. 
+	 * */
 	abstract public MessageDigest getAlgo(byte tag);
 
 	@Override

@@ -25,7 +25,7 @@ import com.google.protobuf.ByteString;
  * V is the type of an event.*/
 
 public interface AggregationInterface<A,V> {
-	/** Factory for building aggregation, used to register aggregation schema's by name. */
+	/** Factory for building aggregators, used to register aggregation schema's by name. */
 	public interface Factory<A,V> {
 		public AggregationInterface<A,V> newInstance();
 		public String name();
