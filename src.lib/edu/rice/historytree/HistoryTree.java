@@ -85,7 +85,8 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     		return; // If its a stub.
 
     	// Not a stub. Must always have a left and may have right child.
-    	assert in.hasLeft();
+    	if (!in.hasLeft())
+    		throw new Error("Invalid Proof. Missing left child.");
 
     	parseSubtree(node.forceLeft(), in.getLeft());
 
