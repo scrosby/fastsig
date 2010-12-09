@@ -19,6 +19,7 @@
 
 package edu.rice.historytree;
 
+/** Used to indicate that some form of proof error has occurred */
 public class ProofError extends Exception {
 	ProofError(String text) {
 		super(text);
@@ -26,5 +27,4 @@ public class ProofError extends Exception {
 	
 
 	private static final long serialVersionUID = -6180155708923293161L;
-
 }

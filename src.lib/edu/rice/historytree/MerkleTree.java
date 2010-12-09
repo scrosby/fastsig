@@ -23,7 +23,15 @@ import edu.rice.historytree.generated.Serialization;
 import edu.rice.historytree.generated.Serialization.HistNode;
 import edu.rice.historytree.storage.AppendOnlyArrayStore;
 
-/** DOES NOT WORK WITH APPENDONLYARRAY */
+/** Top level class for implementing a history tree. 
+*
+* NOTE: DOES NOT WORK WITH APPENDONLYARRAY data store.
+* 
+* @author crosby
+*
+* @param <A> The type of aggregate value
+* @param <V> The type of annotation
+*/
 public class MerkleTree<A, V> extends TreeBase<A, V> {	
 	/** Make an empty merkle tree with a given aggobj and datastore.  */
 	public MerkleTree(AggregationInterface<A,V> aggobj,

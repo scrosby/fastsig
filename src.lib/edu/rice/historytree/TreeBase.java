@@ -425,7 +425,7 @@ protected boolean parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
 		}
 	}
 
-
+	/** Return ceil(log_2(x)) */
 	public static int log2(int x) {
 		int i = 0, pow = 1;
 		while (pow <= x) {
@@ -435,6 +435,11 @@ protected boolean parseNode(NodeCursor<A,V> node, Serialization.HistNode in) {
 		return i;
 	}
 
+	/** Make an empty pruned tree based around the current tree.
+	 * 
+	 * @param datastore The datastore to used for the pruned tree.
+	 * @return
+	 */
 	abstract public TreeBase<A, V> makePruned(
 			HistoryDataStoreInterface<A, V> datastore);
 
