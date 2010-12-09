@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 
 import edu.rice.historytree.AggregationInterface;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings("rawtypes")
 public class ConcatAgg implements AggregationInterface<String, String> {
 	@Override
 	public String aggChildren(String leftAnn, String rightAnn) {

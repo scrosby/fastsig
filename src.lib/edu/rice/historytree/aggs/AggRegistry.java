@@ -24,10 +24,10 @@ import java.util.HashMap;
 import edu.rice.historytree.AggregationInterface;
 
 public class AggRegistry {
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	static HashMap<String, AggregationInterface.Factory> registry = new HashMap<String,AggregationInterface.Factory>();
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	static void register(AggregationInterface.Factory factory) {
 		registry.put(factory.name(),factory);
 	}

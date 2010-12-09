@@ -26,7 +26,7 @@ import edu.rice.historytree.AggregationInterface;
 
 
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings("rawtypes")
 public class SHA256Agg extends HashAggBase {
 	public MessageDigest getAlgo(byte tag) {
 		try {
