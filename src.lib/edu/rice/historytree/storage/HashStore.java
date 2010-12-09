@@ -7,9 +7,10 @@ import edu.rice.historytree.HistoryDataStoreInterface;
 import edu.rice.historytree.NodeCursor;
 
 public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterface<A, V> {
+	private HashMap<Integer,A>  aggstore;
+	private HashMap<Integer,V>  valstore;
 
 	public HashStore() {
-		this.time = -1;
 		this.aggstore = new HashMap<Integer,A>();
 		this.valstore = new HashMap<Integer,V>();
 	}
@@ -68,7 +69,4 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterfa
 		this.time = time;		
 	}
 
-	HashMap<Integer,A>  aggstore;
-	protected int time;
-	HashMap<Integer,V>  valstore;
 	}

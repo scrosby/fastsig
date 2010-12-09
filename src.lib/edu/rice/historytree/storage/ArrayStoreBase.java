@@ -34,7 +34,11 @@ import edu.rice.historytree.NodeCursor;
  * @param <V>
  */
 public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryDataStoreInterface<A, V> {
-	protected int time;
+    /** Record the agg for a node. Offset into the array is the node's index in a post order traversal. */
+	protected ArrayList<A> aggstore;
+    /** Record the val for a node. Offset into the array is the leaf node's index. */
+	protected ArrayList<V> valstore;
+
 
 	@Override
 	public NodeCursor<A, V> makeRoot(int layer) {
@@ -68,15 +72,10 @@ public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryD
 		assert (v != null);
 		valstore.set(node.index(),v);
 	}
-
-    /** Record the agg for a node. Offset into the array is the node's index in a post order traversal. */
-	protected ArrayList<A> aggstore;
-    /** Record the val for a node. Offset into the array is the leaf node's index. */
-	protected ArrayList<V> valstore;
+	
 
 	public ArrayStoreBase() {
 		super();
-		this.time = -1;
 		this.aggstore = new ArrayList<A>(5);
 		this.valstore = new ArrayList<V>(5);
 	}

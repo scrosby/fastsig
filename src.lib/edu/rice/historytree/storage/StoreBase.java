@@ -19,6 +19,12 @@
 
 package edu.rice.historytree.storage;
 
+/** Base class used for the different stores I implement */
 public class StoreBase {
-	
+	/** The current time // last index in the store */
+	protected int time;
+
+	StoreBase() {
+		time = -1;
+	}
 }

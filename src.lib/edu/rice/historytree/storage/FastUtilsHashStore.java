@@ -39,14 +39,14 @@ package edu.rice.historytree.storage;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-
-import java.util.HashMap;
-
 import edu.rice.historytree.HistoryDataStoreInterface;
 import edu.rice.historytree.NodeCursor;
 
 
 public class FastUtilsHashStore<A,V> extends StoreBase implements HistoryDataStoreInterface<A, V> {
+	private Int2ObjectMap<A>  aggstore;
+	private int time;
+	private Int2ObjectMap<V>  valstore;
 
 	public FastUtilsHashStore() {
 		this.time = -1;
@@ -107,10 +107,6 @@ public class FastUtilsHashStore<A,V> extends StoreBase implements HistoryDataSto
 		assert (time >= this.time);
 		this.time = time;		
 	}
-
-	Int2ObjectMap<A>  aggstore;
-	protected int time;
-	Int2ObjectMap<V>  valstore;
-	}
+}
 
 
