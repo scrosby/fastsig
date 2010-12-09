@@ -55,10 +55,12 @@ package edu.rice.historytree;
  */
 
 public final class NodeCursor<A, V> {
-	public final HistoryDataStore<A, V> datastore;
-	public final int layer;
-	public final int index;
+	private final HistoryDataStore<A, V> datastore;
+	private final int layer;
+	private final int index;
 
+	final public int layer() { return layer; }
+	final public int index() { return index; }
 	/** Interfaces that a cursor requires of a data store */
 	interface HistoryDataStore<A, V> {
 		/**

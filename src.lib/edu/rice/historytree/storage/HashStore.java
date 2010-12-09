@@ -27,12 +27,12 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterfa
 
 	@Override
 	public V getVal(NodeCursor<A, V> node) {
-		return valstore.get(new Integer(node.index));
+		return valstore.get(new Integer(node.index()));
 	}
 
 	@Override
 	public boolean hasVal(NodeCursor<A, V> node) {
-		return valstore.get(new Integer(node.index)) != null;
+		return valstore.get(new Integer(node.index())) != null;
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public class HashStore<A,V> extends StoreBase implements HistoryDataStoreInterfa
 	public void setVal(NodeCursor<A, V> node, V v) {
 		// Also, vals cannot be primitive types. Need a 'null' to indicate invalid.
 		assert (v != null);
-		valstore.put(new Integer(node.index),v);
+		valstore.put(new Integer(node.index()),v);
 	}
 
 	@Override

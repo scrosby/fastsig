@@ -41,7 +41,7 @@ public class ArrayStore<A,V> extends ArrayStoreBase<A, V>
 
 	@Override
 	public void markValid(NodeCursor<A, V> node) {
-		assert node.index <= time : "Prob: "+ node.index + " " +time;
+		assert node.index() <= time : "Prob: "+ node.index() + " " +time;
 		aggvalid.set(node.computeIndex(), new Boolean(true));
 	}
 

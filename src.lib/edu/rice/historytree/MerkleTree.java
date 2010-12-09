@@ -44,7 +44,7 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	public MerkleTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
     	MerkleTree<A,V> out = new MerkleTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
-        out.root = out.datastore.makeRoot(root.layer);
+        out.root = out.datastore.makeRoot(root.layer());
     	out.isFrozen = true;
     	out.root.copyAgg(this.root);
     	return out;

@@ -51,11 +51,11 @@ public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryD
 	}
 
 	public V getVal(NodeCursor<A, V> node) {
-		return valstore.get(node.index);
+		return valstore.get(node.index());
 	}
 
 	public boolean hasVal(NodeCursor<A, V> node) {
-		return valstore.get(node.index) != null;
+		return valstore.get(node.index()) != null;
 	}
 
 	public void setAgg(NodeCursor<A, V> node, A a) {
@@ -66,7 +66,7 @@ public abstract class ArrayStoreBase<A, V> extends StoreBase implements HistoryD
 	public void setVal(NodeCursor<A, V> node, V v) {
 		// Also, vals cannot be primitive types. Need a 'null' to indicate invalid.
 		assert (v != null);
-		valstore.set(node.index,v);
+		valstore.set(node.index(),v);
 	}
 
     /** Record the agg for a node. Offset into the array is the node's index in a post order traversal. */

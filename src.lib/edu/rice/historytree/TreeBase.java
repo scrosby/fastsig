@@ -66,7 +66,7 @@ public abstract class TreeBase<A,V> {
 	 * @param time
 	 */
   protected void reparent(int time) {
-  	while (!(time <= (1<<root.layer)-1))
+  	while (!(time <= (1<<root.layer())-1))
   		this.root = root.reparent();
   }
 
@@ -114,7 +114,7 @@ public abstract class TreeBase<A,V> {
   /** Return this as a longer tab-delimited string */
   public String toString(NodeCursor<A,V> node) {
   	StringBuilder b=new StringBuilder();
-  	b.append(String.format("<%d,%d>",node.layer,node.index));
+  	b.append(String.format("<%d,%d>",node.layer(),node.index()));
   	b.append("\t");
   	// Print out the value (if any)
   	
@@ -284,7 +284,7 @@ public void copyV(TreeBase<A, V> orig, int leafnum, boolean copyValueFlag) throw
 		throw new IllegalArgumentException(String.format("Version %d beyond the bounds of the tree [0,%d]",leafnum,version()));
 	// If source tree is null
 	if (root == null) {
-		root = datastore.makeRoot(orig.root.layer);
+		root = datastore.makeRoot(orig.root.layer());
 	}
 	
 	NodeCursor<A,V> origleaf, selfleaf;

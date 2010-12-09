@@ -23,7 +23,7 @@ package edu.rice.historytree;
 import edu.rice.historytree.generated.Serialization;
 
 
-/** Top level function for implementing a history tree. 
+/** Top level class for implementing a history tree. 
  *
  * @author crosby
  *
@@ -52,7 +52,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	A agg = leaf.getAgg();
 		//System.out.println("leaf"+node);
 
-    	while (node!=null && version >= (1<<node.layer-1)) {
+    	while (node!=null && version >= (1<<node.layer()-1)) {
     		//System.out.println("aggv"+node);
     		NodeCursor<A,V>  left = node.left();
     		if (child.equals(left))
@@ -74,7 +74,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
 	public HistoryTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
     	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
-        out.root = out.datastore.makeRoot(root.layer);
+        out.root = out.datastore.makeRoot(root.layer());
     	out.copySiblingAggs(this,this.leaf(time),out.forceLeaf(time),true);
     	return out;
         }

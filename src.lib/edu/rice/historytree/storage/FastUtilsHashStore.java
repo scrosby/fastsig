@@ -67,12 +67,12 @@ public class FastUtilsHashStore<A,V> extends StoreBase implements HistoryDataSto
 
 	@Override
 	public V getVal(NodeCursor<A, V> node) {
-		return valstore.get(new Integer(node.index));
+		return valstore.get(new Integer(node.index()));
 	}
 
 	@Override
 	public boolean hasVal(NodeCursor<A, V> node) {
-		return valstore.get(new Integer(node.index)) != null;
+		return valstore.get(new Integer(node.index())) != null;
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public class FastUtilsHashStore<A,V> extends StoreBase implements HistoryDataSto
 	public void setVal(NodeCursor<A, V> node, V v) {
 		// Also, vals cannot be primitive types. Need a 'null' to indicate invalid.
 		assert (v != null);
-		valstore.put(new Integer(node.index),v);
+		valstore.put(new Integer(node.index()),v);
 	}
 
 	@Override

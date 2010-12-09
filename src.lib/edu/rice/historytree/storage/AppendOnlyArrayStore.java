@@ -32,12 +32,12 @@ public class AppendOnlyArrayStore<A,V> extends ArrayStoreBase<A,V>  {
 
 	@Override
 	public boolean isAggValid(NodeCursor<A, V> node) {
-		return node.index <= time;
+		return node.index() <= time;
 	}
 
 	@Override
 	public void markValid(NodeCursor<A, V> node) {
-		assert(node.index <= time);
+		assert(node.index() <= time);
 	}
 
 	@Override
