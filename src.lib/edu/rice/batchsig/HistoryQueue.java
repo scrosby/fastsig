@@ -47,7 +47,7 @@ import edu.rice.historytree.storage.HashStore;
 public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	/** Largest size we want the history tree to grow to before rotating  */
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
-	/** Underlying signign algorithm */
+	/** Underlying signing algorithm */
 	private SignaturePrimitives signer;
 	
 	/** Track when we last contacted a given recipient_host, so we know which splices to use. */
@@ -55,7 +55,7 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 	/** As a history tree may be used among multiple messages, indicate which message this is dealing with. */
 	public long treeid;
 
-	/** The actual history tree */
+	/** The actual history tree. */
 	public HistoryTree<byte[], byte[]> histtree;
 		
 	public HistoryQueue(SignaturePrimitives signer) {
@@ -66,10 +66,11 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 		initTree();
 	}
 
+	/** Create the tree. */
 	private void initTree() {		
 		treeid = new Random().nextLong();
-		histtree = new HistoryTree<byte[],byte[]>(new SHA256Agg(),new AppendOnlyArrayStore<byte[], byte[]>());
-		lastcontacts = new HashMap<Object,Integer>();
+		histtree = new HistoryTree<byte[], byte[]>(new SHA256Agg(), new AppendOnlyArrayStore<byte[], byte[]>());
+		lastcontacts = new HashMap<Object, Integer>();
 	}
 
 	/** Make a new fresh history tree if the additional nodes would make it bigger than the target size. */
@@ -78,6 +79,7 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 			initTree();
 	}
 	
+	@Override
 	public void process() {
 		ArrayList<OMessage> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)

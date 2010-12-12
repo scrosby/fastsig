@@ -22,6 +22,6 @@ package edu.rice.batchsig;
 /** Base template for messages. Refined by IMessage and OMessage */
 public interface Message {
 	/** Return the hash value associated with the message that is to be signed. The returned data 
-	 * *is* stored in the history tree, so should probably be a hash of the actual underlying data being authenticated. */
+	 * is stored in the history tree, so should probably be a hash of the actual underlying data being authenticated. */
 	byte []getData();
 }

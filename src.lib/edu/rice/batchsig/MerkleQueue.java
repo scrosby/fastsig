@@ -43,7 +43,9 @@ import edu.rice.historytree.storage.HashStore;
  * A new merkle tree is used for each batch.
  */
 public class MerkleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
+	/** Record functions responsible for signing. */
 	private SignaturePrimitives signer;
+
 	public MerkleQueue(SignaturePrimitives signer) {
 		super();
 		if (signer == null)
@@ -51,6 +53,7 @@ public class MerkleQueue extends QueueBase<OMessage> implements SuspendableProce
 		this.signer = signer;
 	}
 
+	@Override
 	public void process() {
 		ArrayList<OMessage> oldqueue = atomicGetQueue();
 		if (oldqueue.size() == 0)
@@ -60,13 +63,14 @@ public class MerkleQueue extends QueueBase<OMessage> implements SuspendableProce
 		
 		AggregationInterface<byte[], byte[]> aggobj = new SHA256Agg();
 		ArrayStore<byte[], byte[]> datastore = new ArrayStore<byte[], byte[]>();
-		MerkleTree<byte[], byte[]> histtree = new MerkleTree<byte[], byte[]>(
+		MerkleTree<byte[], byte[]> merkletree = new MerkleTree<byte[], byte[]>(
 				aggobj, datastore);
-		
+
+		// Add all of the messages to the Merkle tree.
 		for (Message m : oldqueue) {
-			histtree.append(m.getData());
+			merkletree.append(m.getData());
 		}
-		histtree.freeze();
+		merkletree.freeze();
 
 		// At this point, everything is read-only. I can generate signatures and
 		// pruned trees concurrently.
@@ -74,39 +78,43 @@ public class MerkleQueue extends QueueBase<OMessage> implements SuspendableProce
 		// The only data-dependency is on rootSig; I need to sign before I can
 		// generate the output messages.
 
-		final byte[] rootHash = histtree.agg();
+		final byte[] rootHash = merkletree.agg();
 
 		// Make the unified signature of all.
 		TreeSigMessage.Builder msgbuilder = TreeSigMessage.newBuilder()
 			.setTreetype(SigTreeType.MERKLE_TREE)
-			.setVersion(histtree.version())
+			.setVersion(merkletree.version())
 			.setRoothash(ByteString.copyFrom(rootHash));
 
 		// Make the template sigblob containing the RSA signature.
 		TreeSigBlob.Builder sigblob = TreeSigBlob.newBuilder();
 		sigblob.setSignatureType(SignatureType.SINGLE_MERKLE_TREE);
-		signer.sign(msgbuilder.build().toByteArray(),sigblob);
+		signer.sign(msgbuilder.build().toByteArray(), sigblob);
 
 		// Make the read-only template.
-		TreeSigBlob template=sigblob.build();
+		TreeSigBlob template = sigblob.build();
 				
 		for (int i = 0; i < oldqueue.size(); i++) {
-			processMessage(histtree,oldqueue.get(i), i, TreeSigBlob.newBuilder(template));
+			processMessage(merkletree, oldqueue.get(i), i, TreeSigBlob.newBuilder(template));
 		}
 	}
-	private void processMessage(TreeBase<byte[], byte[]> histtree, OMessage message, int i, TreeSigBlob.Builder template) {	
+	
+	/** Generate the pruned tree field for each message, given the template 
+	 * containing the public key signature. */
+	private void processMessage(TreeBase<byte[], byte[]> merkletree, OMessage message, int leaf, 
+			TreeSigBlob.Builder template) {	
 		try {
 			// Make the pruned tree.
-			TreeBase<byte[], byte[]> pruned = histtree
+			TreeBase<byte[], byte[]> pruned = merkletree
 					.makePruned(new HashStore<byte[], byte[]>());
-			pruned.copyV(histtree, i, true);
+			pruned.copyV(merkletree, leaf, true);
 
 			PrunedTree.Builder treebuilder = PrunedTree.newBuilder();
 			pruned.serializeTree(treebuilder);
 
 			template
 					.setTree(treebuilder)
-					.setLeaf(i);
+					.setLeaf(leaf);
 			message.signatureResult(template.build());
 		} catch (ProofError e) {
 			// Should never occur.

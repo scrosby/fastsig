@@ -21,5 +21,6 @@ package edu.rice.batchsig;
 
 /** Represent a queue of messages to be signed with some sort of bulk signature mechanism. */
 public interface SuspendableProcessQueue<T> extends ProcessQueue<T> {
+	/** Suspend the current thread until the queue is non-empty */
 	public void suspendTillNonEmpty();
 }

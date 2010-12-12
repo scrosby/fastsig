@@ -8,22 +8,25 @@ import java.util.ArrayList;
  * For the most part, wraps an underlying AsyncQueue for managing the
  * outstanding unprocessed messages.
  * */
-abstract public class QueueBase<T> implements ProcessQueue<T> {
+abstract public class QueueBase<T> implements SuspendableProcessQueue<T> {
 	final private AsyncQueue<T> queue = new AsyncQueue<T>();
 
-	// Called Async. 
+	@Override
 	public void add(T m) {
 		queue.add(m);
 	}
 
+	@Override
 	public void finish() {
 		process();
 	}
 	
+	@Override
 	public int peekSize() {
 		return queue.peekSize();
 	}
 	
+	@Override
 	public abstract void process();
 
 	
@@ -37,6 +40,7 @@ abstract public class QueueBase<T> implements ProcessQueue<T> {
 	/** 
 	 * @see edu.rice.batchsig.AsyncQueue#suspendTillNonEmpty
 	 */
+	@Override
 	public void suspendTillNonEmpty() {
 		queue.suspendTillNonEmpty();
 	}

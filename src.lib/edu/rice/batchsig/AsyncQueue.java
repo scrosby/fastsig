@@ -52,6 +52,7 @@ public class AsyncQueue<T> {
 		return size.get();
 	}
 
+	/** Reset and start with a new empty queue */
 	private void initQueue() {
 		queue = new ArrayList<T>(32);
 		size.set(0);

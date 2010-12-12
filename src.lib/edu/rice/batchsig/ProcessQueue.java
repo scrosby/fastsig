@@ -27,13 +27,13 @@ public interface ProcessQueue<T> {
 	public abstract void add(T message);
 
 	/**
-	 * Process all of the messages, signing every one. May be done in a separate
-	 * signing thread. Called concurrently.
+	 * Request that all of the outstanding messages in the queue be processed at the current time.
+ 	 * Called concurrently.
 	 */
 	abstract public void process();
 
 	/**
-	 * Indicate that all processing is done. Called concurrently to add().
+	 * Indicate that the queue is being closed down and all outstanding messages should be be immediately processed.
 	 */
 	abstract public void finish();
 
