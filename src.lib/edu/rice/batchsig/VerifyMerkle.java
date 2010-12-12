@@ -10,17 +10,27 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
+/** Verify Merkle tree signatures */
 public class VerifyMerkle extends Verifier {
+	static public MerkleTree<byte[],byte[]> parseMerkleTree(IMessage message) {
+		TreeSigBlob sigblob = message.getSignatureBlob();
+		PrunedTree pb=sigblob.getTree();
+		MerkleTree<byte[],byte[]> tree= new MerkleTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
+		tree.updateTime(pb.getVersion());
+		tree.parseTree(pb);
+		return tree;
+	}
 
 	public VerifyMerkle(SignaturePrimitives signer) {
 		super(signer);
 	}
 
+	@Override
 	public void add(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
 		// Parse the tree.
-		MerkleTree<byte[],byte[]> parsed=parseMerkleTree(message);
+		MerkleTree<byte[], byte[]> parsed = parseMerkleTree(message);
 
 		// See if the message is in the tree.
 		if (!checkLeaf(message, parsed))
@@ -34,14 +44,9 @@ public class VerifyMerkle extends Verifier {
 
 		message.signatureValidity(checkSig(sigblob, msgbuilder));
 	}
-	static public MerkleTree<byte[],byte[]> parseMerkleTree(IMessage message) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-		PrunedTree pb=sigblob.getTree();
-		MerkleTree<byte[],byte[]> tree= new MerkleTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
-		tree.updateTime(pb.getVersion());
-		tree.parseTree(pb);
-		return tree;
-	}
-	public void finishBatch() {
+	
+	@Override
+	public void process() {
+		// We verify them when we add them. 
 	}
 }

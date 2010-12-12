@@ -31,24 +31,29 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 /**
  * Top level queue for verifying incoming messages. Works eagerly, verifying all
- * outstanding messages on each invocation.
+ * outstanding messages on each invocation. Wraps the various Verifier
+ * implementations into a ProcessQueue. Demultiplexes messages that have Merkle
+ * signatures, simple signatures, or spliced signatures and calls the
+ * appropriate underlying verifier.
  */
 public class VerifyQueue extends QueueBase<IMessage> implements SuspendableProcessQueue<IMessage> {
-	private Verifier verifier;
+	/** The verifier used to handle Merkle signatures */
 	private VerifyMerkle merkleverifier;
-	private VerifyAtomicSignature atomicverifier;
-	private VerifyHisttree histtreeverifier;
+	/** The verifier used to handle simple signatures. */
+	private VerifySimpleSignature atomicverifier;
+	/** The verifier used to handle spliced signatures */
+	private VerifyHisttreeEagerlyBase histtreeverifier;
 	
 	public VerifyQueue(SignaturePrimitives signer) {
 		super(signer);
 		this.merkleverifier = new VerifyMerkle(signer);
-		this.atomicverifier = new VerifyAtomicSignature(signer);
+		this.atomicverifier = new VerifySimpleSignature(signer);
 		this.histtreeverifier = new VerifyHisttreeGroup(signer);
 	}
 	
+	@Override
 	public void process() {
 		ArrayList<IMessage> oldqueue = atomicGetQueue();
-
 
 		// Go over each message
 		for (IMessage m : oldqueue) {
@@ -57,24 +62,20 @@ public class VerifyQueue extends QueueBase<IMessage> implements SuspendableProce
 				continue;
 			}
 			TreeSigBlob sigblob = m.getSignatureBlob();
+
+			// Dispatch based on the type. 
 			if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE) {
-				// If it is a singlely signed message, check.
-				// TODO: Do concurrently; dispatch into thread pool.
 				atomicverifier.add(m);
 			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE) {
-				// If its is a merkle tree message, check.
-				// TODO: Do concurrently; dispatch into thread pool.
 				merkleverifier.add(m);
 			} else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE) {
 				histtreeverifier.add(m);
-				// If a history tree, put into a set of queues, one for each signer.
 			} else {
 				System.out.println("Unrecognized SignatureType");
 			}
 		}
-		atomicverifier.finishBatch();
-		merkleverifier.finishBatch();
-		histtreeverifier.finishBatch();
+		atomicverifier.process();
+		merkleverifier.process();
+		histtreeverifier.process();
 	}
 }
-

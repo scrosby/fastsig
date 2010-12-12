@@ -6,12 +6,14 @@ import edu.rice.historytree.generated.Serialization.SigTreeType;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 
-public class VerifyAtomicSignature extends Verifier {
+/** Verify messages signed with a simple signature. */
+public class VerifySimpleSignature extends Verifier {
 
-	public VerifyAtomicSignature(SignaturePrimitives signer) {
+	public VerifySimpleSignature(SignaturePrimitives signer) {
 		super(signer);
 	}
 
+	@Override
 	public void add(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
@@ -23,6 +25,8 @@ public class VerifyAtomicSignature extends Verifier {
 
 		message.signatureValidity(checkSig(sigblob, msgbuilder));
 	}
-	public void finishBatch() {
+	
+	@Override
+	public void process() {
 	}
 }

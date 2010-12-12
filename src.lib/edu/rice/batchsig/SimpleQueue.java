@@ -35,13 +35,11 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
  * 
  */
 public class SimpleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
-	private long initTime;
-
 	public SimpleQueue(SignaturePrimitives signer) {
 		super(signer);
-		this.initTime = System.currentTimeMillis();
 	}
 
+	@Override
 	public void process() {
 		long now = System.currentTimeMillis();
 		ArrayList<OMessage> oldqueue = atomicGetQueue();
@@ -65,10 +63,10 @@ public class SimpleQueue extends QueueBase<OMessage> implements SuspendableProce
 		}
 	}
 
-	/** Helper function for hashing a byte array */
-	static public byte[] hash(byte[] data) {
+	/** Helper function for hashing a byte array. */
+	public static byte[] hash(byte[] data) {
 		try {
-			MessageDigest md=MessageDigest.getInstance("SHA-256");
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.update(data);
 			return md.digest();
 		} catch (NoSuchAlgorithmException e) {

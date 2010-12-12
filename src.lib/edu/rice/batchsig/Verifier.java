@@ -36,35 +36,28 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
+/**
+ * Various common functions useful for verifying Simple, Merkle, and Spliced
+ * signatures, and a base class for managing several outstanding signatures.
+ */
 abstract public class Verifier {
+	/** Store the signature primitives used in verifying */
 	private SignaturePrimitives signer;
 
 	public Verifier(SignaturePrimitives signer) {
-		this.signer=signer;
+		this.signer = signer;
 	}
 
-	/** Within each batch, add this message to be processed */
+	/** Within each batch, add this message to be processed. */
 	public abstract void add(IMessage message);
-	/** At the end of each batch, mark the end of the batch */
-	public abstract void finishBatch();
+	/** At the end of each batch, process the batch. */
+	public abstract void process();
 
-	/*
-	boolean verify(Message message) {
-		TreeSigBlob sigblob = message.getSignatureBlob();
-		
-		// Other choices are unsupported in this code.
-		if (sigblob.getSignatureType() == SignatureType.SINGLE_MERKLE_TREE)
-			return verifyMerkle(message);
-		else if (sigblob.getSignatureType() == SignatureType.SINGLE_HISTORY_TREE)
-			return verifyHistory(message);
-		else if (sigblob.getSignatureType() == SignatureType.SINGLE_MESSAGE)
-			return verifyMessage(message);
-		else 
-			return false;
-
-	}
-	*/
-
+	/**
+	 * Given a message to be checked, see if the hash stored at that leaf
+	 * matches the hash of the message. Shared for both Merkle and history
+	 * trees.
+	 */
 	static public boolean checkLeaf(IMessage message, TreeBase<byte[], byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 
@@ -82,8 +75,11 @@ abstract public class Verifier {
 		return true;
 	}
 
-
-	boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
+	/** Verify the public key signature. 
+	 * 
+	 * @return true if the signature matches. 
+	 */
+	protected boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
 		byte[] signeddata = msgbuilder.build().toByteArray();
 		return signer.verify(signeddata, sigblob);
 	}

@@ -7,36 +7,41 @@ import java.util.HashMap;
 
 import edu.rice.historytree.HistoryTree;
 
-public class VerifyHisttreeGroup extends VerifyHisttree {
+/** Verify all of the spliced signed messages in the queue while try to exploit available splices. */
+public class VerifyHisttreeGroup extends VerifyHisttreeEagerlyBase {
 	public VerifyHisttreeGroup(SignaturePrimitives signer) {
 		super(signer);
 	}
 
-	/** Handle all messages with the same treeID */
-	protected void processMessagesFromTree(ArrayList<IMessage> l) {
+	@Override
+	protected void process(ArrayList<IMessage> l) {
 		// Traverse in reverse order from most recent to earliest.
 		Collections.reverse(l);
-	
-		/* Algorithm: Traverse from the latest message to the earliest. 
+
+		/*
+		 * Algorithm: Traverse from the latest message to the earliest.
 		 * 
-		 * For each message, we see if we have a splice from a previously verified message (a reverse-index of splicepoints to the corresponding messages is stored in splices)
-	     * If so, then verify the splice. If not, or a bad splice check the signature. 
-	     * If a message validates via one of these mechanisms, then this message is valid and add its splicepoints to splices.
+		 * For each message, we see if we have a splice from a previously
+		 * verified message (a reverse-index of splicepoints to the
+		 * corresponding messages is stored in splices) If so, then verify the
+		 * splice. If not, or a bad splice check the signature. If a message
+		 * validates via one of these mechanisms, then this message is valid and
+		 * add its splicepoints to splices.
 		 */
 		
 		/** For each version number a confirmed valid message that claims to splice the requested message */
-		HashMap<Integer,IMessage> splices = new HashMap<Integer,IMessage>();
+		HashMap<Integer, IMessage> splices = new HashMap<Integer, IMessage>();
 	
 		/** Cache of the parsed trees */
-		HashMap<IMessage,HistoryTree<byte[],byte[]>> trees = new HashMap<IMessage,HistoryTree<byte[],byte[]>>();
+		HashMap<IMessage, HistoryTree<byte[], byte[]>> trees = new HashMap<IMessage, HistoryTree<byte[],byte[]>>();
 		
 		for (IMessage m : l) {
 			//System.out.format("*Checking message at leaf %d\n",m.getSignatureBlob().getLeaf());
 			
 			boolean validated = false;
-			HistoryTree<byte[],byte[]> tree = parseHistoryTree(m);
+			HistoryTree<byte[], byte[]> tree = parseHistoryTree(m);
 			
-			if (!Verifier.checkLeaf(m,tree)) {
+			if (!Verifier.checkLeaf(m, tree)) {
 				m.signatureValidity(false);
 				continue;
 			}
@@ -82,13 +87,13 @@ public class VerifyHisttreeGroup extends VerifyHisttree {
 			// Save the splices, if any, of this message, if validated.
 			if (validated && m.getSignatureBlob().getSpliceHintCount() > 0) {
 					trees.put(m, tree);
-					for (int splice: m.getSignatureBlob().getSpliceHintList()) {
+					for (int splice : m.getSignatureBlob().getSpliceHintList()) {
 						if (tree.leaf(splice) == null) {
 							// Claims it has splice, but doesn't have the leaf.
-							System.out.println("Claims splice, but no splice included.");
+							//System.out.println("Claims splice, but no splice included.");
 						} else {
-							System.out.format("Store splice at %d with tree-version %d\n",splice,version);
-							splices.put(splice,m);
+							//System.out.format("Store splice at %d with tree-version %d\n", splice, version);
+							splices.put(splice, m);
 						}
 					}
 			}

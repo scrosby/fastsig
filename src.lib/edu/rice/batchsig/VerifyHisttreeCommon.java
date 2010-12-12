@@ -10,7 +10,9 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
+/** Common code for the various history tree verifiers, both the eager ones here and the lazy ones. */
 public abstract class VerifyHisttreeCommon extends Verifier {
+	/** Parse the history tree structure out of an incoming message */
 	public static HistoryTree<byte[],byte[]> parseHistoryTree(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 		PrunedTree pb=sigblob.getTree();
@@ -20,10 +22,11 @@ public abstract class VerifyHisttreeCommon extends Verifier {
 		return tree;
 	}
 
-	public VerifyHisttreeCommon(SignaturePrimitives signer) {
+	protected VerifyHisttreeCommon(SignaturePrimitives signer) {
 		super(signer);
 	}
 
+	/** Verify the message in the parsed history tree with a public key signature verification. */
 	public boolean verifyHistoryRoot(IMessage message, HistoryTree<byte[],byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 	

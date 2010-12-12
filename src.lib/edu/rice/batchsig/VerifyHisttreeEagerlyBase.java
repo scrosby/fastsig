@@ -11,11 +11,16 @@ import com.google.common.collect.Table;
 import edu.rice.historytree.NodeCursor;
 import edu.rice.historytree.TreeBase;
 
-public abstract class VerifyHisttree extends VerifyHisttreeCommon {
-	/** Map from (author_server, treeid) -> OneTree */
+/** Abstract class for verifying a history tree eagerly. I.e., Whenever the queue is processed, the entire batch is processed and verified.
+ * */
+public abstract class VerifyHisttreeEagerlyBase extends VerifyHisttreeCommon {
+	/** We don't bother to splices messages created in different history trees. Track each of the distinct history trees here.
+	 * 
+	 * Map from (author_server, treeid) -> OneTree */
 	private Table<Object,Long,ArrayList<IMessage>> map1 = HashBasedTable.create();
 
-	ArrayList<IMessage> getListForMessage(IMessage m) {
+	/** Get the appropriate list managing the history tree for a given message */
+	private ArrayList<IMessage> getListForMessage(IMessage m) {
 		ArrayList<IMessage> out = map1.get(m.getAuthor(),m.getSignatureBlob().getTreeId());
 		if (out == null) {
 			out = new ArrayList<IMessage>();
@@ -25,23 +30,22 @@ public abstract class VerifyHisttree extends VerifyHisttreeCommon {
 	}
 	
 	
-	public VerifyHisttree(SignaturePrimitives signer) {
+	public VerifyHisttreeEagerlyBase(SignaturePrimitives signer) {
 		super(signer);
 	}
 
-	
+	@Override
 	public void add(IMessage m) {
 		getListForMessage(m).add(m);
 	}
 		
-	HashMap<Object,ArrayList<IMessage>> messages = new HashMap<Object,ArrayList<IMessage>>();
-
-	public void finishBatch() {
+	@Override
+	public void process() {
 		// Process each signer's list of messages in turn.
 		for (ArrayList<IMessage> l : map1.values())
-			processMessagesFromTree(l);
+			process(l);
 		map1.clear();
 	}
-	
-	abstract protected void processMessagesFromTree(ArrayList<IMessage> l);
+	/** Process all of the messages from one distinct history tree instance. */
+	protected abstract void process(ArrayList<IMessage> l);
 }

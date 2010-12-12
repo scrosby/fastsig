@@ -141,7 +141,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 	}
 	
 	/** At the end of a batch of inserts, handle expiration forcing */
-	public void finishBatch() {
+	public void process() {
 		//System.out.println("  Forcing batch begin");
 		for (OneTree i : treesToForceAll) {
 			i.forceAll();
@@ -208,7 +208,7 @@ public class VerifyHisttreeLazily extends VerifyHisttreeCommon implements Verify
 		}
 		expirationqueue.put(tree,tree);
 		userToMessages.put(m.getRecipientUser(), m);
-		finishBatch();
+		process();
 	}
 
 	/** Get the size of the queue. May be called concurrently from any number of threads */
