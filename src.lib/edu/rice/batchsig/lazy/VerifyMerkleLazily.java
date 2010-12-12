@@ -74,14 +74,10 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		}
 		
 		@Override
-		protected boolean removeEldestEntry(Map.Entry<IMessage,IMessage> eldest) {
-			if (super.removeEldestEntry(eldest)) {
-				System.out.println("Expiration for too many trees");
-				// Enqueue it in the underlying verifier
-				merkleverify.add(eldest.getKey());
-				return true;
-			}
-			return false;
+		protected void expire(IMessage eldest) {
+			System.out.println("Expiration for too many trees");
+			// Enqueue it in the underlying verifier
+			merkleverify.add(eldest);
 		}
 	}
 	

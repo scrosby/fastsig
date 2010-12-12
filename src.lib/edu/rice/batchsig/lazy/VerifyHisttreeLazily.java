@@ -142,13 +142,9 @@ public class VerifyHisttreeLazily implements
 		}
 
 		@Override
-		protected boolean removeEldestEntry(Map.Entry<OneTree, OneTree> eldest) {
-			if (super.removeEldestEntry(eldest)) {
-				System.out.println("Expiration for too many trees");
-				treesToForceAll.add(eldest.getValue());
-				return true;
-			}
-			return false;
+		protected void expire(OneTree eldest) {
+			System.out.println("Expiration for too many trees");
+			treesToForceAll.add(eldest);
 		}
 	}
 
