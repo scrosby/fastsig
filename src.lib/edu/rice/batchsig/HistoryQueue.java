@@ -49,12 +49,12 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
 	
 	/** Track when we last contacted a given recipient_host, so we know which splices to use. */
-	public HashMap<Object,Integer> lastcontacts;
+	private HashMap<Object,Integer> lastcontacts;
 	/** As a history tree may be used among multiple messages, indicate which message this is dealing with. */
-	public long treeid;
+	private long treeid;
 
 	/** The actual history tree. */
-	public HistoryTree<byte[], byte[]> histtree;
+	private HistoryTree<byte[], byte[]> histtree;
 		
 	public HistoryQueue(SignaturePrimitives signer) {
 		super(signer);
