@@ -36,9 +36,13 @@ import edu.rice.historytree.generated.Serialization.PrunedTree;
  *            Type of the value being stored.
  */
 public abstract class TreeBase<A, V> {
+	/** The current timestamp; the index of the last inserted event. */
 	protected int time;
+	/** The cursor position of the root. */
 	protected NodeCursor<A, V> root;
+	/** The underlying data store that is being used. */
 	protected HistoryDataStoreInterface<A, V> datastore;
+	/** The aggregation object plugged in. */
 	protected AggregationInterface<A, V> aggobj;
 
 	/** Make an empty history tree with a given aggobj and datastore. */
@@ -71,7 +75,7 @@ public abstract class TreeBase<A, V> {
 			this.root = root.reparent();
 	}
 
-	/** Get a clone of the aggregation object */
+	/** Get a clone of the aggregation object. */
 	public AggregationInterface<A, V> getAggObj() {
 		return aggobj.clone();
 	}
@@ -84,7 +88,7 @@ public abstract class TreeBase<A, V> {
 		return time;
 	}
 
-	/** Helper method for prettyprinting a tree */
+	/** Helper method for prettyprinting a tree. */
 	public String toString(String prefix) {
 		StringBuilder b = new StringBuilder();
 		b.append(prefix);
@@ -95,10 +99,12 @@ public abstract class TreeBase<A, V> {
 		return new String(b);
 	}
 
+	@Override
 	public String toString() {
 		return toString("");
 	}
 
+	/** Get debug string output. */
 	public void debugString(StringBuilder b, String prefix,
 			NodeCursor<A, V> node) {
 		b.append(prefix);
@@ -116,7 +122,7 @@ public abstract class TreeBase<A, V> {
 			debugString(b, prefix + "R", right);
 	}
 
-	/** Return this as a longer tab-delimited string */
+	/** Return this as a longer tab-delimited string. */
 	public String toString(NodeCursor<A, V> node) {
 		StringBuilder b = new StringBuilder();
 		b.append(String.format("<%d,%d>", node.layer(), node.index()));
@@ -143,17 +149,17 @@ public abstract class TreeBase<A, V> {
 		return b.toString();
 	}
 
-	/** Helper wrapper function for prettyprinting */
+	/** Helper wrapper function for prettyprinting. */
 	private String aggToString(A a) {
 		return aggobj.serializeAgg(a).toStringUtf8();
 	}
 
-	/** Helper wrapper function for prettyprinting */
+	/** Helper wrapper function for prettyprinting. */
 	private String valToString(V v) {
 		return aggobj.serializeVal(v).toStringUtf8();
 	}
 
-	/** Serialize a pruned tree to a protocol buffer */
+	/** Serialize a pruned tree to a protocol buffer. */
 	public void serializeTree(Serialization.PrunedTree.Builder out) {
 		out.setVersion(time);
 		if (root != null) {
@@ -164,7 +170,7 @@ public abstract class TreeBase<A, V> {
 		}
 	}
 
-	/** Serialize a tree into a protobuf and serialize that into a byte array */
+	/** Serialize a tree into a protobuf and serialize that into a byte array. */
 	public byte[] serializeTree() {
 		Serialization.PrunedTree.Builder builder = Serialization.PrunedTree
 				.newBuilder();
@@ -172,7 +178,7 @@ public abstract class TreeBase<A, V> {
 		return builder.build().toByteArray();
 	}
 
-	/** Helper function for recursively serializing a history tree */
+	/** Helper function for recursively serializing a history tree. */
 	private void serializeNode(Serialization.HistNode.Builder out,
 			NodeCursor<A, V> node) {
 		if (node.isLeaf()) {
@@ -363,7 +369,7 @@ public abstract class TreeBase<A, V> {
 		}
 	}
 
-	/** Parse a tree from a serialized protocol buffer */
+	/** Parse a tree from a serialized protocol buffer. */
 	public void parseTree(byte data[]) throws InvalidProtocolBufferException {
 		parseTree(PrunedTree.parseFrom(data));
 	}
