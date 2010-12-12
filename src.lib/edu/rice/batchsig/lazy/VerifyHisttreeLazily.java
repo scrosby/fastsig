@@ -31,7 +31,7 @@ import com.google.common.collect.Table;
 
 import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.SignaturePrimitives;
-import edu.rice.batchsig.VerifyHisttreeCommon;
+import edu.rice.batchsig.HistTreeTools;
 import edu.rice.batchsig.bench.Tracker;
 
 /**

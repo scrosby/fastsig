@@ -7,9 +7,9 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 
 /** Verify messages signed with a simple signature. */
-public class VerifySimpleSignature extends Verifier {
+public class VerifySimple extends Verifier {
 
-	public VerifySimpleSignature(SignaturePrimitives signer) {
+	public VerifySimple(SignaturePrimitives signer) {
 		super(signer);
 	}
 

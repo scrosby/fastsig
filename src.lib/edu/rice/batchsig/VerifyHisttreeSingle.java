@@ -13,8 +13,8 @@ public class VerifyHisttreeSingle extends VerifyHisttreeEagerlyBase {
 	@Override
 	protected void process(ArrayList<IMessage> l) {
 		for (IMessage m : l) {
-			HistoryTree<byte[], byte[]> tree = VerifyHisttreeCommon.parseHistoryTree(m);			
-			m.signatureValidity(Verifier.checkLeaf(m, tree) && VerifyHisttreeCommon.verifyHistoryRoot(signer,m,tree));
+			HistoryTree<byte[], byte[]> tree = HistTreeTools.parseHistoryTree(m);			
+			m.signatureValidity(Verifier.checkLeaf(m, tree) && HistTreeTools.verifyHistoryRoot(signer,m,tree));
 		}
 	}
 }

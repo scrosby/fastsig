@@ -11,7 +11,7 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
 /** Utility code for the various history tree verifiers, both the eager ones here and the lazy ones. */
-public class VerifyHisttreeCommon {
+public class HistTreeTools {
 	/** Parse the history tree structure out of an incoming message.
 	 * 
 	 *  @return the parsed history tree.

@@ -40,14 +40,14 @@ public class VerifyQueue extends QueueBase<IMessage> implements SuspendableProce
 	/** The verifier used to handle Merkle signatures */
 	private VerifyMerkle merkleverifier;
 	/** The verifier used to handle simple signatures. */
-	private VerifySimpleSignature atomicverifier;
+	private VerifySimple atomicverifier;
 	/** The verifier used to handle spliced signatures */
 	private VerifyHisttreeEagerlyBase histtreeverifier;
 	
 	public VerifyQueue(SignaturePrimitives signer) {
 		super(signer);
 		this.merkleverifier = new VerifyMerkle(signer);
-		this.atomicverifier = new VerifySimpleSignature(signer);
+		this.atomicverifier = new VerifySimple(signer);
 		this.histtreeverifier = new VerifyHisttreeGroup(signer);
 	}
 	

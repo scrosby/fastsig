@@ -11,7 +11,7 @@ import com.google.protobuf.ByteString;
 import edu.rice.batchsig.IMessage;
 import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.Verifier;
-import edu.rice.batchsig.VerifyHisttreeCommon;
+import edu.rice.batchsig.HistTreeTools;
 import edu.rice.historytree.HistoryTree;
 
 /** Represent all of the message from one history tree instance by an author. Track dependencies, users, etc. */
@@ -99,7 +99,7 @@ public class OneTree {
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
 		Integer bundlekey = m.getSignatureBlob().getTree().getVersion();
-		HistoryTree<byte[],byte[]> tree = VerifyHisttreeCommon.parseHistoryTree(m);
+		HistoryTree<byte[],byte[]> tree = HistTreeTools.parseHistoryTree(m);
 		ByteString agg = ByteString.copyFrom(tree.agg());
 		
 		// First, see if this message is well-formed in the bundle?   Yes. It is.
@@ -146,7 +146,7 @@ public class OneTree {
 			if (succm == null)
 				throw new Error("Algorithm bug.");
 			// Time to verify the splice is OK. 
-			HistoryTree<byte[],byte[]> succtree = VerifyHisttreeCommon.parseHistoryTree(succm);
+			HistoryTree<byte[],byte[]> succtree = HistTreeTools.parseHistoryTree(succm);
 			if (Arrays.equals(succtree.aggV(bundlekey.intValue()),tree.agg())) {
 				System.out.println("Unusual splice circumstance -- success");
 				dag.addEdge(succ,bundlenode);
@@ -243,10 +243,10 @@ public class OneTree {
 			// An incoming message that nominally validates the root bundle (may be more than one)
 			IMessage rootm = validators.get(rooti);
 			//System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
-			HistoryTree<byte[], byte[]> roottree = VerifyHisttreeCommon.parseHistoryTree(rootm);
+			HistoryTree<byte[], byte[]> roottree = HistTreeTools.parseHistoryTree(rootm);
 
 			// Verify the root's public key signature.
-			if (VerifyHisttreeCommon.verifyHistoryRoot(signer, rootm, roottree)) {
+			if (HistTreeTools.verifyHistoryRoot(signer, rootm, roottree)) {
 				//System.out.println("Verified the root's signature - SUCCESS. It is valid");
 				// Success!
 				// Now traverse *all* descendents and mark them as good.
