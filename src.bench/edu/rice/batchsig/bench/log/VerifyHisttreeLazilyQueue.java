@@ -58,7 +58,8 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 	// called concurrently.
 	public void finish() {
 		System.out.println("Ordering processing to finish");
-		finished.set(true);
+		// Order the underlying thread to quit.
+		super.shutdown();
 	}
 
 	// Called concurrently
@@ -87,7 +88,7 @@ public class VerifyHisttreeLazilyQueue extends ShutdownableThread implements Pro
 		long lastExpiration = 0;
 		long lastMessage=0;
 		try {
-			while (!finished.get()) {
+			while (!isShuttingdown()) {
 				// Since we're idle? See if there's any useful work we could do right now.
 				if (sleepSemaphore.tryAcquire()) {
 					// We have work waiting.... Release the semaphore and do it.

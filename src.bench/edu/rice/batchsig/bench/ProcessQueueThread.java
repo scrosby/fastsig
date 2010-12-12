@@ -45,7 +45,7 @@ public class ProcessQueueThread extends ShutdownableThread {
 	
 	@Override
 	public void run() {
-		while (!finished.get()) {
+		while (!isShuttingdown()) {
 			//System.out.println("SigningLoop");
 			long epochstart = System.currentTimeMillis();
 			signqueue.suspendTillNonEmpty();

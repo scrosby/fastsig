@@ -54,7 +54,7 @@ public class CreateAndQueueMessagesForSigningThread extends MessageGeneratorThre
 	public void run() {
 		long initTime = System.currentTimeMillis(); // When we started.
 		long insertedNum = 0;
-		while (!finished.get()) {
+		while (!isShuttingdown()) {
 			long now = System.currentTimeMillis();
 			long deltaTime = now-initTime; // Ok. In DELTA ms, we should have inserted..
 			long targetNum = deltaTime*rate/1000; // this many messages.

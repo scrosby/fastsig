@@ -67,7 +67,7 @@ public class ReplaySavedMessagesRealtimeThread extends MessageGeneratorThreadBas
 		Set<Integer> loggedOnUsers = new HashSet<Integer>();
 		long initTime = System.currentTimeMillis(); // When we started.
 		long msgOffsetTime = 0;
-		while (!finished.get()) {
+		while (!isShuttingdown()) {
 			IncomingMessage msg = input.nextOnePass();
 			// We're at the end.
 			if (msg == null) {

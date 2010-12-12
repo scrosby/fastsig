@@ -4,7 +4,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Represents a thread that can be requested to exit. */
 public class ShutdownableThread extends Thread {
-	protected AtomicBoolean finished = new AtomicBoolean(false);
+	/** Has this thread been marked to be shuttingdown? */
+	private AtomicBoolean shuttingdown = new AtomicBoolean(false);
 
 	public ShutdownableThread() {
 		super();
@@ -12,6 +13,11 @@ public class ShutdownableThread extends Thread {
 
 	/** Request that this thread finish its work and exit. */
 	public void shutdown() {
-		finished.set(true);
+		shuttingdown.set(true);
+	}
+	
+	/** Has this thread been marked as done? */
+	protected boolean isShuttingdown() {
+		return shuttingdown.get();
 	}
 }
