@@ -5,7 +5,11 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
 /**
  * Wrap an IMessage with one that is the same, except that it supports an extra
- * callback on whether the message is valid or not.
+ * callback on whether the message is valid or not. I need to do this because,
+ * with spliced signatures, messages can validate 'by surprise' without being
+ * asked to. The lazy verifier needs to know if this has occurred so that it can
+ * cease tracking the message. Ergo, it wraps messages so-as to receive these
+ * notifications.
  */
 public class WrappedIMessage implements IMessage {
 	/** The message being wrapped. */

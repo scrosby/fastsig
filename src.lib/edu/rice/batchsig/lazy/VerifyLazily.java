@@ -10,7 +10,7 @@ public interface VerifyLazily {
 	 */
 	int peekSize();
 
-	/** Force the oldest message in this queue */
+	/** Force the oldest message in this queue. */
 	void forceOldest();
 
 	/** Add a message to be lazily verified. */

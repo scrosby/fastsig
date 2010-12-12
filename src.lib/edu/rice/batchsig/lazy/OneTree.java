@@ -22,21 +22,24 @@ public class OneTree {
 	
 	final private VerifyHisttreeLazily verifier;
 	
-	/** Map from an integer version number to the message at that version number */
-	HashMap<Integer,IMessage> bundles = new LinkedHashMap<Integer,IMessage>(1,.75f,false);
+	/** Map from an integer version number to the message at that version number. */
+	HashMap<Integer, IMessage> bundles = new LinkedHashMap<Integer, IMessage>(1,.75f, false);
 	
 	/** Cache of root hashes for each unvalidated bundle.
 	 *    When we verify a splice, we need to take the predecessor's bundle agg() and compare it to aggV(pred.version).
 	 *    Rather than rebuild the pred's pruned tree, or cache the whole thing, just cache the parts we need, the agg().
 	 *  */
-	HashMap<Integer,ByteString> roothashes = new HashMap<Integer,ByteString>();
-	
-	/** This hashmap finds the message signatures we need to verify to validate a given bundle.
+	HashMap<Integer, ByteString> roothashes = new HashMap<Integer, ByteString>();
+
+	/**
+	 * This hashmap finds the message signatures we need to verify to validate a
+	 * given bundle.
 	 * 
-	 * When we find the 'root' node of a dependency tree, that will be an exlempar, but not correspond to a 'real' message. This will.
+	 * When we find the 'root' node of a dependency tree, that will be an
+	 * exlempar, but not correspond to a 'real' message. This will.
 	 * 
 	 */
-	HashMap<Integer,IMessage> validators = new HashMap<Integer,IMessage>();
+	HashMap<Integer, IMessage> validators = new HashMap<Integer, IMessage>();
 	
 	/**
 	 * Invariant; The dag contains nodes for each message and the version
@@ -54,17 +57,22 @@ public class OneTree {
 	 * */
 	final private Dag<Integer> dag = new Dag<Integer>();
 
+	/** Which author created the history tree that we are tracking? */
 	final private Object author;
+	/** Which treeid did the author assign to the tree that we are tracking? */
 	final private long treeid;
 
+	/** @return The author of the history tree we are tracking. */
 	public Object getAuthor() {
 		return author;
 	}
 
+	/** @return The treeid assigned by the author of the history tree we are tracking. */
 	public long getTreeid() {
 		return treeid;
 	}
 
+	/* Make or get the node in the Dag corresponding to the given message. */
 	Dag<Integer>.DagNode getNode(IMessage m) {
 		Integer key = m.getSignatureBlob().getLeaf();
 		return dag.makeOrGet(key);
