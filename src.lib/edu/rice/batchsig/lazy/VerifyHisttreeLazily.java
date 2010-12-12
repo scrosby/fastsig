@@ -97,15 +97,11 @@ public class VerifyHisttreeLazily implements
 	 */
 	private static int MAX_TREE_SIZE = 1000;
 
-	/** Map from recipient_user to the messages queued to that recipient_user. */
-	Multimap<Object, IMessage> userToMessages = HashMultimap.create();
-
 	/** The signer. */
 	final SignaturePrimitives signer;
 
-	public VerifyHisttreeLazily(SignaturePrimitives signer) {
-		this.signer = signer;
-	}
+	/** Map from recipient_user to the messages queued to that recipient_user. */
+	Multimap<Object, IMessage> userToMessages = HashMultimap.create();
 
 	/** Track the number of messages enqueued. */
 	private AtomicInteger size = new AtomicInteger(0);
@@ -148,6 +144,10 @@ public class VerifyHisttreeLazily implements
 		}
 	}
 
+	public VerifyHisttreeLazily(SignaturePrimitives signer) {
+		this.signer = signer;
+	}
+	
 	/** This message has been validated, can stop tracking it now. */
 	public void messageValidatorCallback(IMessage m, boolean valid) {
 		userToMessages.remove(m.getRecipientUser(), m);
@@ -163,7 +163,7 @@ public class VerifyHisttreeLazily implements
 	private OneTree makeOneTreeForMessage(IMessage m) {
 		OneTree out = getOneTreeForMessage(m);
 		if (out == null) {
-			out = new OneTree(this, m.getAuthor(), m.getSignatureBlob()
+			out = new OneTree(signer, m.getAuthor(), m.getSignatureBlob()
 					.getTreeId());
 			map1.put(m.getAuthor(), m.getSignatureBlob().getTreeId(), out);
 		}

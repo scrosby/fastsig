@@ -172,7 +172,7 @@ public class Dag<T> {
 		parents.remove(child, parent);
 	}
 
-	/** All descendents of a node, including itself. */
+	/** All descendants of a node, including itself. */
 	public Collection<DagNode> getAllChildren(DagNode node) {
 		HashSet<DagNode> todo = new HashSet<DagNode>();
 		HashSet<DagNode> out = new HashSet<DagNode>();

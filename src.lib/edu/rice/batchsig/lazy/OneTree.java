@@ -9,18 +9,18 @@ import java.util.LinkedHashMap;
 import com.google.protobuf.ByteString;
 
 import edu.rice.batchsig.IMessage;
+import edu.rice.batchsig.SignaturePrimitives;
 import edu.rice.batchsig.Verifier;
 import edu.rice.batchsig.VerifyHisttreeCommon;
 import edu.rice.historytree.HistoryTree;
 
-/** Represent all of the message from one history tree instance */
+/** Represent all of the message from one history tree instance by an author. Track dependencies, users, etc. */
 public class OneTree {
+	/** How many messages are in the history tree. */
 	int size = 0;
-	public int size() {
-		return size;
-	}
 	
-	final private VerifyHisttreeLazily verifier;
+	/** The public key signature primitives. */
+	final private SignaturePrimitives signer;
 	
 	/** Map from an integer version number to the message at that version number. */
 	HashMap<Integer, IMessage> bundles = new LinkedHashMap<Integer, IMessage>(1,.75f, false);
@@ -36,7 +36,8 @@ public class OneTree {
 	 * given bundle.
 	 * 
 	 * When we find the 'root' node of a dependency tree, that will be an
-	 * exlempar, but not correspond to a 'real' message. This will.
+	 * exlempar, but that root isn't really a message. It is the history tree version of a different message.
+	 * This map tells us which message has that root, so that we can use its public signature to verify the tree.
 	 * 
 	 */
 	HashMap<Integer, IMessage> validators = new HashMap<Integer, IMessage>();
@@ -62,6 +63,19 @@ public class OneTree {
 	/** Which treeid did the author assign to the tree that we are tracking? */
 	final private long treeid;
 
+	/** Make a OneTree around a given author, treeid, and public key verification object. */
+	public OneTree(SignaturePrimitives signer, Object author, long treeid) {
+		this.author = author;
+		this.treeid = treeid;
+		this.signer = signer;
+	}
+
+	
+	/** How many messages are in this OneTree */
+	public int size() {
+		return size;
+	}
+
 	/** @return The author of the history tree we are tracking. */
 	public Object getAuthor() {
 		return author;
@@ -72,36 +86,14 @@ public class OneTree {
 		return treeid;
 	}
 
-	/* Make or get the node in the Dag corresponding to the given message. */
+	/** Make or get the node in the Dag corresponding to the given message. */
 	Dag<Integer>.DagNode getNode(IMessage m) {
 		Integer key = m.getSignatureBlob().getLeaf();
 		return dag.makeOrGet(key);
 	}
 
-	public OneTree(VerifyHisttreeLazily verifier, Object object, long l) {
-		this.author = object;
-		this.treeid = l;
-		this.verifier = verifier;
-	}
-
-	private void failMessage(IMessage m) {
-		m.signatureValidity(true);
-		size--;
-	}
-	
-	/*
-	 *  Errors: See this messages bundle before with a different hash. Verify immediately.
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 */
-	
-	
-	
-	
-	/* Each node in the dag corresponds to a set of bundles. All that end in the same epoch. */
+		
+	/** Each node in the dag corresponds to a set of bundles. All that end in the same epoch. */
 	void addMessage(IMessage m) {
 		//System.out.println("\nAdding message "+m);
 		size++;
@@ -113,7 +105,8 @@ public class OneTree {
 		// First, see if this message is well-formed in the bundle?   Yes. It is.
 		if (!Verifier.checkLeaf(m,tree)) {
 			System.out.println("Broken proof that doesn't validate message in proof.");
-			failMessage(m);
+			m.signatureValidity(false);
+			size--;
 			return;
 		}
 		
@@ -127,11 +120,12 @@ public class OneTree {
 			}
 			//System.out.println("Adding to existing bundle");
 		}
-		validators.put(bundlekey,m);
+		validators.put(bundlekey, m);
 		
-		// At this point, we know that any keys in this bundle all have the same ending hash, ergo,
-		// the same contents. We don't have to worry about inconsistency anymore, and can just store the data, except for validating splices.
-		
+		// At this point, we know that any keys in this bundle all have the same
+		// ending hash, ergo, the same contents. We don't have to worry about inconsistency
+		// anymore, and can just store the data, except for validating splices.
+
 		// Now, build an edge in the dag from the integer representing the bundle to this message.
 		Dag<Integer>.DagNode node = dag.makeOrGet(key);
 		Dag<Integer>.DagNode bundlenode = dag.makeOrGet(bundlekey);
@@ -198,6 +192,7 @@ public class OneTree {
 		int index = m.getSignatureBlob().getLeaf();
 		remove(index);
 	}
+	
 	/** Called to remove a message index from all tracking */
 	private void remove(int index) {
 		if (bundles.remove(index)!= null)
@@ -226,12 +221,12 @@ public class OneTree {
 	}
 	
 	
-	
+	/** Force this specific message. */
 	void forceMessage(IMessage m) {
 		//System.out.format("\n>>>>> Forcing a message %d to %s\n",m.getSignatureBlob().getLeaf(),getName());
 		
 		if (!bundles.containsKey(m.getSignatureBlob().getLeaf())) {
-			System.out.println("Forcing message that doesn't exist:"+m.toString()); // Should trigger occasionally.
+			System.out.println("Forcing message that doesn't exist:" + m.toString()); // Should trigger occasionally.
 			throw new Error("WARN");
 			//return;
 		}
@@ -248,10 +243,10 @@ public class OneTree {
 			// An incoming message that nominally validates the root bundle (may be more than one)
 			IMessage rootm = validators.get(rooti);
 			//System.out.format("Got root at %d about to see if it verifies %s\n",rooti,rootm);
-			HistoryTree<byte[],byte[]> roottree = VerifyHisttreeCommon.parseHistoryTree(rootm);
+			HistoryTree<byte[], byte[]> roottree = VerifyHisttreeCommon.parseHistoryTree(rootm);
 
 			// Verify the root's public key signature.
-			if (VerifyHisttreeCommon.verifyHistoryRoot(verifier.signer,rootm,roottree)) {
+			if (VerifyHisttreeCommon.verifyHistoryRoot(signer, rootm, roottree)) {
 				//System.out.println("Verified the root's signature - SUCCESS. It is valid");
 				// Success!
 				// Now traverse *all* descendents and mark them as good.
@@ -289,6 +284,7 @@ public class OneTree {
 		
 	}
 	
+	/** Force every message in the OneTree */
 	public void forceAll() {
 		//System.out.format("Forcing all bundles in OneTree\n");
 		while (!bundles.isEmpty()) {
@@ -296,9 +292,5 @@ public class OneTree {
 			m.resetCreationTimeNull();
 			forceMessage(m);
 		}
-	}
-	
-	public boolean isEmpty() {
-		return bundles.isEmpty();
 	}
 }
