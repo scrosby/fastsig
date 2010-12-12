@@ -47,7 +47,7 @@ public class SHA256Agg extends HashAggBase {
 	static { 
 		AggRegistry.register(new AggregationInterface.Factory() {
 			public String name() {return NAME;}
-			public AggregationInterface newInstance() { return new ConcatAgg();} 
+			public AggregationInterface newInstance() { return new SHA256Agg();} 
 		});
 	}
 }

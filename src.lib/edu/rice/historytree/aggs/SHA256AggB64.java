@@ -26,7 +26,7 @@ import com.sun.org.apache.xml.internal.security.utils.Base64;
 
 import edu.rice.historytree.AggregationInterface;
 
-/** Extend the prior standard SHA256Agg class to be human readable base64'ed values */
+/** Extend the prior standard SHA256Agg class to print human readable base64'ed values */
 @SuppressWarnings("rawtypes")
 public class SHA256AggB64 extends SHA256Agg {
 	@Override
@@ -52,7 +52,7 @@ public class SHA256AggB64 extends SHA256Agg {
 	static { 
 		AggRegistry.register(new AggregationInterface.Factory() {
 			public String name() {return NAME;}
-			public AggregationInterface newInstance() { return new ConcatAgg();} 
+			public AggregationInterface newInstance() { return new SHA256AggB64();} 
 		});
 	}
 }
