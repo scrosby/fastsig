@@ -198,7 +198,9 @@ public class OneTree {
 		roothashes.remove(index);
 		}
 
-	/** Force the oldest thing here, return true if somethign was forced */
+	/** Force the oldest thing here.
+	 * 
+	 *  @return true if something was forced. */
 	boolean forceOldest() {
 		System.out.format("Forcing oldest message (OneTree)\n");
 

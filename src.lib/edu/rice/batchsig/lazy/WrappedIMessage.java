@@ -3,19 +3,27 @@ package edu.rice.batchsig.lazy;
 import edu.rice.batchsig.IMessage;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 
+/**
+ * Wrap an IMessage with one that is the same, except that it supports an extra
+ * callback on whether the message is valid or not.
+ */
 public class WrappedIMessage implements IMessage {
-	final IMessage o;
+	/** The message being wrapped. */
+	final private IMessage o;
+	/** The callback. */
 	private Callback validator;
-	
-	public interface Callback {
-		public void messageValidatorCallback(IMessage o, boolean valid);
-	}
-	
 
+	/** The interface that the class wanting the callback must support. */
+	public interface Callback {
+		/** @see edu.rice.batchsig.IMessage#signatureValidity */
+		void messageValidatorCallback(IMessage o, boolean valid);
+	}
+
+	/** Constructor */
 	WrappedIMessage(IMessage o) {
 		this.o = o;
 	}
-	
+
 	@Override
 	public byte[] getData() {
 		return o.getData();
@@ -25,7 +33,7 @@ public class WrappedIMessage implements IMessage {
 	public void signatureValidity(boolean valid) {
 		o.signatureValidity(valid);
 		if (validator != null)
-			validator.messageValidatorCallback(o,valid);
+			validator.messageValidatorCallback(o, valid);
 	}
 
 	@Override
@@ -43,6 +51,7 @@ public class WrappedIMessage implements IMessage {
 		return o.getRecipientUser();
 	}
 
+	/** Set the callback object to be invoked. */
 	public void setCallback(Callback c) {
 		validator = c;
 	}

@@ -34,41 +34,50 @@ import edu.rice.batchsig.VerifyMerkle;
 import edu.rice.batchsig.bench.Tracker;
 
 
-
+/** Class for lazily verifying Merkle signatures. */
 public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callback {
-	public static int MAX_MESSAGES = 100000;
-	final public VerifyMerkle merkleverify;
-	AtomicInteger size = new AtomicInteger(0);
-	/** Map from recipient_user to the messages queued to that recipient_user */
-	Multimap<Object,IMessage> userToMessages = HashMultimap.create();
+	/** Maximum number of outstanding unverified messages before we force the oldest. */
+	private static final int MAX_MESSAGES = 20000;
+
+	/** Track info for expiration. */
+	private TreeExpirationManager expirationqueue = new TreeExpirationManager(MAX_MESSAGES);
+
+	/** Underlying eager Merkle signature verifier. */
+	private final VerifyMerkle merkleverify;
+
+	/** Track the number of messages enqueued. */
+	private AtomicInteger size = new AtomicInteger(0);
+
+	/** Map from recipient_user to the messages queued to that recipient_user. */
+	Multimap<Object, IMessage> userToMessages = HashMultimap.create();
+	
+	/** Which messages are asynchronously marked as needing to be lazily forced. */
+	private ArrayList<IMessage> expired = new ArrayList<IMessage>();
 	
 	public VerifyMerkleLazily(SignaturePrimitives signer) {
 		merkleverify = new VerifyMerkle(signer);
 	}
 
 	
-	/** THis message has been validated, can stop tracking it now. */
+	/** This message has been validated, and we can stop tracking it now. */
 	public void messageValidatorCallback(IMessage m, boolean valid) {
-		userToMessages.remove(m.getRecipientUser(),m);
+		userToMessages.remove(m.getRecipientUser(), m);
 		size.decrementAndGet();
 	}
 		
-	/** Track info for expiration */
-	private TreeExpirationManager expirationqueue = new TreeExpirationManager(MAX_MESSAGES);
 
-	// NOT USED RIGHT NOW
-	private ArrayList<IMessage> expired = new ArrayList<IMessage>();
-	
+	/** Track the oldest unverified Merrkle signature */
+	@SuppressWarnings("serial")
 	class TreeExpirationManager extends ExpirationManager<IMessage> {
-		private static final long serialVersionUID = 1L;
-
 		TreeExpirationManager(int size_limit) {
 			super(size_limit);
 		}
 		
+		@Override
 		protected boolean removeEldestEntry(Map.Entry<IMessage,IMessage> eldest) {
 			if (super.removeEldestEntry(eldest)) {
 				System.out.println("Expiration for too many trees");
+				// Enqueue it in the underlying verifier
 				merkleverify.add(eldest.getKey());
 				return true;
 			}
@@ -76,6 +85,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		}
 	}
 	
+	@Override
 	public void forceUser(Object user, long timestamp) {
 		Collection<IMessage> ml = new ArrayList<IMessage>(userToMessages.get(user));
 		for (IMessage m : ml) {
@@ -86,6 +96,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		}
 	}
 	
+	@Override
 	public void forceAll() {
 		for (IMessage m : expired) {
 			m.resetCreationTimeNull();
@@ -96,7 +107,8 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 			merkleverify.add(m);
 		}
 	}
-	
+
+	@Override
 	public void forceOldest() {
 		if (expired.size() > 0) {
 			Iterator<IMessage> i = expired.iterator();
@@ -118,7 +130,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		expirationqueue.remove(x);
 	}
 	
-
+	@Override
 	public void add(IMessage m) {
 		WrappedIMessage msg = new WrappedIMessage(m);
 		msg.setCallback(this);
@@ -130,7 +142,7 @@ public class VerifyMerkleLazily implements VerifyLazily, WrappedIMessage.Callbac
 		userToMessages.put(msg.getRecipientUser(), m);
 	}
 
-	/** Get the size of the queue. May be called concurrently from any number of threads */
+	@Override
 	public int peekSize() {
 		return size.get();
 	}
