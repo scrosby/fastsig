@@ -6,5 +6,55 @@
 </head>
 <body>
 
+<h1> Top level code for managing Merkle and History trees. </h1>
+
+<h2>Overview</h2>
+
+<p>These classes implement the underlying tree operations for Merkle
+trees and history trees. They handle the initial creation of the trees,
+generating pruned trees, serializing the trees (and pruned trees), and
+parsing the trees and pruned trees. 
+
+<p>This code is generic in two ways. First, the actual storage of the
+contents of the trees is managed through HistoryDataStoreInterface which
+is manipulated through cursors. Second, this code abstracts over the
+types of aggregates (often, hashes) A and the type of values being
+stored (often byte strings) in the tree. An AggregationInterface object is
+used to manipulate these types.
+
+<p>The main top-level classes for external use are HistoryTree and
+MerkleTree with their shared code in TreeBase.
+
+<p>Pruned trees are made by invoking makePruned(), followed by copyV()'ing over the events that should be included in to the tree. Events can be copied either by value, or by the aggregate of the leaf.
+
+<h2> Tree manipulation functions</h2>
+
+<h3>Shared functions</h3>
+
+<p>append: Append the given value to the tree.
+
+<p>makePruned: Make an empty pruned tree which can have events copyV'ed into it.
+
+<p>copyV: On a pruned tree, copy an event at a given index.
+
+<p>agg: Get the agg value of the root, typically the root hash.
+
+<h3> Functions for History tree.</h3>
+
+<p>aggV: Get the aggregate value for a prior version of the history tree.
+
+<h3> Functions for Merkle tree.</h3>
+
+<p>freeze: Merkle trees are mutable until being frozen, and are immutable thereafter. Only frozen merkle trees can be used for generating pruned trees used to prove membership.
+
+<h2> Other classes </h2>
+
+<h3> Node Cursor</h3>
+
+Because I abstract away the back-end data store from the Merkle and
+History tree manipulation code. The front end uses cursors to navigate
+and manipulate that data store.
+
+
 </body>
 </html>
