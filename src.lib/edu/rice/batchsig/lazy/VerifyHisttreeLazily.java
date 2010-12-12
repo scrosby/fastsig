@@ -98,10 +98,10 @@ public class VerifyHisttreeLazily implements
 	private static int MAX_TREE_SIZE = 1000;
 
 	/** The signer. */
-	final SignaturePrimitives signer;
+	private final SignaturePrimitives signer;
 
 	/** Map from recipient_user to the messages queued to that recipient_user. */
-	Multimap<Object, IMessage> userToMessages = HashMultimap.create();
+	private Multimap<Object, IMessage> userToMessages = HashMultimap.create();
 
 	/** Track the number of messages enqueued. */
 	private AtomicInteger size = new AtomicInteger(0);
@@ -174,7 +174,7 @@ public class VerifyHisttreeLazily implements
 	 * Done at the end of every batch and tries to lazy force any old and
 	 * expired messages.
 	 */
-	public void doExpire() {
+	private void doExpire() {
 		// System.out.println("  Forcing batch begin");
 		for (OneTree i : treesToForceAll) {
 			i.forceAll();
