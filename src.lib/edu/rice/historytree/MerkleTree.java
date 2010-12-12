@@ -34,19 +34,24 @@ import edu.rice.historytree.storage.AppendOnlyArrayStore;
  *            The type of annotation
  */
 public class MerkleTree<A, V> extends TreeBase<A, V> {
+	/** Has this Merkle tree been frozen and marked immutable? */
 	boolean isFrozen = false;
 
 	/** Make an empty merkle tree with a given aggobj and datastore. */
 	public MerkleTree(AggregationInterface<A, V> aggobj,
 			HistoryDataStoreInterface<A, V> datastore) {
 		super(aggobj, datastore);
+		// Complain if this mistake is made. 
 		if (datastore instanceof AppendOnlyArrayStore<?, ?>)
 			throw new Error(
 					"Merkle Tree incompatible with AppendOnlyArrayStore");
 	}
 
+	@Override
 	public MerkleTree<A, V> makePruned(
 			HistoryDataStoreInterface<A, V> newdatastore) {
+		if (isFrozen == false)
+			throw new Error("Attempt to make pruned trees out of a unfrozen merkle tree");
 		MerkleTree<A, V> out = new MerkleTree<A, V>(this.aggobj, newdatastore);
 		out.updateTime(this.time);
 		out.root = out.datastore.makeRoot(root.layer());
@@ -55,6 +60,10 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 		return out;
 	}
 
+	/**
+	 * Helper when freezing the Merkle tree. mark all of the unused right
+	 * children to be valid with the default NULL agg.
+	 */
 	public void freezeHelper(NodeCursor<A, V> node) {
 		node.markValid();
 		if (node.right() == null)
@@ -75,7 +84,8 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 	 * a precomputed agg.
 	 */
 	public void freeze() {
-		assert (isFrozen == false);
+		if (isFrozen == true)
+			throw new Error("Attempt to re-freeze frozen Merkle tree");
 		isFrozen = true;
 		if (time <= 0)
 			return;

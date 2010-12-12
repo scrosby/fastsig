@@ -70,7 +70,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     //
     //  Operations for making pruned trees.
     //
-    
+    @Override
 	public HistoryTree<A, V> makePruned(HistoryDataStoreInterface<A, V> newdatastore) {
     	HistoryTree<A,V> out = new HistoryTree<A,V>(this.aggobj,newdatastore);
     	out.updateTime(this.time);
@@ -79,7 +79,7 @@ public class HistoryTree<A,V> extends TreeBase<A,V> {
     	return out;
         }
 
-    
+    @Override
     void parseSubtree(NodeCursor<A,V> node, Serialization.HistNode in) {
     	if (parseNode(node,in))
     		return; // If its a stub.
