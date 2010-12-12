@@ -47,8 +47,6 @@ import edu.rice.historytree.storage.HashStore;
 public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
 	/** Largest size we want the history tree to grow to before rotating  */
 	private final int MAX_SIZE=1<<16 - 2; // Should be just under a power of 2.
-	/** Underlying signing algorithm */
-	private SignaturePrimitives signer;
 	
 	/** Track when we last contacted a given recipient_host, so we know which splices to use. */
 	public HashMap<Object,Integer> lastcontacts;
@@ -59,10 +57,7 @@ public class HistoryQueue extends QueueBase<OMessage> implements SuspendableProc
 	public HistoryTree<byte[], byte[]> histtree;
 		
 	public HistoryQueue(SignaturePrimitives signer) {
-		super();
-		if (signer == null)
-			throw new NullPointerException();
-		this.signer = signer;
+		super(signer);
 		initTree();
 	}
 

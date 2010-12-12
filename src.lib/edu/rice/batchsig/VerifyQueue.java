@@ -35,16 +35,12 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
  */
 public class VerifyQueue extends QueueBase<IMessage> implements SuspendableProcessQueue<IMessage> {
 	private Verifier verifier;
-	private SignaturePrimitives signer;
 	private VerifyMerkle merkleverifier;
 	private VerifyAtomicSignature atomicverifier;
 	private VerifyHisttree histtreeverifier;
 	
 	public VerifyQueue(SignaturePrimitives signer) {
-		super();
-		if (signer == null)
-			throw new NullPointerException();
-		this.signer = signer;
+		super(signer);
 		this.merkleverifier = new VerifyMerkle(signer);
 		this.atomicverifier = new VerifyAtomicSignature(signer);
 		this.histtreeverifier = new VerifyHisttreeGroup(signer);

@@ -43,14 +43,8 @@ import edu.rice.historytree.storage.HashStore;
  * A new merkle tree is used for each batch.
  */
 public class MerkleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
-	/** Record functions responsible for signing. */
-	private SignaturePrimitives signer;
-
 	public MerkleQueue(SignaturePrimitives signer) {
-		super();
-		if (signer == null)
-			throw new NullPointerException();
-		this.signer = signer;
+		super(signer);
 	}
 
 	@Override

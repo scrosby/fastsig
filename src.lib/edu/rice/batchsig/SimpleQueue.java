@@ -35,14 +35,10 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
  * 
  */
 public class SimpleQueue extends QueueBase<OMessage> implements SuspendableProcessQueue<OMessage> {
-	private SignaturePrimitives signer;
 	private long initTime;
 
 	public SimpleQueue(SignaturePrimitives signer) {
-		super();
-		if (signer == null)
-			throw new NullPointerException();
-		this.signer = signer;
+		super(signer);
 		this.initTime = System.currentTimeMillis();
 	}
 
