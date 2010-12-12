@@ -1,4 +1,4 @@
-package edu.rice.batchsig.splice;
+package edu.rice.batchsig.lazy;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -69,9 +69,9 @@ import edu.rice.batchsig.bench.log.MultiplexedPublicKeyPrims;
 import edu.rice.batchsig.bench.log.ReplayAndQueueMessagesForSigningThread;
 import edu.rice.batchsig.bench.log.ReplaySavedMessagesRealtimeThread;
 import edu.rice.batchsig.bench.log.VerifyHisttreeLazilyQueue;
-import edu.rice.batchsig.splice.VerifyHisttreeLazily;
-import edu.rice.batchsig.splice.VerifyLazily;
-import edu.rice.batchsig.splice.VerifyMerkleLazily;
+import edu.rice.batchsig.lazy.VerifyHisttreeLazily;
+import edu.rice.batchsig.lazy.VerifyLazily;
+import edu.rice.batchsig.lazy.VerifyMerkleLazily;
 
 
 /* 

@@ -1,4 +1,4 @@
-package edu.rice.batchsig.splice;
+package edu.rice.batchsig.lazy;
 
 import edu.rice.batchsig.IMessage;
 import edu.rice.historytree.generated.Serialization.TreeSigBlob;

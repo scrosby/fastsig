@@ -2,8 +2,8 @@ package edu.rice.batchsig;
 
 import org.junit.Test;
 
-import edu.rice.batchsig.splice.Dag;
-import edu.rice.batchsig.splice.Dag.DagNode;
+import edu.rice.batchsig.lazy.Dag;
+import edu.rice.batchsig.lazy.Dag.DagNode;
 import junit.framework.TestCase;
 
 public class TestDag extends TestCase {

@@ -17,7 +17,7 @@
  *
  */
 
-package edu.rice.batchsig.splice;
+package edu.rice.batchsig.lazy;
 
 import java.util.ArrayList;
 import java.util.Collection;

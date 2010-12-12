@@ -10,8 +10,8 @@ import edu.rice.batchsig.Message;
 import edu.rice.batchsig.ProcessQueue;
 import edu.rice.batchsig.ShutdownableThread;
 import edu.rice.batchsig.bench.IncomingMessage;
-import edu.rice.batchsig.splice.VerifyHisttreeLazily;
-import edu.rice.batchsig.splice.VerifyLazily;
+import edu.rice.batchsig.lazy.VerifyHisttreeLazily;
+import edu.rice.batchsig.lazy.VerifyLazily;
 
 /** Handle the glue code. 
  * 
