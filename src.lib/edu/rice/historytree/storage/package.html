@@ -5,6 +5,23 @@
 <title>Insert title here</title>
 </head>
 <body>
+<h1>History tree storage</h1>
+
+<h2>Overview</h2>
+
+<p>Our history tree and Merkle tree operate do not operate on their
+binary trees directly. Rather, they interface to their 'data store' via
+an opaque interface. This code code implements several data storage
+backends with different time/space/performance tradeoffs, including one
+that stores nodes consecutively in an array, and one in a hash table.
+
+<p>We need multiple kinds of stores. An Array based store is best
+when building complete binary trees, and every node is stored. A hash store is
+better when generating sparse pruned trees.
+
+<p>History trees support a special kind of linear access that allows
+us use a lighter weight store when building them, the
+AppendOnlyArrayStore, which does not work for Merkle trees.
 
 </body>
 </html>
