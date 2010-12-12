@@ -34,6 +34,8 @@ import edu.rice.historytree.storage.AppendOnlyArrayStore;
  *            The type of annotation
  */
 public class MerkleTree<A, V> extends TreeBase<A, V> {
+	boolean isFrozen = false;
+
 	/** Make an empty merkle tree with a given aggobj and datastore. */
 	public MerkleTree(AggregationInterface<A, V> aggobj,
 			HistoryDataStoreInterface<A, V> datastore) {
@@ -82,8 +84,6 @@ public class MerkleTree<A, V> extends TreeBase<A, V> {
 			freezeHelper(node);
 		}
 	}
-
-	boolean isFrozen = false;
 
 	@Override
 	public A agg() {

@@ -253,7 +253,7 @@ public abstract class TreeBase<A, V> {
 		}
 	}
 
-	/** Add an event to the log */
+	/** Add an event to the history tree or merkle tree. */
 	public void append(V val) {
 		NodeCursor<A, V> leaf;
 		if (time < 0) {
