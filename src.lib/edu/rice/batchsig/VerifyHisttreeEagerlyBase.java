@@ -13,7 +13,7 @@ import edu.rice.historytree.TreeBase;
 
 /** Abstract class for verifying a history tree eagerly. I.e., Whenever the queue is processed, the entire batch is processed and verified.
  * */
-public abstract class VerifyHisttreeEagerlyBase extends VerifyHisttreeCommon {
+public abstract class VerifyHisttreeEagerlyBase extends Verifier {
 	/** We don't bother to splices messages created in different history trees. Track each of the distinct history trees here.
 	 * 
 	 * Map from (author_server, treeid) -> OneTree */

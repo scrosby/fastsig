@@ -11,27 +11,27 @@ import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
 /** Common code for the various history tree verifiers, both the eager ones here and the lazy ones. */
-public abstract class VerifyHisttreeCommon extends Verifier {
-	/** Parse the history tree structure out of an incoming message */
-	public static HistoryTree<byte[],byte[]> parseHistoryTree(IMessage message) {
+public abstract class VerifyHisttreeCommon {
+	/** Parse the history tree structure out of an incoming message.
+	 * 
+	 *  @return the parsed history tree.
+	 *  */
+	public static HistoryTree<byte[], byte[]> parseHistoryTree(IMessage message) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
-		PrunedTree pb=sigblob.getTree();
-		HistoryTree<byte[],byte[]> tree= new HistoryTree<byte[],byte[]>(new SHA256Agg(),new HashStore<byte[],byte[]>());
+		PrunedTree pb = sigblob.getTree();
+		HistoryTree<byte[], byte[]> tree = new HistoryTree<byte[], byte[]>(
+				new SHA256Agg(), new HashStore<byte[], byte[]>());
 		tree.updateTime(pb.getVersion());
 		tree.parseTree(pb);
 		return tree;
 	}
 
-	protected VerifyHisttreeCommon(SignaturePrimitives signer) {
-		super(signer);
-	}
-
 	/** Verify the message in the parsed history tree with a public key signature verification. */
-	public boolean verifyHistoryRoot(IMessage message, HistoryTree<byte[],byte[]> parsed) {
+	public static boolean verifyHistoryRoot(SignaturePrimitives signer, IMessage message, HistoryTree<byte[], byte[]> parsed) {
 		TreeSigBlob sigblob = message.getSignatureBlob();
 	
 		// See if the message is in the tree.
-		if (!checkLeaf(message, parsed))
+		if (!Verifier.checkLeaf(message, parsed))
 			return false;
 		
 		final byte[] rootHash = parsed.agg();
@@ -40,7 +40,7 @@ public abstract class VerifyHisttreeCommon extends Verifier {
 			.setVersion(parsed.version())
 			.setRoothash(ByteString.copyFrom(rootHash));
 	
-		return checkSig(sigblob, msgbuilder);
+		return Verifier.checkSig(signer, sigblob, msgbuilder);
 	}
 
 }

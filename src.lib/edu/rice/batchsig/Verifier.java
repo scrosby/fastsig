@@ -42,7 +42,7 @@ import edu.rice.historytree.storage.HashStore;
  */
 abstract public class Verifier {
 	/** Store the signature primitives used in verifying */
-	private SignaturePrimitives signer;
+	protected final SignaturePrimitives signer;
 
 	public Verifier(SignaturePrimitives signer) {
 		this.signer = signer;
@@ -79,8 +79,11 @@ abstract public class Verifier {
 	 * 
 	 * @return true if the signature matches. 
 	 */
-	protected boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
+	static public boolean checkSig(SignaturePrimitives signer, TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
 		byte[] signeddata = msgbuilder.build().toByteArray();
 		return signer.verify(signeddata, sigblob);
+	}
+	public boolean checkSig(TreeSigBlob sigblob, TreeSigMessage.Builder msgbuilder) {
+		return checkSig(signer,sigblob,msgbuilder);
 	}
 }

@@ -99,7 +99,7 @@ public class OneTree {
 		size++;
 		Integer key = m.getSignatureBlob().getLeaf();
 		Integer bundlekey = m.getSignatureBlob().getTree().getVersion();
-		HistoryTree<byte[],byte[]> tree = VerifyHisttreeLazily.parseHistoryTree(m);
+		HistoryTree<byte[],byte[]> tree = VerifyHisttreeCommon.parseHistoryTree(m);
 		ByteString agg = ByteString.copyFrom(tree.agg());
 		
 		// First, see if this message is well-formed in the bundle?   Yes. It is.
@@ -144,7 +144,7 @@ public class OneTree {
 			if (succm == null)
 				throw new Error("Algorithm bug.");
 			// Time to verify the splice is OK. 
-			HistoryTree<byte[],byte[]> succtree = VerifyHisttreeLazily.parseHistoryTree(succm);
+			HistoryTree<byte[],byte[]> succtree = VerifyHisttreeCommon.parseHistoryTree(succm);
 			if (Arrays.equals(succtree.aggV(bundlekey.intValue()),tree.agg())) {
 				System.out.println("Unusual splice circumstance -- success");
 				dag.addEdge(succ,bundlenode);
@@ -243,7 +243,7 @@ public class OneTree {
 			HistoryTree<byte[],byte[]> roottree = VerifyHisttreeCommon.parseHistoryTree(rootm);
 
 			// Verify the root's public key signature.
-			if (verifier.verifyHistoryRoot(rootm,roottree)) {
+			if (VerifyHisttreeCommon.verifyHistoryRoot(verifier.signer,rootm,roottree)) {
 				//System.out.println("Verified the root's signature - SUCCESS. It is valid");
 				// Success!
 				// Now traverse *all* descendents and mark them as good.

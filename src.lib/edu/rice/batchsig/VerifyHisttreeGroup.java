@@ -39,7 +39,7 @@ public class VerifyHisttreeGroup extends VerifyHisttreeEagerlyBase {
 			//System.out.format("*Checking message at leaf %d\n",m.getSignatureBlob().getLeaf());
 			
 			boolean validated = false;
-			HistoryTree<byte[], byte[]> tree = parseHistoryTree(m);
+			HistoryTree<byte[], byte[]> tree = VerifyHisttreeCommon.parseHistoryTree(m);
 			
 			if (!Verifier.checkLeaf(m, tree)) {
 				m.signatureValidity(false);
@@ -70,7 +70,7 @@ public class VerifyHisttreeGroup extends VerifyHisttreeEagerlyBase {
 			// No splice or invalid splice.
 			if (validated == false) {
 				//System.out.format("Splices do not have tree %d\n",version);
-				if (verifyHistoryRoot(m,tree)) {
+				if (VerifyHisttreeCommon.verifyHistoryRoot(signer, m, tree)) {
 					validated = true; // GOOD signature.
 				} else {
 					System.out.println("Signature necessary, but doesn't validate. Skip message");
