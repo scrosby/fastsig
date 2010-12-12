@@ -23,7 +23,7 @@ package edu.rice.batchsig;
  * with some sort of bulk signature or verification mechanism. */
 public interface ProcessQueue<T> {
 
-	/** Add a message to be processed. Called concurrently. */
+	/** Add or submit a message to be processed. Called concurrently. */
 	public abstract void add(T message);
 
 	/**

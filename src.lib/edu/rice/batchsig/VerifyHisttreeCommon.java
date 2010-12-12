@@ -10,8 +10,8 @@ import edu.rice.historytree.generated.Serialization.TreeSigBlob;
 import edu.rice.historytree.generated.Serialization.TreeSigMessage;
 import edu.rice.historytree.storage.HashStore;
 
-/** Common code for the various history tree verifiers, both the eager ones here and the lazy ones. */
-public abstract class VerifyHisttreeCommon {
+/** Utility code for the various history tree verifiers, both the eager ones here and the lazy ones. */
+public class VerifyHisttreeCommon {
 	/** Parse the history tree structure out of an incoming message.
 	 * 
 	 *  @return the parsed history tree.
